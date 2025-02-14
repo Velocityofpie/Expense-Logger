@@ -1,0 +1,5 @@
+# Ignore all files in the uploads directory
+uploads/
+
+# Ignore the database file
+invoices.db

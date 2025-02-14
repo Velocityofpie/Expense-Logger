@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pytesseract
+pillow
+pandas
+PyPDF2
+matplotlib
+pymupdf
