@@ -3,7 +3,7 @@ uvicorn
 pydantic
 pymongo
 passlib[bcrypt]
-python-jose[cryptography]
+PyJWT  # <-- Make sure this is added
 python-multipart
 motor
 fastapi-mail

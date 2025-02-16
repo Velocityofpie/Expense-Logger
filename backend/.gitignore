@@ -1,25 +1,17 @@
-# Ignore Python compiled files
+# Ignore dependencies
+node_modules/
+venv/
+
+# Ignore compiled Python files
 __pycache__/
 *.pyc
 *.pyo
-*.pyd
 
-# Ignore virtual environment
-venv/
-.env
+# Ignore logs
+*.log
+logs/
 
 # Ignore database files
-uploads/
-uploads/avatars/
-invoices.db
-
-# Ignore log files
-*.log
-
-# Ignore FastAPI cache
 *.sqlite3
-
-# Ignore IDE and OS-generated files
-.vscode/
-.idea/
-.DS_Store
+db.sqlite3
+migrations/

@@ -1,123 +1,179 @@
-from fastapi import FastAPI, HTTPException, Depends, UploadFile, File
-from pydantic import BaseModel, EmailStr
-from passlib.context import CryptContext
-import jwt
-import datetime
-from fastapi.security import OAuth2PasswordBearer
-from motor.motor_asyncio import AsyncIOMotorClient
-from bson import ObjectId
+from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, FileResponse
+import sqlite3
+import json
 import os
 from pathlib import Path
-from fastapi.responses import FileResponse
-from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
-import secrets
+from fastapi.staticfiles import StaticFiles
+
 
 app = FastAPI()
 
-# MongoDB Connection
-MONGO_URI = "mongodb://localhost:27017"
-client = AsyncIOMotorClient(MONGO_URI)
-db = client["invoice_extractor"]
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
-# Secret key for JWT
-SECRET_KEY = "supersecretkey"
 
-# Password hashing
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# Allow frontend to communicate with backend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+UPLOAD_FOLDER = Path("uploads")
+UPLOAD_FOLDER.mkdir(exist_ok=True)
 
-UPLOAD_FOLDER = Path("uploads/avatars")
-UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+DB_FILE = "invoices.db"
 
-async def verify_token(token: str = Depends(oauth2_scheme)):
+# Initialize the database
+def init_db():
+    conn = sqlite3.connect(DB_FILE)
+    c = conn.cursor()
+    c.execute("""
+        CREATE TABLE IF NOT EXISTS invoices (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            filename TEXT, date TEXT, order_number TEXT,
+            merchant TEXT, amount TEXT, category TEXT,
+            card_used TEXT, notes TEXT, line_items TEXT
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+init_db()
+
+@app.get("/invoices/")
+async def get_invoices():
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        return payload
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(status_code=401, detail="Token expired")
-    except jwt.DecodeError:
-        raise HTTPException(status_code=401, detail="Invalid token")
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT * FROM invoices")
+        rows = c.fetchall()
+        conn.close()
 
-# User Registration
-class UserSignup(BaseModel):
-    username: str
-    email: EmailStr
-    password: str
-    role: str  # "admin" or "user"
+        return {
+            "invoices": [
+                {
+                    "id": row[0], "filename": row[1], "date": row[2],
+                    "order_number": row[3], "merchant": row[4],
+                    "amount": row[5], "category": row[6], "card_used": row[7],
+                    "notes": row[8], "line_items": json.loads(row[9]) if row[9] else []
+                }
+                for row in rows
+            ]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/signup/")
-async def signup(user_data: UserSignup):
-    existing_user = await db.users.find_one({"username": user_data.username})
-    if existing_user:
-        raise HTTPException(status_code=400, detail="Username already taken")
+@app.get("/invoice/{invoice_id}")
+async def get_invoice(invoice_id: int):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("SELECT * FROM invoices WHERE id=?", (invoice_id,))
+        row = c.fetchone()
+        conn.close()
 
-    hashed_password = pwd_context.hash(user_data.password)
-    user = {"username": user_data.username, "email": user_data.email, "password": hashed_password, "role": user_data.role, "avatar": ""}
-    await db.users.insert_one(user)
-    return {"message": "User registered successfully"}
+        if not row:
+            raise HTTPException(status_code=404, detail="Invoice not found")
 
-# Login & JWT Token
-class UserLogin(BaseModel):
-    username: str
-    password: str
+        return {
+            "id": row[0], "filename": row[1], "date": row[2], "order_number": row[3],
+            "merchant": row[4], "amount": row[5], "category": row[6],
+            "card_used": row[7], "notes": row[8],
+            "line_items": json.loads(row[9]) if row[9] else []
+        }
 
-@app.post("/login/")
-async def login(user_data: UserLogin):
-    user = await db.users.find_one({"username": user_data.username})
-    if not user or not pwd_context.verify(user_data.password, user["password"]):
-        raise HTTPException(status_code=400, detail="Invalid username or password")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    token = jwt.encode({"sub": user_data.username, "role": user["role"], "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)}, SECRET_KEY, algorithm="HS256")
-    return {"access_token": token, "token_type": "bearer"}
+@app.post("/upload/")
+async def upload_invoice(file: UploadFile = File(...)):
+    try:
+        file_path = UPLOAD_FOLDER / file.filename
+        with open(file_path, "wb") as f:
+            f.write(file.file.read())
 
-# Get User Profile
-@app.get("/profile/")
-async def get_profile(payload: dict = Depends(verify_token)):
-    user = await db.users.find_one({"username": payload["sub"]}, {"_id": 0, "password": 0})
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    return user
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute(
+            "INSERT INTO invoices (filename, date, order_number, merchant, amount, category, card_used, notes, line_items) VALUES (?, '', '', '', '', '', '', '', ?)",
+            (file.filename, json.dumps([]))
+        )
+        conn.commit()
+        conn.close()
 
-# Update Profile
-class UserUpdate(BaseModel):
-    email: EmailStr = None
-    new_password: str = None
-    role: str = None
+        return {"message": "File uploaded successfully", "filename": file.filename}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-@app.put("/profile/")
-async def update_profile(data: UserUpdate, payload: dict = Depends(verify_token)):
-    update_fields = {}
+@app.put("/update/{invoice_id}")
+async def update_invoice(invoice_id: int, invoice_data: dict):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        c.execute("""
+            UPDATE invoices SET 
+            date = ?, order_number = ?, merchant = ?, 
+            amount = ?, category = ?, card_used = ?, notes = ?, 
+            line_items = ? WHERE id = ?
+        """, (
+            invoice_data.get("date"), invoice_data.get("order_number"),
+            invoice_data.get("merchant"), invoice_data.get("amount"),
+            invoice_data.get("category"), invoice_data.get("card_used"),
+            invoice_data.get("notes"),
+            json.dumps(invoice_data.get("line_items", [])),  # Store as JSON
+            invoice_id
+        ))
 
-    if data.email:
-        update_fields["email"] = data.email
+        conn.commit()
+        conn.close()
+        return {"message": "Invoice updated successfully"}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
-    if data.new_password:
-        update_fields["password"] = pwd_context.hash(data.new_password)
+@app.get("/uploads/{filename}")
+async def get_uploaded_file(filename: str):
+    file_path = UPLOAD_FOLDER / filename
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File not found")
+    return {"url": str(file_path)}
 
-    if data.role and payload["role"] == "admin":
-        update_fields["role"] = data.role  # Only admins can change roles
+@app.get("/download/{filename}")
+def download_invoice(filename: str):  # Decode URL-encoded filenames
+    file_path = UPLOAD_FOLDER / filename
+    if os.path.exists(file_path):
+        return FileResponse(file_path, media_type="application/pdf", filename=filename)
+    return JSONResponse(content={"detail": "File not found"}, status_code=404)
 
-    if update_fields:
-        await db.users.update_one({"username": payload["sub"]}, {"$set": update_fields})
+UPLOAD_DIR = "uploads"
+@app.delete("/delete/{invoice_id}")
+async def delete_invoice(invoice_id: int, filename: str):
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        
+        # Delete from database
+        c.execute("DELETE FROM invoices WHERE id=?", (invoice_id,))
+        conn.commit()
+        conn.close()
 
-    return {"message": "Profile updated successfully"}
+        # Construct file path
+        file_path = UPLOAD_FOLDER / filename
 
-# Avatar Upload
-@app.post("/upload-avatar/")
-async def upload_avatar(file: UploadFile = File(...), payload: dict = Depends(verify_token)):
-    avatar_path = UPLOAD_FOLDER / f"{payload['sub']}.jpg"
+        # Debugging print statement
+        print(f"Trying to delete: {file_path}")
 
-    with open(avatar_path, "wb") as buffer:
-        buffer.write(await file.read())
+        # Check if file exists before deleting
+        if file_path.exists():
+            os.remove(file_path)
+            print(f"Deleted file: {file_path}")
+        else:
+            print(f"File not found: {file_path}")
 
-    await db.users.update_one({"username": payload["sub"]}, {"$set": {"avatar": str(avatar_path)}})
-
-    return {"message": "Avatar uploaded successfully", "avatar_url": f"/avatar/{payload['sub']}"}
-
-@app.get("/avatar/{username}")
-async def get_avatar(username: str):
-    avatar_path = UPLOAD_FOLDER / f"{username}.jpg"
-    if avatar_path.exists():
-        return FileResponse(avatar_path)
-    return HTTPException(status_code=404, detail="Avatar not found")
+        return {"message": "Invoice deleted successfully"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error deleting invoice: {str(e)}")
