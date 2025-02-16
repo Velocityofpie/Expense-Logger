@@ -6,6 +6,7 @@ import Dropzone from "react-dropzone";
 const API_URL = "http://127.0.0.1:8000";
 
 export default function InvoiceExtractor() {
+    
     const [invoices, setInvoices] = useState([]);
     const [categories, setCategories] = useState([]);
     const navigate = useNavigate();
@@ -16,41 +17,63 @@ export default function InvoiceExtractor() {
     }, []);
 
     const fetchInvoices = async () => {
-        const response = await fetch(`${API_URL}/invoices/`);
-        const data = await response.json();
-        setInvoices(data.invoices);
+        try {
+            const response = await fetch(`${API_URL}/invoices/`);
+            if (!response.ok) throw new Error("Failed to fetch invoices");
+            const data = await response.json();
+            setInvoices(data.invoices);
+        } catch (error) {
+            console.error("Error fetching invoices:", error);
+        }
     };
 
     const fetchCategories = async () => {
-        const response = await fetch(`${API_URL}/categories/`);
-        const data = await response.json();
-        setCategories(data.categories);
+        try {
+            const response = await fetch(`${API_URL}/categories/`);
+            if (!response.ok) throw new Error("Failed to fetch categories");
+            const data = await response.json();
+            setCategories(data.categories);
+        } catch (error) {
+            console.error("Error fetching categories:", error);
+        }
     };
 
     const handleFileUpload = async (files) => {
         for (let file of files) {
             const formData = new FormData();
             formData.append("file", file);
-            await fetch(`${API_URL}/upload/`, {
-                method: "POST",
-                body: formData,
-            });
+            try {
+                await fetch(`${API_URL}/upload/`, {
+                    method: "POST",
+                    body: formData,
+                });
+                fetchInvoices();
+            } catch (error) {
+                console.error("Error uploading file:", error);
+            }
         }
-        fetchInvoices();
     };
 
     const deleteInvoice = async (id) => {
-        await fetch(`${API_URL}/delete/${id}`, { method: "DELETE" });
-        fetchInvoices();
+        try {
+            await fetch(`${API_URL}/delete/${id}`, { method: "DELETE" });
+            fetchInvoices();
+        } catch (error) {
+            console.error("Error deleting invoice:", error);
+        }
     };
 
     const updateCategory = async (id, category) => {
-        await fetch(`${API_URL}/update/${id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ category }),
-        });
-        fetchInvoices();
+        try {
+            await fetch(`${API_URL}/update/${id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ category }),
+            });
+            fetchInvoices();
+        } catch (error) {
+            console.error("Error updating category:", error);
+        }
     };
 
     const viewInvoice = (invoice) => {
