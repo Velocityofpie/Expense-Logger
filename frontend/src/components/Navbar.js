@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
 
 const API_URL = "http://127.0.0.1:8000";
 
 export default function NavigationBar() {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [isAuthenticated] = useState(false);
     const [avatarUrl, setAvatarUrl] = useState("");
 
     useEffect(() => {
@@ -18,7 +18,7 @@ export default function NavigationBar() {
     return (
         <Navbar bg="dark" variant="dark" expand="lg">
             <Container>
-                <Navbar.Brand as={Link} to="/">Invoice Extractor</Navbar.Brand>
+                <Navbar.Brand as={Link} to="/invoices">Invoice Extractor</Navbar.Brand>
                 <Nav className="me-auto">
                     <Nav.Link as={Link} to="/">Home</Nav.Link>
                     <Nav.Link as={Link} to="/dashboard">Dashboard</Nav.Link>
