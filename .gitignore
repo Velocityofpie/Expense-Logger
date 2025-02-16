@@ -1,5 +1,37 @@
-# Ignore all files in the uploads directory
-uploads/
+# --- General OS-specific and IDE files ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.log
 
-# Ignore the database file
-invoices.db
+# --- Backend (FastAPI) ---
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/*.pyd
+backend/venv/
+backend/.env
+backend/uploads/
+backend/uploads/avatars/
+backend/invoices.db
+backend/*.sqlite3
+backend/.pytest_cache/
+backend/.mypy_cache/
+
+# --- Frontend (React) ---
+frontend/node_modules/
+frontend/package-lock.json
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development
+frontend/.env.production
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# --- Global Git Ignore ---
+*.swp
+*.swo
+*.bak

@@ -1,0 +1,36 @@
+📂 invoice-extractor/
+│
+├── 📂 backend/                 # 🖥️ FastAPI Backend
+│   ├── 📂 uploads/
+│   │   ├── 📂 avatars/         # Stores user profile pictures
+│   │   └── (Invoice PDF/PNG files)
+│   │
+│   ├── 📄 main.py              # FastAPI server (authentication, invoices, profile, avatars)
+│   ├── 📄 requirements.txt      # Backend dependencies
+│   └── 📄 .gitignore            # Ignores sensitive files
+│
+├── 📂 frontend/                 # 🌐 React Frontend
+│   ├── 📂 public/
+│   │   ├── index.html          # Main HTML file
+│   │
+│   ├── 📂 src/
+│   │   ├── 📂 components/      # 📦 React Components
+│   │   │   ├── 📄 Navbar.js          # Navigation bar with login/logout & profile
+│   │   │   ├── 📄 Dashboard.js       # Displays spending trends & charts
+│   │   │   ├── 📄 InvoiceExtractor.js # Invoice management (upload, view, delete)
+│   │   │   ├── 📄 InvoiceDetail.js   # View & edit invoice details
+│   │   │   ├── 📄 UploadForm.js      # Drag & drop invoice uploader
+│   │   │   ├── 📄 RequestPasswordReset.js # User requests password reset
+│   │   │   ├── 📄 ResetPassword.js    # Enter new password after email reset
+│   │   │   ├── 📄 Profile.js         # User profile (update email, password, avatar)
+│   │   │
+│   │   ├── 📄 App.js                 # Main React App (Routes)
+│   │   ├── 📄 api.js                 # Handles API requests
+│   │   ├── 📄 index.js               # React entry point
+│   │
+│   ├── 📄 package.json               # Frontend dependencies & scripts
+│   ├── 📄 package-lock.json           # Lockfile for dependencies
+│   └── 📄 .gitignore                  # Ignores node_modules, build files, etc.
+│
+├── 📄 README.md                        # 📖 Project documentation
+└── 📄 .gitignore                        # Ignores sensitive files

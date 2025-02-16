@@ -1,15 +1,17 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import InvoiceExtractor from "./components/InvoiceExtractor";
-import InvoiceDetail from "./components/InvoiceDetail";
+import NavigationBar from "./components/Navbar";
+import Profile from "./components/Profile";
 
-export default function App() {
-  return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<InvoiceExtractor />} />
-        <Route path="/invoice/:id" element={<InvoiceDetail />} />
-      </Routes>
-    </Router>
-  );
+function App() {
+    return (
+        <Router>
+            <NavigationBar />
+            <Routes>
+                <Route path="/profile" element={<Profile />} />
+            </Routes>
+        </Router>
+    );
 }
+
+export default App;
