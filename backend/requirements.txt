@@ -1,8 +1,9 @@
 fastapi
 uvicorn
-pytesseract
-pillow
-pandas
-PyPDF2
-matplotlib
-pymupdf
+pydantic
+pymongo
+passlib[bcrypt]
+PyJWT  # <-- Make sure this is added
+python-multipart
+motor
+fastapi-mail
