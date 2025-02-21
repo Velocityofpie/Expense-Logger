@@ -1,37 +1,51 @@
+version: "3.9"
+
 services:
+  db:
+    image: postgres:15
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: invoice_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
   backend:
     build: ./backend
-    ports:
-      - "8000:8000"
+    container_name: expense-logger-backend
     depends_on:
-      - mongodb
+      - db
     environment:
-      - MONGO_URI=mongodb://mongodb:27017/invoice_extractor
+      # Connect to the db service:
+      # postgresql://USER:PASSWORD@SERVICE_NAME:PORT/DBNAME
+      POSTGRES_URL: "postgresql://postgres:postgres@db:5432/invoice_db"
+      # Add other environment vars here, if needed
     volumes:
       - ./backend:/app
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
     restart: always
 
   frontend:
     build: ./frontend
-    ports:
-      - "3000:3000"
+    container_name: expense-logger-frontend
     depends_on:
       - backend
+    environment:
+      # For React, environment vars must start with REACT_APP_ to be used in code
+      REACT_APP_API_URL: "http://localhost:8000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules  # Prevents overwriting node_modules inside the container
-    restart: always
-    working_dir: /app  # Ensure correct working directory
-    command: ["npm", "start"]
-
-  mongodb:
-    image: mongo:6.0
-    container_name: mongodb
-    restart: always
+      - /app/node_modules
     ports:
-      - "27017:27017"
-    volumes:
-      - mongodb_data:/data/db
+      - "3000:3000"
+    command: ["npm", "start"]
+    restart: always
 
 volumes:
-  mongodb_data:
+  postgres_data:

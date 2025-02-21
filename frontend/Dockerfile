@@ -1,23 +1,20 @@
-# Use an official Node.js image
-FROM node:18
+# frontend/Dockerfile
 
-# Set working directory
+FROM node:16
+
+# Create app directory
 WORKDIR /app
 
-# Copy package files first (to leverage Docker caching)
-COPY package.json package-lock.json ./
-
-# Install dependencies
+# Copy package.json/package-lock.json first, then install
+COPY package*.json ./
 RUN npm install
 
-# Copy frontend source code
-COPY . .
+# Copy the rest of your frontend source
+COPY . /app
 
-# Ensure node_modules exists
-RUN ls -la node_modules || npm install
-
-# Expose React port
+# Expose port 3000
 EXPOSE 3000
 
-# Start React app
+# Default command
 CMD ["npm", "start"]
+

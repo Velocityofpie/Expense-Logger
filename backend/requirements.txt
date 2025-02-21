@@ -1,9 +1,6 @@
 fastapi
 uvicorn
-pydantic
-pymongo
-passlib[bcrypt]
-PyJWT  # <-- Make sure this is added
+sqlalchemy
+psycopg2-binary
 python-multipart
-motor
-fastapi-mail
+pydantic

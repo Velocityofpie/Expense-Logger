@@ -1,18 +1,20 @@
-# Use official Python image
-FROM python:3.11
+# backend/Dockerfile
 
-# Set working directory
+FROM python:3.11-slim
+
+# Create a directory for the app
 WORKDIR /app
 
-# Copy and install dependencies
-COPY requirements.txt .
-RUN pip install --upgrade pip && pip install --no-cache-dir -r requirements.txt
+# Copy requirements and install
+COPY requirements.txt /app/requirements.txt
+RUN pip install --no-cache-dir --upgrade pip \
+    && pip install --no-cache-dir -r requirements.txt
 
-# Copy backend source code
-COPY . .
+# Copy all backend code into the container
+COPY . /app
 
-# Expose FastAPI port
+# Expose port 8000 for FastAPI
 EXPOSE 8000
 
-# Start FastAPI server
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+# By default, docker-compose will override the CMD with "uvicorn main:app ..."
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

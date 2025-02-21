@@ -5,79 +5,169 @@ import { Button, Form, Table } from "react-bootstrap";
 const API_URL = "http://127.0.0.1:8000";
 
 export default function InvoiceDetail() {
-  const { id } = useParams();           // 1️⃣ Grab the invoice ID from the URL param
+  const { id } = useParams(); // Current invoice ID from the URL
   const navigate = useNavigate();
 
-  const [invoice, setInvoice] = useState({});
+  const [invoices, setInvoices] = useState([]);
+  const [invoice, setInvoice] = useState(null);
+  const [currentIndex, setCurrentIndex] = useState(-1);
   const [lineItems, setLineItems] = useState([]);
   const [pdfUrl, setPdfUrl] = useState("");
 
+  // ─────────────────────────────────────────────────────────────────────────
+  //  1) Fetch ALL invoices once
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
-    // If we have a valid ID, fetch the invoice from the backend
-    if (id) {
+    async function fetchAllInvoices() {
+      try {
+        const response = await fetch(`${API_URL}/invoices/`);
+        if (!response.ok) throw new Error("Failed to fetch all invoices");
+        const data = await response.json();
+        setInvoices(data.invoices || []);
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    }
+    fetchAllInvoices();
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  2) When ID or invoices changes, load correct invoice
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!id || invoices.length === 0) return;
+
+    const idx = invoices.findIndex((inv) => String(inv.id) === String(id));
+    setCurrentIndex(idx);
+
+    if (idx >= 0) {
+      const inv = invoices[idx];
+      setInvoice(inv);
+      setLineItems(inv.line_items || []);
+      setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(inv.filename)}`);
+    } else {
+      // If not found in local array, fetch from server
       fetchInvoiceDetails(id);
     }
-  }, [id]);
+  }, [id, invoices]);
 
-  const fetchInvoiceDetails = async (invoiceId) => {
+  async function fetchInvoiceDetails(invoiceId) {
     try {
       const response = await fetch(`${API_URL}/invoice/${invoiceId}`);
       if (!response.ok) throw new Error("Failed to fetch invoice details");
       const data = await response.json();
-
-      // Update invoice state
       setInvoice(data);
-
-      // Convert line_items to an array if needed
-      setLineItems(Array.isArray(data.line_items) ? data.line_items : []);
-
-      // Build the PDF URL to display the invoice file
+      setLineItems(data.line_items || []);
       setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(data.filename)}`);
     } catch (error) {
       console.error("Error fetching invoice details:", error);
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  3) Next / Previous invoice navigation
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleNext = () => {
+    if (currentIndex < invoices.length - 1) {
+      const nextInv = invoices[currentIndex + 1];
+      navigate(`/invoice/${nextInv.id}`);
+    } else {
+      alert("No more invoices!");
+    }
   };
 
-  // Handle input changes for main invoice fields (date, merchant, etc.)
-  const handleEditChange = (e) => {
-    setInvoice({ ...invoice, [e.target.name]: e.target.value });
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      const prevInv = invoices[currentIndex - 1];
+      navigate(`/invoice/${prevInv.id}`);
+    } else {
+      alert("No previous invoices!");
+    }
   };
 
-  // Handle input changes for line items
+  // ─────────────────────────────────────────────────────────────────────────
+  //  4) Save changes logic
+  // ─────────────────────────────────────────────────────────────────────────
+  const saveEdit = async () => {
+    if (!invoice) return;
+    try {
+      const response = await fetch(`${API_URL}/update/${invoice.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...invoice,
+          line_items: lineItems,
+        }),
+      });
+      if (!response.ok) throw new Error("Failed to update invoice");
+      await fetchInvoiceDetails(invoice.id);
+      alert("Invoice updated successfully!");
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      alert("Failed to save invoice changes.");
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  5) Delete button
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleDelete = async () => {
+    if (!invoice) return;
+    try {
+      const url = `${API_URL}/delete/${invoice.id}?filename=${encodeURIComponent(invoice.filename)}`;
+      const response = await fetch(url, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete invoice");
+      alert("Invoice deleted!");
+      // Option: navigate to the next invoice, or back to a list:
+      navigate("/invoices");
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      alert("Failed to delete invoice.");
+    }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  6) Handle invoice field changes
+  // ─────────────────────────────────────────────────────────────────────────
+  const handleInvoiceFieldChange = (field, value) => {
+    if (!invoice) return;
+    setInvoice({ ...invoice, [field]: value });
+  };
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  7) Line item changes
+  // ─────────────────────────────────────────────────────────────────────────
   const handleLineItemChange = (index, field, value) => {
     const updatedItems = [...lineItems];
     updatedItems[index][field] = value;
     setLineItems(updatedItems);
   };
 
-  // Add a new line item
   const addRow = () => {
     setLineItems([...lineItems, { product: "", price: "", quantity: "", total: "", link: "" }]);
   };
 
-  // Remove a line item
   const removeRow = (index) => {
     setLineItems(lineItems.filter((_, i) => i !== index));
   };
 
-  // Save changes to the invoice (PUT /update/{invoice_id})
-  const saveEdit = async () => {
-    try {
-      await fetch(`${API_URL}/update/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...invoice, line_items: lineItems }),
-      });
-      // Refresh invoice details after saving
-      fetchInvoiceDetails(id);
-    } catch (error) {
-      console.error("Error saving invoice:", error);
+  // ─────────────────────────────────────────────────────────────────────────
+  //  8) Custom displayed filename (Merchant - Order# ####.pdf)
+  // ─────────────────────────────────────────────────────────────────────────
+  function getDisplayedFilename() {
+    if (!invoice) return "";
+    if (invoice.merchant && invoice.order_number) {
+      return `${invoice.merchant} - Order# ${invoice.order_number}.pdf`;
     }
-  };
+    // fallback to the real filename if merchant/order_number are missing
+    return invoice.filename;
+  }
 
-  // If the invoice is empty or not yet fetched, show a loading / placeholder
-  if (!invoice.id) {
-    return <p>Loading or no invoice found.</p>;
+  // ─────────────────────────────────────────────────────────────────────────
+  //  9) Render
+  // ─────────────────────────────────────────────────────────────────────────
+  if (!invoice) {
+    return <div>Loading invoice...</div>;
   }
 
   return (
@@ -85,85 +175,88 @@ export default function InvoiceDetail() {
       <h2 className="text-2xl font-bold mb-4">Invoice Details</h2>
       <div className="border p-4 rounded shadow-md">
         <div className="flex space-x-4 mb-4">
-          <Button variant="secondary" onClick={() => navigate("/invoices")}>
+          <Button variant="secondary" onClick={() => navigate("/")}>
             Back
+          </Button>
+          <Button variant="primary" onClick={handlePrev}>
+            Previous
+          </Button>
+          <Button variant="primary" onClick={handleNext}>
+            Next
           </Button>
           <Button variant="success" onClick={saveEdit}>
             Save Changes
           </Button>
+          <Button variant="danger" onClick={handleDelete}>
+            Delete
+          </Button>
         </div>
 
-        <p><strong>Filename:</strong> {invoice.filename}</p>
+        {/* Show custom filename */}
+        <p><strong>Filename:</strong> {getDisplayedFilename()}</p>
+
+        {/* Show ID, or any other fields you want */}
         <p><strong>ID:</strong> {invoice.id}</p>
 
-        {/* Main invoice fields */}
         <Form>
           <Form.Group className="mb-3">
             <Form.Label>Date:</Form.Label>
             <Form.Control
               type="date"
-              name="date"
               value={invoice.date || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("date", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Order #:</Form.Label>
             <Form.Control
               type="text"
-              name="order_number"
               value={invoice.order_number || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("order_number", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Merchant:</Form.Label>
             <Form.Control
               type="text"
-              name="merchant"
               value={invoice.merchant || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("merchant", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Total Amount:</Form.Label>
             <Form.Control
               type="text"
-              name="amount"
               value={invoice.amount || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("amount", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Category:</Form.Label>
             <Form.Control
               type="text"
-              name="category"
               value={invoice.category || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("category", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Card Used:</Form.Label>
             <Form.Control
               type="text"
-              name="card_used"
               value={invoice.card_used || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("card_used", e.target.value)}
             />
           </Form.Group>
           <Form.Group className="mb-3">
             <Form.Label>Notes:</Form.Label>
             <Form.Control
               as="textarea"
-              name="notes"
               value={invoice.notes || ""}
-              onChange={handleEditChange}
+              onChange={(e) => handleInvoiceFieldChange("notes", e.target.value)}
             />
           </Form.Group>
         </Form>
 
-        {/* Line Items */}
         <h3 className="text-lg font-bold mt-4">Line Items</h3>
         <Table striped bordered hover>
           <thead>
@@ -235,7 +328,6 @@ export default function InvoiceDetail() {
           Add Row
         </Button>
 
-        {/* Invoice PDF Iframe */}
         <h3 className="text-lg font-bold mt-4">Invoice PDF</h3>
         {pdfUrl ? (
           <iframe
