@@ -1,281 +1,382 @@
 import React, { useState, useEffect } from "react";
-import { Button, Table, Form, Modal } from "react-bootstrap";
+import { Button, Table, Form } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
-import Dropzone from "react-dropzone";
 
 const API_URL = "http://127.0.0.1:8000";
 
+// Example statuses you might want:
+const VALID_STATUSES = ["Open", "Draft", "Needs Attention", "Resolved"];
+
 export default function InvoiceExtractor() {
   const [invoices, setInvoices] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [showModal, setShowModal] = useState(false);
+  const [file, setFile] = useState(null);
+
+  // Fields for adding a bank entry (no PDF)
+  const [newDate, setNewDate] = useState("");
+  const [newMerchant, setNewMerchant] = useState("");
+  const [newOrderNumber, setNewOrderNumber] = useState("");
   const [newCategory, setNewCategory] = useState("");
+  const [newAmount, setNewAmount] = useState("");
+  const [newStatus, setNewStatus] = useState("Open");
+  const [newTags, setNewTags] = useState("");
+  const [newNotes, setNewNotes] = useState("");
+
   const navigate = useNavigate();
 
+  // ─────────────────────────────────────────────────────────
+  // Fetch the invoice list on mount
+  // ─────────────────────────────────────────────────────────
   useEffect(() => {
     fetchInvoices();
-    fetchCategories();
   }, []);
 
-  // ---------------------------
-  //   FETCHING
-  // ---------------------------
   const fetchInvoices = async () => {
     try {
       const response = await fetch(`${API_URL}/invoices/`);
-      if (!response.ok) throw new Error("Failed to fetch invoices");
       const data = await response.json();
-      setInvoices(data.invoices);
+      setInvoices(data.invoices || []);
     } catch (error) {
       console.error("Error fetching invoices:", error);
     }
   };
 
-  const fetchCategories = async () => {
-    try {
-      const response = await fetch(`${API_URL}/categories/`);
-      if (!response.ok) {
-        // Possibly no real endpoint
-        console.warn("No /categories/ endpoint found. Using fallback list.");
-        return;
-      }
-      const data = await response.json();
-      setCategories(data.categories || []);
-    } catch (error) {
-      console.error("Error fetching categories:", error);
-    }
+  // ─────────────────────────────────────────────────────────
+  // Upload a PDF-based invoice
+  // ─────────────────────────────────────────────────────────
+  const handleFileSelect = (e) => {
+    setFile(e.target.files[0]);
   };
 
-  // ---------------------------
-  //   FILE UPLOAD
-  // ---------------------------
-  const handleFileUpload = async (files) => {
-    for (let file of files) {
+  const uploadInvoice = async () => {
+    if (!file) return;
+    try {
       const formData = new FormData();
       formData.append("file", file);
-      try {
-        await fetch(`${API_URL}/upload/`, {
-          method: "POST",
-          body: formData,
-        });
-        fetchInvoices(); // Refresh after upload
-      } catch (error) {
-        console.error("Error uploading file:", error);
-      }
+
+      await fetch(`${API_URL}/upload/`, {
+        method: "POST",
+        body: formData,
+      });
+
+      // Clear file input
+      setFile(null);
+      // Refresh the invoice list
+      fetchInvoices();
+    } catch (error) {
+      console.error("Error uploading invoice:", error);
     }
   };
 
-  // ---------------------------
-  //   CATEGORY + MODAL
-  // ---------------------------
-  const handleCategoryChange = (invoiceId, value) => {
-    if (value === "ADD_NEW") {
-      // Show the "Add new category" modal
-      setShowModal(true);
-      // We'll store the invoice ID in local state or pass it along
-      setCurrentInvoiceId(invoiceId);
-    } else {
-      // Just an existing category
-      updateCategory(invoiceId, value);
-    }
-  };
-
-  // We also need a place to store which invoice we’re updating if we do "Add new category..."
-  const [currentInvoiceId, setCurrentInvoiceId] = useState(null);
-
-  const handleAddCategory = async () => {
-    if (!newCategory.trim()) {
-      alert("Category name cannot be empty.");
-      return;
-    }
+  // ─────────────────────────────────────────────────────────
+  // Add a "bank entry" (no PDF)
+  // ─────────────────────────────────────────────────────────
+  const addBankEntry = async () => {
     try {
-      // POST to backend
-      const res = await fetch(`${API_URL}/categories/`, {
+      const entryData = {
+        date: newDate,
+        merchant: newMerchant,
+        order_number: newOrderNumber,
+        category: newCategory,
+        amount: newAmount,
+        status: newStatus,
+        // We'll store tags as an array on the backend, so split by comma:
+        tags: newTags.split(",").map((t) => t.trim()).filter(Boolean),
+        notes: newNotes,
+      };
+
+      const response = await fetch(`${API_URL}/add-entry/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cat: newCategory }),
+        body: JSON.stringify(entryData),
       });
-      const data = await res.json();
 
-      // Update local categories
-      setCategories(data.categories);
-
-      // If we want to auto-set the newly added category on the invoice:
-      if (currentInvoiceId !== null) {
-        updateCategory(currentInvoiceId, newCategory);
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.detail || "Failed to add bank entry");
       }
 
-      // Clear and close
+      // Clear the form
+      setNewDate("");
+      setNewMerchant("");
+      setNewOrderNumber("");
       setNewCategory("");
-      setShowModal(false);
-      setCurrentInvoiceId(null);
+      setNewAmount("");
+      setNewStatus("Open");
+      setNewTags("");
+      setNewNotes("");
+
+      // Refresh the invoice list
+      fetchInvoices();
     } catch (error) {
-      console.error("Error adding new category:", error);
-      alert("Failed to add category.");
+      console.error("Error adding bank entry:", error);
     }
   };
 
-  // ---------------------------
-  //   UPDATE & DELETE
-  // ---------------------------
-  const updateCategory = async (invoiceId, category) => {
+  // ─────────────────────────────────────────────────────────
+  // Update an invoice's fields (e.g. category, status, tags)
+  // ─────────────────────────────────────────────────────────
+  const updateInvoice = async (inv, updatedFields) => {
     try {
-      const invoiceToUpdate = invoices.find((inv) => inv.id === invoiceId);
-      if (!invoiceToUpdate) return;
+      // If tags are being updated as a string, convert them to array
+      if (updatedFields.tags && typeof updatedFields.tags === "string") {
+        updatedFields.tags = updatedFields.tags.split(",").map((t) => t.trim());
+      }
 
-      const updatedInvoice = { ...invoiceToUpdate, category };
-      await fetch(`${API_URL}/update/${invoiceId}`, {
+      const updatedInvoice = { ...inv, ...updatedFields };
+
+      await fetch(`${API_URL}/update/${inv.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedInvoice),
       });
-      fetchInvoices();
+      fetchInvoices(); // Refresh
     } catch (error) {
-      console.error("Error updating category:", error);
+      console.error("Error updating invoice:", error);
     }
   };
 
-  const deleteInvoice = async (invoiceId, filename) => {
+  // ─────────────────────────────────────────────────────────
+  // Delete an invoice
+  // ─────────────────────────────────────────────────────────
+  const deleteInvoice = async (inv) => {
+    if (!window.confirm("Are you sure you want to delete this invoice?")) {
+      return;
+    }
     try {
-      await fetch(
-        `${API_URL}/delete/${invoiceId}?filename=${encodeURIComponent(filename)}`,
-        { method: "DELETE" }
-      );
+      const filename = inv.filename || "";
+      const url = `${API_URL}/delete/${inv.id}?filename=${encodeURIComponent(filename)}`;
+
+      const response = await fetch(url, { method: "DELETE" });
+      if (!response.ok) {
+        const errData = await response.json();
+        throw new Error(errData.detail || "Failed to delete invoice");
+      }
       fetchInvoices();
     } catch (error) {
-      console.error("Error deleting invoice:", error);
+      console.error("Delete error:", error);
     }
   };
 
-  const viewInvoice = (invoice) => {
-    navigate(`/invoice/${invoice.id}`, { state: { invoice } });
+  // ─────────────────────────────────────────────────────────
+  // View invoice detail page
+  // ─────────────────────────────────────────────────────────
+  const viewInvoice = (inv, index) => {
+    // We'll pass invoice + the entire list + current index
+    navigate(`/invoice/${inv.id}`, {
+      state: {
+        invoice: inv,
+        invoiceList: invoices,
+        currentIndex: index,
+      },
+    });
   };
 
-  // ---------------------------
-  //   RENDER
-  // ---------------------------
+  // ─────────────────────────────────────────────────────────
+  // Render
+  // ─────────────────────────────────────────────────────────
   return (
     <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Invoice Extractor</h1>
+      <h1>Invoice Extractor</h1>
 
-      {/* 1) File Upload via Dropzone */}
-      <Dropzone onDrop={handleFileUpload}>
-        {({ getRootProps, getInputProps }) => (
-          <div {...getRootProps()} className="p-4 border-dashed border-2 cursor-pointer">
-            <input {...getInputProps()} />
-            <p>Drag & drop an invoice file here, or click to select a file</p>
-          </div>
-        )}
-      </Dropzone>
+      {/* ─────────────────────────────────────────────────────────
+          A) Upload PDF
+      ───────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h2>Upload PDF Invoice</h2>
+        <input type="file" onChange={handleFileSelect} />
+        <Button onClick={uploadInvoice} style={{ marginLeft: "1rem" }}>
+          Upload
+        </Button>
+      </div>
 
-      {/* 2) Invoice Table */}
-      <Table striped bordered hover className="mt-4">
+      {/* ─────────────────────────────────────────────────────────
+          B) Add Bank Entry
+      ───────────────────────────────────────────────────────── */}
+      <div style={{ marginBottom: "2rem" }}>
+        <h2>Add Bank Entry (no PDF)</h2>
+        <Form.Group>
+          <Form.Label>Date</Form.Label>
+          <Form.Control
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Merchant</Form.Label>
+          <Form.Control
+            type="text"
+            value={newMerchant}
+            onChange={(e) => setNewMerchant(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Order #</Form.Label>
+          <Form.Control
+            type="text"
+            value={newOrderNumber}
+            onChange={(e) => setNewOrderNumber(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Category</Form.Label>
+          <Form.Control
+            type="text"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Amount</Form.Label>
+          <Form.Control
+            type="text"
+            value={newAmount}
+            onChange={(e) => setNewAmount(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Status</Form.Label>
+          <Form.Control
+            as="select"
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.target.value)}
+          >
+            {VALID_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s}
+              </option>
+            ))}
+          </Form.Control>
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Tags (comma separated)</Form.Label>
+          <Form.Control
+            type="text"
+            value={newTags}
+            onChange={(e) => setNewTags(e.target.value)}
+          />
+        </Form.Group>
+        <Form.Group>
+          <Form.Label>Notes</Form.Label>
+          <Form.Control
+            as="textarea"
+            value={newNotes}
+            onChange={(e) => setNewNotes(e.target.value)}
+          />
+        </Form.Group>
+        <Button onClick={addBankEntry} style={{ marginTop: "1rem" }}>
+          Add Bank Entry
+        </Button>
+      </div>
+
+      {/* ─────────────────────────────────────────────────────────
+          C) Invoice Table
+      ───────────────────────────────────────────────────────── */}
+      <Table striped bordered hover>
         <thead>
           <tr>
             <th>ID</th>
             <th>Filename</th>
-            <th>Amount</th>
             <th>Date</th>
-            <th>Order #</th>
             <th>Merchant</th>
+            <th>Order #</th>
             <th>Category</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Tags</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          {invoices.length > 0 ? (
-            invoices.map((invoice) => (
-              <tr key={invoice.id}>
-                <td>{invoice.id}</td>
-                <td
-                  className="cursor-pointer"
-                  onClick={() => viewInvoice(invoice)}
-                >
-                  {invoice.filename}
-                </td>
-                <td>${invoice.amount}</td>
-                <td>{invoice.date}</td>
-                <td>{invoice.order_number}</td>
-                <td>{invoice.merchant}</td>
-                <td>
-                  <Form.Select
-                    value={invoice.category || ""}
-                    onChange={(e) =>
-                      handleCategoryChange(invoice.id, e.target.value)
-                    }
-                  >
-                    {categories.map((cat, idx) => (
-                      <option key={idx} value={cat}>
-                        {cat}
-                      </option>
-                    ))}
-                    <option value="ADD_NEW">Add new category...</option>
-                  </Form.Select>
-                </td>
-                <td>
-                  <Button
-                    variant="danger"
-                    onClick={() => deleteInvoice(invoice.id, invoice.filename)}
-                  >
-                    Delete
-                  </Button>
-                  <a
-                    href={`${API_URL}/uploads/${encodeURIComponent(
-                      invoice.filename
-                    )}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-2"
-                  >
-                    View
-                  </a>
-                  <a
-                    href={`${API_URL}/download/${encodeURIComponent(
-                      invoice.filename
-                    )}`}
-                    download
-                    className="ml-2"
-                  >
-                    Download
-                  </a>
-                </td>
-              </tr>
-            ))
-          ) : (
+          {invoices.length === 0 ? (
             <tr>
-              <td colSpan="8" className="text-center">
+              <td colSpan={10} style={{ textAlign: "center" }}>
                 No invoices found
               </td>
             </tr>
+          ) : (
+            invoices.map((inv, index) => {
+              // If tags are an array, convert to comma string:
+              let tagsString = "";
+              if (Array.isArray(inv.tags)) {
+                tagsString = inv.tags.join(", ");
+              } else if (typeof inv.tags === "string") {
+                tagsString = inv.tags;
+              }
+
+              return (
+                <tr key={inv.id}>
+                  <td>{inv.id}</td>
+                  <td
+                    style={{ cursor: "pointer", color: "blue" }}
+                    onClick={() => viewInvoice(inv, index)}
+                  >
+                    {inv.filename || "(No PDF)"}
+                  </td>
+                  <td>{inv.date}</td>
+                  <td>{inv.merchant}</td>
+                  <td>{inv.order_number}</td>
+                  <td>{inv.category}</td>
+                  <td>{inv.amount}</td>
+
+                  {/* Status dropdown */}
+                  <td>
+                    <Form.Control
+                      as="select"
+                      value={inv.status || "Open"}
+                      onChange={(e) => updateInvoice(inv, { status: e.target.value })}
+                    >
+                      {VALID_STATUSES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </Form.Control>
+                  </td>
+
+                  {/* Tags text input */}
+                  <td>
+                    <Form.Control
+                      type="text"
+                      value={tagsString}
+                      onChange={(e) => updateInvoice(inv, { tags: e.target.value })}
+                    />
+                  </td>
+
+                  <td>
+                    <Button
+                      variant="danger"
+                      onClick={() => deleteInvoice(inv)}
+                      style={{ marginRight: "0.5rem" }}
+                    >
+                      Delete
+                    </Button>
+                    {/* If we have a filename, show View/Download links */}
+                    {inv.filename && inv.filename.length > 0 && (
+                      <>
+                        <a
+                          href={`${API_URL}/uploads/${encodeURIComponent(inv.filename)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ marginRight: "0.5rem" }}
+                        >
+                          View
+                        </a>
+                        <a
+                          href={`${API_URL}/download/${encodeURIComponent(inv.filename)}`}
+                          download
+                        >
+                          Download
+                        </a>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              );
+            })
           )}
         </tbody>
       </Table>
-
-      {/* 3) Modal for "Add New Category" */}
-      <Modal show={showModal} onHide={() => setShowModal(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Add New Category</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          <Form.Group>
-            <Form.Label>Category Name</Form.Label>
-            <Form.Control
-              type="text"
-              value={newCategory}
-              onChange={(e) => setNewCategory(e.target.value)}
-              placeholder="e.g. 'Supplies' or 'Entertainment'"
-            />
-          </Form.Group>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setShowModal(false)}>
-            Cancel
-          </Button>
-          <Button variant="primary" onClick={handleAddCategory}>
-            Add
-          </Button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 }

@@ -1,108 +1,123 @@
 import React, { useEffect, useState } from "react";
+// If you have a custom fetchInvoices, import it:
+// import { fetchInvoices } from "../api";
 import {
-  LineChart,
-  Line,
+  BarChart,
+  Bar,
   XAxis,
   YAxis,
   Tooltip,
   PieChart,
   Pie,
   Cell,
-  ResponsiveContainer,
+  Legend,
 } from "recharts";
-// import axios from "axios";  // Remove if not used
 
-export default function Dashboard() {
-  // 🔹 Example chart data
-  const [spendingTrends, setSpendingTrends] = useState([
-    { month: "Jan", totalSpent: 200 },
-    { month: "Feb", totalSpent: 300 },
-    { month: "Mar", totalSpent: 150 },
-  ]);
-  const [monthlySpending, setMonthlySpending] = useState([
-    { month: "Jan", amount: 500 },
-    { month: "Feb", amount: 600 },
-    { month: "Mar", amount: 700 },
-  ]);
-  const [categoryDistribution, setCategoryDistribution] = useState([
-    { category: "Office", amount: 300 },
-    { category: "Travel", amount: 200 },
-    { category: "Food", amount: 100 },
-  ]);
+const API_URL = "http://127.0.0.1:8000";
 
-  // No need to fetch anything if you have no endpoint
+function Dashboard() {
+  const [invoices, setInvoices] = useState([]);
+
+  // 1) Fetch all invoices on mount
   useEffect(() => {
-    // If you had an actual endpoint, you could fetch it here
-    // e.g., fetchDashboardData();
+    async function loadInvoices() {
+      try {
+        // If you have a custom fetchInvoices function, use that:
+        // const result = await fetchInvoices();
+        // setInvoices(result.invoices || []);
+
+        // Otherwise, call the endpoint directly:
+        const response = await fetch(`${API_URL}/invoices/`);
+        const data = await response.json();
+        setInvoices(data.invoices || []);
+      } catch (error) {
+        console.error("Error fetching invoices:", error);
+      }
+    }
+    loadInvoices();
   }, []);
 
-  // If you eventually create an endpoint, uncomment:
-  // const fetchDashboardData = async () => {
-  //   try {
-  //     const response = await axios.get("/api/dashboard");
-  //     setSpendingTrends(response.data.spendingTrends);
-  //     setMonthlySpending(response.data.monthlySpending);
-  //     setCategoryDistribution(response.data.categoryDistribution);
-  //   } catch (error) {
-  //     console.error("Error fetching dashboard data:", error);
-  //   }
-  // };
+  // ─────────────────────────────────────────────────────────
+  // 2) Build data for the BAR chart (spending over time)
+  //    We'll sum amounts by "date".
+  // ─────────────────────────────────────────────────────────
+  const dateMap = {};
+  invoices.forEach((inv) => {
+    const date = inv.date || "Unknown";
+    const amt = parseFloat(inv.amount) || 0;
+    if (!dateMap[date]) {
+      dateMap[date] = 0;
+    }
+    dateMap[date] += amt;
+  });
+  // Convert to array for Recharts
+  const barData = Object.keys(dateMap).map((date) => ({
+    date,
+    total: dateMap[date],
+  }));
 
-  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+  // ─────────────────────────────────────────────────────────
+  // 3) Build data for the PIE chart (spending by category)
+  // ─────────────────────────────────────────────────────────
+  const catMap = {};
+  invoices.forEach((inv) => {
+    const cat = inv.category || "Uncategorized";
+    const amt = parseFloat(inv.amount) || 0;
+    if (!catMap[cat]) {
+      catMap[cat] = 0;
+    }
+    catMap[cat] += amt;
+  });
+  // Convert to array for Recharts
+  const pieData = Object.keys(catMap).map((cat) => ({
+    name: cat,
+    value: catMap[cat],
+  }));
+
+  // Some color choices for the pie slices
+  const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#AA66CC", "#FF4444"];
 
   return (
-    <div>
+    <div style={{ padding: "1rem" }}>
       <h2>Dashboard</h2>
 
-      {/* Overall Spending Trends */}
-      <div>
-        <h3>Overall Spending Trends</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={spendingTrends}>
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="totalSpent" stroke="#8884d8" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
+      {/* ─────────────────────────────────────────────────────────
+          BAR CHART: Spending Over Time
+      ───────────────────────────────────────────────────────── */}
+      <h3>Spending Over Time</h3>
+      <BarChart width={600} height={300} data={barData}>
+        <XAxis dataKey="date" />
+        <YAxis />
+        <Tooltip />
+        <Bar dataKey="total" fill="#8884d8" />
+      </BarChart>
 
-      {/* Monthly Spending */}
-      <div>
-        <h3>Monthly Spending</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <LineChart data={monthlySpending}>
-            <XAxis dataKey="month" />
-            <YAxis />
-            <Tooltip />
-            <Line type="monotone" dataKey="amount" stroke="#82ca9d" />
-          </LineChart>
-        </ResponsiveContainer>
-      </div>
-
-      {/* Spending by Category */}
-      <div>
-        <h3>Spending by Category</h3>
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={categoryDistribution}
-              dataKey="amount"
-              nameKey="category"
-              cx="50%"
-              cy="50%"
-              outerRadius={100}
-              fill="#8884d8"
-              label
-            >
-              {categoryDistribution.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-      </div>
+      {/* ─────────────────────────────────────────────────────────
+          PIE CHART: Spending By Category
+      ───────────────────────────────────────────────────────── */}
+      <h3>Spending By Category</h3>
+      <PieChart width={400} height={400}>
+        <Pie
+          data={pieData}
+          dataKey="value"
+          nameKey="name"
+          cx="50%"
+          cy="50%"
+          outerRadius={100}
+          label
+        >
+          {pieData.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={COLORS[index % COLORS.length]}
+            />
+          ))}
+        </Pie>
+        <Legend />
+        <Tooltip />
+      </PieChart>
     </div>
   );
 }
 
+export default Dashboard;
