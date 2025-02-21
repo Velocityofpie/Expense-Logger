@@ -1,7 +1,13 @@
 {
-  "name": "invoice-extractor",
+  "name": "invoice-extractor-frontend",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
+  },
   "dependencies": {
     "axios": "^1.7.9",
     "react": "^18.2.0",
@@ -10,14 +16,7 @@
     "react-dropzone": "^14.3.5",
     "react-router-dom": "^6.14.2",
     "react-scripts": "5.0.1",
-    "recharts": "^2.15.1",
-    "web-vitals": "^2.1.4"
-  },
-  "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "recharts": "^2.15.1"
   },
   "eslintConfig": {
     "extends": [
