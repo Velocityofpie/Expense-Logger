@@ -51,3 +51,6 @@ backend/migrations/
 # Ignore database and uploads directory
 backend/invoices.db
 backend/uploads/
+
+# Local Files
+PDFs/
