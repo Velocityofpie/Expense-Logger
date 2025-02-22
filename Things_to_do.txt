@@ -2,10 +2,10 @@ make backups
 - back up are structure in the excel sheets
 -make the dashboard work
 -login
--able to set the location of the db and location of the pdf so it doesnt save to git 
 -docker
 -add barcode reader
 -search able
--rename file if the order number is inputed and merchant
 -duplucate 
 -select delete 
+-add a file to auto pull from 
+-if there is no upload folder create it 
