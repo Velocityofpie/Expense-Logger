@@ -6,16 +6,17 @@ Overall Tasks
 - [x] Docker
 - [ ] Add barcode reader
 - [ ] Searchable
-- [ ] Search duplucate 
+- [ ] Search duplicate 
 - [ ] Select Delete 
-- [ ] Add a file to auto pull from 
+- [ ] Add a file to auto-pull from 
 - [ ] If there is no upload folder create it 
 - [ ] Create admin panel
-- [ ] Allow custom merchant extract fields 
-- [ ] Allow and extract export for user to use as an example 
+- [ ] Allow the user to input a custom/new merchant the field for invoice-extract.js 
+- [ ] Allow and extract export for the user to use as an example 
 - [ ] Give api access for users
 - [ ] AI for pdf info extraction?
 - [ ] Possible AI support?
+- [ ] Template for merchants pdf extraction - amazon, bestbuy, etc.
 
 Login Page
 - [ ] Have sign up option similar to Linkwarden and Wishlist
