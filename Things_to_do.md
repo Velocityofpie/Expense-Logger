@@ -19,9 +19,10 @@ Overall Tasks
 - [ ] Possible AI support?
 - [ ] Allow to hide categories and spending 
 - [ ] Template for merchants pdf extraction - amazon, bestbuy, etc.
-- [ ] dashboard allow to select which category being shown the last 3 months, which month and by years.
-- [ ] Allow connection from smb, nextcloud, Google Drive auto input files. Use a cron job to extract new files
-- [ ] Allow user to set auto approval or informed approval for auto uploads 
+- [ ] The dashboard allows selecting which category has been shown in the last 3 months, which month, and by years.
+- [ ] Allow connection from smb, nextcloud, and Google Drive auto input files. Use a cron job to extract new files
+- [ ] Allow user to set auto approval or informed approval for auto uploads
+- [ ] Email scrapping for online order?
 
 Login Page
 - [ ] Have sign up option similar to Linkwarden and Wishlist
