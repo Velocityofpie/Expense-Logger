@@ -66,7 +66,7 @@ Alternatively, run the backend and frontend locally:
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/invoice-extractor.git
+git clone https://github.com/Velocityofpie/invoice-extractor.git
 cd invoice-extractor
 ```
 
