@@ -27,3 +27,6 @@ Overall Tasks
 Login Page
 - [ ] Have sign up option similar to Linkwarden and Wishlist
 - [ ] Be able to enable or disable the signup option in settings or admin panel
+
+Things to fix
+- [ ] Changing "Status" on entries re-orders the entries 
