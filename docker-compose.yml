@@ -7,29 +7,17 @@ services:
   backend:
     container_name: expense-logger-backend
     build: ./backend
-    # If you don't have a Dockerfile in ./backend, you can specify:
-    #   dockerfile: Dockerfile
-    # or use "image: your-username/expense-logger-backend" if pulling from a registry.
-    
-    # Expose FastAPI on port 8000
     ports:
       - "8000:8000"
-    
-    # The backend depends on PostgreSQL to be running
     depends_on:
       - postgres_db
-    
-    # Example environment variables for connecting to PostgreSQL
     environment:
       - DB_HOST=postgres_db
       - DB_NAME=expense_logger
       - DB_USER=postgres
       - DB_PASSWORD=secret
-      # Adjust these to match your backend's config
-    
     volumes:
-      - ./backend:/app  # Mount your backend code into the container (optional)
-    
+      - ./backend:/app
     command: uvicorn main:app --host 0.0.0.0 --port 8000
     restart: always
 
@@ -39,18 +27,13 @@ services:
   frontend:
     container_name: expense-logger-frontend
     build: ./frontend
-    # Expose React app on port 3000
     ports:
       - "3000:3000"
-    
     depends_on:
       - backend
-    
-    # If you want to develop locally and mount code
     volumes:
       - ./frontend:/app
-      - /app/node_modules  # Avoid overwriting node_modules inside the container
-    
+      - /app/node_modules
     working_dir: /app
     command: ["npm", "start"]
     restart: always
@@ -65,15 +48,11 @@ services:
       POSTGRES_DB: expense_logger
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: secret
-      # Adjust user/password as needed
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     restart: always
 
-# ─────────────────────────────────────────────────────────
-# NAMED VOLUMES
-# ─────────────────────────────────────────────────────────
 volumes:
   postgres_data:
