@@ -34,7 +34,7 @@ services:
       - TZ=UTC
     volumes:
       - ./backend:/app
-      - uploads_data:/app/uploads
+      - uploads_data:/app/uploads  # Named volume for uploads
     ports:
       - "${API_PORT}:8000"
 
@@ -58,4 +58,4 @@ services:
 
 volumes:
   postgres_data:
-  uploads_data:
+  uploads_data:  # Define the named volume

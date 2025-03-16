@@ -115,34 +115,73 @@ export default function InvoiceExtractor() {
     }
   };
   
-  // Upload a file
-  const handleUpload = async () => {
-    if (!file) {
+  // Updated handleUpload function in InvoiceExtractor.js
+
+const handleUpload = async () => {
+  if (!file) {
       alert("Please select a file to upload.");
       return;
-    }
-    
-    try {
+  }
+  
+  try {
       setIsUploading(true);
       
       const formData = new FormData();
       formData.append("file", file);
       
-      await uploadInvoice(formData);
+      // Log for debugging
+      console.log("Uploading file:", file.name);
       
-      // Reset file input and refresh invoice list
+      const result = await uploadInvoice(formData);
+      
+      console.log("Upload result:", result);
+      
+      // Reset file state
       setFile(null);
-      fetchAllData();
+      
+      // Reset file input element safely
+      const fileInput = document.getElementById('fileInput');
+      if (fileInput) {
+          // Create a new file input element to replace the current one
+          // This is the safest way to reset a file input
+          const newFileInput = document.createElement('input');
+          newFileInput.type = 'file';
+          newFileInput.id = 'fileInput';
+          newFileInput.className = fileInput.className;
+          newFileInput.accept = fileInput.accept;
+          newFileInput.addEventListener('change', handleFileSelect);
+          
+          // Replace the old input with the new one
+          fileInput.parentNode.replaceChild(newFileInput, fileInput);
+      }
+      
+      // Fetch all data to refresh the list
+      await fetchAllData();
       
       setIsUploading(false);
       alert("File uploaded successfully!");
-    } catch (error) {
+  } catch (error) {
       console.error("Error uploading file:", error);
       setIsUploading(false);
-      alert("Error uploading file. Please try again.");
-    }
-  };
-  
+      alert(`Error uploading file: ${error.message || "Please try again."}`);
+  }
+};
+
+// Make sure your file input has the correct ID
+// <Form.Control 
+//     id="fileInput"
+//     type="file" 
+//     accept=".pdf,.png,.jpg,.jpeg"
+//     onChange={handleFileSelect}
+// />
+
+// And update the file input element to include an id for resetting
+<Form.Control 
+    id="fileInput"
+    type="file" 
+    accept=".pdf,.png,.jpg,.jpeg"
+    onChange={handleFileSelect}
+/>
   // Handle changes to new invoice fields
   const handleInvoiceChange = (e) => {
     const { name, value } = e.target;

@@ -28,7 +28,7 @@ app.mount("/uploads", StaticFiles(directory=UPLOAD_FOLDER), name="uploads")
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -608,16 +608,48 @@ async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), us
 async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get_db), user_id: int = 1):
     """Upload a file and create a new invoice record."""
     try:
+        # Check if user exists
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if not user:
+            # Create a default user if not exists
+            user = User(
+                user_id=user_id,
+                username="default",
+                password_hash="defaultpasswordhash",
+                email="default@example.com"
+            )
+            db.add(user)
+            db.flush()
+            print(f"Created default user with ID {user_id}")
+
+        # Create upload folder if it doesn't exist
+        UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+        
+        # Clean filename to avoid path traversal and ensure uniqueness
+        original_filename = file.filename
+        safe_filename = "".join([c for c in original_filename if c.isalnum() or c in "._- "])
+        
+        # Add timestamp to ensure uniqueness
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_filename = f"{timestamp}_{safe_filename}"
+        
+        # Create the full file path
+        file_path = UPLOAD_FOLDER / unique_filename
+        
+        # Log for debugging
+        print(f"Saving file to: {file_path}")
+        
+        # Read file content
+        content = await file.read()
+        
         # Save file to disk
-        file_path = UPLOAD_FOLDER / file.filename
         with open(file_path, "wb") as f:
-            content = await file.read()
             f.write(content)
         
         # Create new invoice with minimal info
         new_invoice = Invoice(
             user_id=user_id,
-            file_name=file.filename,
+            file_name=unique_filename,
             status="Open"
         )
         db.add(new_invoice)
@@ -626,7 +658,7 @@ async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get
         # Create invoice file record
         invoice_file = InvoiceFile(
             invoice_id=new_invoice.invoice_id,
-            file_name=file.filename,
+            file_name=unique_filename,
             file_path=str(file_path)
         )
         db.add(invoice_file)
@@ -641,15 +673,22 @@ async def upload_invoice(file: UploadFile = File(...), db: Session = Depends(get
             action="INSERT",
             table_name="invoices",
             record_id=new_invoice.invoice_id,
-            new_data={"file_name": file.filename, "status": "Open"}
+            new_data={"file_name": unique_filename, "status": "Open"}
         )
         
         db.commit()
-        return {"message": "File uploaded successfully", "invoice_id": new_invoice.invoice_id, "filename": file.filename}
+        return {
+            "message": "File uploaded successfully", 
+            "invoice_id": new_invoice.invoice_id, 
+            "filename": unique_filename,
+            "original_filename": original_filename
+        }
     except Exception as e:
         db.rollback()
+        print(f"Upload error: {str(e)}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @app.put("/update/{invoice_id}")
 async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Session = Depends(get_db), user_id: int = 1):

@@ -21,6 +21,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Copy all backend code into the container
+COPY . .
+
 # Create start script
 RUN echo '#!/bin/bash\n\
 # Wait for PostgreSQL to be ready\n\
@@ -31,7 +34,7 @@ done\n\
 \n\
 >&2 echo "Postgres is up - starting application"\n\
 \n\
-# Create tables if they don't exist\n\
+# Create tables if they dont exist\n\
 python -c "from main import Base, engine; Base.metadata.create_all(engine)"\n\
 \n\
 # Start application\n\
@@ -39,10 +42,6 @@ uvicorn main:app --host 0.0.0.0 --port 8000 --reload\n\
 ' > /app/start.sh
 
 RUN chmod +x /app/start.sh
-
-# Copy all backend code into the container
-# This should come AFTER creating the start.sh script to avoid overwriting it
-COPY . .
 
 # Expose port 8000 for FastAPI
 EXPOSE 8000
