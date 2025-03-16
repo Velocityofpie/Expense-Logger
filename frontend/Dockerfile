@@ -1,20 +1,21 @@
 # frontend/Dockerfile
 
-FROM node:16
+FROM node:16-alpine
 
-# Create app directory
+# Set working directory
 WORKDIR /app
 
-# Copy package.json/package-lock.json first, then install
+# Copy package.json and package-lock.json
 COPY package*.json ./
+
+# Install dependencies
 RUN npm install
 
-# Copy the rest of your frontend source
-COPY . /app
+# Copy app source code
+COPY . .
 
 # Expose port 3000
 EXPOSE 3000
 
-# Default command
+# Start app
 CMD ["npm", "start"]
-

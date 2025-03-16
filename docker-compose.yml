@@ -1,58 +1,61 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  # ─────────────────────────────────────────────────────────
-  # BACKEND SERVICE
-  # ─────────────────────────────────────────────────────────
-  backend:
-    container_name: expense-logger-backend
-    build: ./backend
-    ports:
-      - "8000:8000"
-    depends_on:
-      - postgres_db
-    environment:
-      - DB_HOST=postgres_db
-      - DB_NAME=expense_logger
-      - DB_USER=postgres
-      - DB_PASSWORD=secret
-    volumes:
-      - ./backend:/app
-    command: uvicorn main:app --host 0.0.0.0 --port 8000
-    restart: always
-
-  # ─────────────────────────────────────────────────────────
-  # FRONTEND SERVICE
-  # ─────────────────────────────────────────────────────────
-  frontend:
-    container_name: expense-logger-frontend
-    build: ./frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - backend
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    working_dir: /app
-    command: ["npm", "start"]
-    restart: always
-
-  # ─────────────────────────────────────────────────────────
-  # POSTGRES SERVICE
-  # ─────────────────────────────────────────────────────────
   postgres_db:
-    container_name: postgres_db
-    image: postgres:15
+    image: postgres:14-alpine
+    restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: expense_logger
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     restart: always
+    depends_on:
+      postgres_db:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - TZ=UTC
+    volumes:
+      - ./backend:/app
+      - uploads_data:/app/uploads
+    ports:
+      - "${API_PORT}:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - REACT_APP_API_URL=${API_URL}
+      - NODE_ENV=development
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "${FRONTEND_PORT}:3000"
+    depends_on:
+      - backend
 
 volumes:
   postgres_data:
+  uploads_data:

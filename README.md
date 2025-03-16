@@ -1,158 +1,198 @@
-# Invoice Extractor / Expense Logger
+# Expense Logger - Setup Guide
 
-The **Invoice Extractor** is a full-stack web application designed to help you manage invoices and track expenses efficiently. With functionality to upload invoices, add manual bank entries, and view detailed reports with interactive charts, this project offers a complete solution for expense logging and management.
+This guide provides comprehensive instructions for setting up the Expense Logger application using Docker with centralized environment configuration.
 
+## Prerequisites
 
-
-## Features
-
-- **Invoice Upload**: Easily upload PDF or image invoices. The system stores file metadata and invoice details.
-- **Bank Entry Logging**: Add manual bank entries without the need for a PDF.
-- **Invoice Detail Management**: View, edit, and delete invoices using an intuitive interface.
-- **Dashboard Visualization**: Analyze spending trends over time and by category with interactive bar and pie charts.
-- **Category Filtering**: Use the dedicated Categories page to filter and review invoices by category in a spreadsheet-like layout.
-- **User Authentication**: Basic login functionality with room for future enhancements.
-- **Containerized Deployment**: Run the backend, frontend, and PostgreSQL database seamlessly using Docker Compose.
-
-
-
-## Technology Stack
-
-- **Backend**: FastAPI (Python)
-- **Frontend**: React with React-Bootstrap and Recharts for data visualization
-- **Database**: SQLite (development), PostgreSQL (production via Docker Compose)
-- **Containerization**: Docker & Docker Compose
-
+- Docker and Docker Compose installed on your system
+- Git (for cloning the repository)
 
 ## Project Structure
 
 ```
-invoice-extractor/
-├── backend/                 # FastAPI backend service
-│   ├── uploads/             # Directory for uploaded invoice files
-│   ├── main.py              # FastAPI application with API endpoints
-│   ├── requirements.txt     # Python dependencies
-│   └── .gitignore           # Git ignore file for backend
-├── frontend/                # React frontend service
-│   ├── public/              # Public assets including index.html
+expense-logger/
+├── backend/
+│   ├── uploads/
+│   ├── Dockerfile
+│   ├── main.py
+│   └── requirements.txt
+├── frontend/
+│   ├── public/
 │   ├── src/
-│   │   ├── components/      # Reusable React components (e.g., NavigationBar)
-│   │   ├── pages/           # Page components (Dashboard, InvoiceExtractor, InvoiceDetail, CategoryPage)
-│   │   ├── App.js           # Main React App component (includes routing)
-│   │   ├── api.js           # API helper functions for HTTP requests
-│   │   └── index.js         # React entry point
-│   ├── package.json         # Frontend dependencies and scripts
-│   ├── package-lock.json    # NPM lock file
-│   └── .gitignore           # Git ignore file for frontend
-├── docker-compose.yml       # Docker Compose configuration for backend, frontend, and PostgreSQL
-└── README.md                # Project documentation (this file)
+│   ├── Dockerfile
+│   └── package.json
+├── .env
+├── docker-compose.yml
+└── README.md
 ```
 
+## Setup Instructions
 
-
-## Getting Started
-
-### Prerequisites
-
-- Docker and Docker Compose (for containerized deployment)
-
-Alternatively, run the backend and frontend locally:
-
-- Python 3.7+
-- Node.js 14+
-
-### Running with Docker Compose
-
-Clone the repository:
+### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/Velocityofpie/invoice-extractor.git
-cd invoice-extractor
+git clone <repository-url>
+cd expense-logger
 ```
 
-Build and start the services:
+### 2. Configure Environment Variables
+
+1. Copy the provided `.env` file to the root of the project:
 
 ```bash
-docker-compose up --build
+# Example content of .env file
+DB_HOST=postgres_db
+DB_NAME=expense_logger
+DB_USER=postgres
+DB_PASSWORD=secret
+# ... other variables
 ```
 
-This builds the Docker images for the backend and frontend and starts them along with a PostgreSQL container.
+2. Review and modify the values as needed for your environment.
 
-Access the application:
-
-- Frontend: [http://localhost:3000](http://localhost:3000)
-- Backend API: [http://localhost:8000](http://localhost:8000)
-
-### Running Locally without Docker
-
-#### Backend
-
-Navigate to the backend folder:
+### 3. Build and Start the Services
 
 ```bash
-cd backend
+# Build the Docker images
+docker-compose build
+
+# Start the services in the background
+docker-compose up -d
 ```
 
-Install dependencies:
+### 4. Monitor the Setup Process
 
 ```bash
-pip install -r requirements.txt
+# View logs from all services
+docker-compose logs -f
 ```
 
-Run the FastAPI server:
+### 5. Access the Application
+
+- Frontend UI: http://localhost:3000
+- Backend API: http://localhost:8000
+- API Documentation: http://localhost:8000/docs
+
+## Environment Configuration
+
+The central `.env` file contains configuration for all services:
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| DB_HOST | PostgreSQL server hostname | postgres_db |
+| DB_NAME | Database name | expense_logger |
+| DB_USER | Database username | postgres |
+| DB_PASSWORD | Database password | secret |
+| API_URL | Backend API URL | http://localhost:8000 |
+| API_PORT | Port for backend service | 8000 |
+| FRONTEND_URL | Frontend URL | http://localhost:3000 |
+| FRONTEND_PORT | Port for frontend service | 3000 |
+| JWT_SECRET | Secret key for JWT tokens | your-secret-key-change-in-production |
+| MAX_UPLOAD_SIZE | Maximum file upload size in bytes | 10485760 (10MB) |
+
+## Development Workflow
+
+### Updating the Backend
+
+1. Make changes to the backend code
+2. The changes will be automatically applied (hot reload is enabled)
+
+### Updating the Frontend
+
+1. Make changes to the frontend code
+2. The changes will be automatically applied (hot reload is enabled)
+
+### Database Changes
+
+If you make schema changes to the database models:
+
+1. The backend will automatically apply the changes on restart
+2. For major schema changes, you may need to rebuild:
 
 ```bash
-uvicorn main:app --reload
+docker-compose down
+docker-compose up -d --build
 ```
 
-The backend will be available at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+## Troubleshooting
 
-#### Frontend
+### Common Issues
 
-Navigate to the frontend folder:
+1. **Database Connection Issues**:
+   ```bash
+   # Check if PostgreSQL is running
+   docker-compose ps
+   
+   # View PostgreSQL logs
+   docker-compose logs postgres_db
+   ```
+
+2. **API Connection Issues**:
+   ```bash
+   # Verify the backend is running
+   docker-compose ps backend
+   
+   # Check backend logs
+   docker-compose logs backend
+   ```
+
+3. **Frontend Not Loading**:
+   ```bash
+   # Check frontend logs
+   docker-compose logs frontend
+   
+   # Verify the API_URL is correct in .env
+   ```
+
+4. **Reset Everything**:
+   ```bash
+   # Stop all containers and remove volumes
+   docker-compose down -v
+   
+   # Rebuild and start
+   docker-compose up -d --build
+   ```
+
+## Backup and Restore
+
+### Backup the Database
 
 ```bash
-cd frontend
+docker-compose exec postgres_db pg_dump -U postgres expense_logger > backup.sql
 ```
 
-Install dependencies:
+### Restore the Database
 
 ```bash
-npm install
+# Stop services
+docker-compose down
+
+# Start just the database
+docker-compose up -d postgres_db
+
+# Wait for it to initialize
+sleep 10
+
+# Restore from backup
+docker-compose exec -T postgres_db psql -U postgres expense_logger < backup.sql
+
+# Start all services
+docker-compose up -d
 ```
 
-Start the React application:
+## Production Deployment Notes
 
-```bash
-npm start
-```
+For production deployment:
 
-The frontend will be accessible at [http://localhost:3000](http://localhost:3000).
+1. Change all default passwords and secrets in the `.env` file
+2. Set `NODE_ENV=production` for the frontend service
+3. Configure proper SSL/TLS for secure connections
+4. Set up a proper backup strategy
+5. Consider using Docker Swarm or Kubernetes for container orchestration
 
+## Additional Resources
 
-
-## Usage
-
-- **Invoice Management**: Upload invoices or add manual bank entries on the Invoice Extractor page.
-- **Dashboard**: View interactive charts that display spending trends over time and by category.
-- **Categories Page**: Filter invoices by category with a spreadsheet-like layout.
-- **Authentication**: Use the Login button on the navigation bar to authenticate (expandable as needed).
-
-
-
-## Contributing
-
-Contributions are welcome! If you have suggestions, bug fixes, or enhancements, please open an issue or submit a pull request.
-
-
-## License
-
-
-
-
-## Acknowledgments
-
-- Built with **FastAPI** and **React**.
-- Interactive charts powered by **Recharts**.
-- Styling provided by **React Bootstrap**.
-
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [React Documentation](https://reactjs.org/docs/getting-started.html)
+- [PostgreSQL Documentation](https://www.postgresql.org/docs/)
+- [Docker Documentation](https://docs.docker.com/)
