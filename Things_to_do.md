@@ -9,8 +9,8 @@ Overall Tasks
 - [ ] Searchable
 - [ ] alert for duplicate 
 - [ ] Select Delete 
-- [ ] Add a file to auto-pull from 
-- [ ] If there is no upload folder create it 
+- [ ] Add a file to auto-pull from a folder
+- [x] If there is no upload folder, create it 
 - [ ] Create admin panel
 - [ ] Allow the user to input a custom/new merchant the field for invoice-extract.js 
 - [ ] Allow and extract export for the user to use as an example 
