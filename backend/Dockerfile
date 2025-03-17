@@ -8,6 +8,10 @@ RUN apt-get update && apt-get install -y \
     gcc \
     python3-dev \
     libpq-dev \
+    # OCR system dependencies
+    tesseract-ocr \
+    tesseract-ocr-eng \
+    poppler-utils \
     && rm -rf /var/lib/apt/lists/*
 
 # Create a directory for the app

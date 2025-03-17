@@ -1,0 +1,45 @@
+// frontend/src/pages/Tools.js
+import React, { useState } from "react";
+import { Tab, Nav, Card } from "react-bootstrap";
+import OcrExtractor from "../components/OcrExtractor";
+import "../styles/ocr-tool.css"; // Import the custom styles
+
+export default function Tools() {
+  const [activeTab, setActiveTab] = useState("ocr");
+
+  return (
+    <div className="tools-container">
+      <h1 className="mb-4">Tools</h1>
+      
+      <Card className="shadow-sm mb-5">
+        <Card.Body className="p-0">
+          <Tab.Container activeKey={activeTab} onSelect={setActiveTab}>
+            <div className="border-bottom mb-0">
+              <Nav variant="tabs" className="px-3 pt-2">
+                <Nav.Item>
+                  <Nav.Link 
+                    eventKey="ocr" 
+                    className="d-flex align-items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-text me-2" viewBox="0 0 16 16">
+                      <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
+                      <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                    </svg>
+                    PDF OCR Extraction
+                  </Nav.Link>
+                </Nav.Item>
+                {/* You can add more tool tabs here in the future */}
+              </Nav>
+            </div>
+            
+            <Tab.Content>
+              <Tab.Pane eventKey="ocr" className="p-4">
+                <OcrExtractor />
+              </Tab.Pane>
+            </Tab.Content>
+          </Tab.Container>
+        </Card.Body>
+      </Card>
+    </div>
+  );
+}

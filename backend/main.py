@@ -15,6 +15,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+# Add these imports at the top of your backend/main.py file
+import tempfile
+import os
+import io
+from PIL import Image
+import pytesseract
+from pdf2image import convert_from_path
+from typing import List, Optional
+from ocr import OcrOptions, process_pdf_with_ocr, get_available_languages
+
 # FastAPI application setup
 app = FastAPI(title="Invoice Management System")
 
@@ -1093,3 +1103,56 @@ async def delete_wishlist_item(wishlist_id: int, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/ocr/extract/")
+async def extract_text_from_pdf(
+    file: UploadFile = File(...),
+    language: str = Form("eng"),
+    dpi: int = Form(300),
+    preprocess: bool = Form(False),
+    page_start: Optional[int] = Form(None),
+    page_end: Optional[int] = Form(None)
+):
+    """Extract text from a PDF file using OCR."""
+    if not file.filename.endswith(('.pdf', '.PDF')):
+        raise HTTPException(status_code=400, detail="Only PDF files are supported")
+    
+    try:
+        # Create options object
+        options = OcrOptions(
+            language=language,
+            dpi=dpi,
+            preprocess=preprocess,
+            page_range=[page_start, page_end] if page_start is not None else None
+        )
+        
+        # Create temporary file to store the uploaded PDF
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp:
+            temp_path = temp.name
+            content = await file.read()
+            temp.write(content)
+        
+        # Extract text using OCR
+        try:
+            extracted_text = process_pdf_with_ocr(temp_path, options)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"OCR processing failed: {str(e)}")
+        finally:
+            # Clean up temp file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+        
+        return {"text": extracted_text}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"OCR processing error: {str(e)}")
+
+
+@app.get("/ocr/languages/")
+async def get_ocr_languages():
+    """Get available OCR languages."""
+    try:
+        languages = get_available_languages()
+        return {"languages": languages}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get languages: {str(e)}")
