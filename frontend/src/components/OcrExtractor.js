@@ -1,6 +1,6 @@
 // frontend/src/components/OcrExtractor.js
 import React, { useState, useEffect } from "react";
-import { Form, Button, Alert, Spinner, Row, Col, Card } from "react-bootstrap";
+import { Form, Button, Alert, Spinner, Row, Col, Card, ButtonGroup } from "react-bootstrap";
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
@@ -40,12 +40,15 @@ export default function OcrExtractor() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
   const [extractedText, setExtractedText] = useState("");
+  const [rawOcrData, setRawOcrData] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [languages, setLanguages] = useState([]);
   const [isLoadingLanguages, setIsLoadingLanguages] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [viewMode, setViewMode] = useState("readable"); // "readable" or "raw"
+  const [showDownloadOptions, setShowDownloadOptions] = useState(false);
   
   // OCR settings
   const [language, setLanguage] = useState("eng");
@@ -157,6 +160,7 @@ export default function OcrExtractor() {
       
       const data = await response.json();
       setExtractedText(data.text);
+      setRawOcrData(data.text); // Store raw data as well
       setSuccess("Text extracted successfully!");
       
     } catch (error) {
@@ -168,23 +172,27 @@ export default function OcrExtractor() {
   };
 
   // Download extracted text as a TXT file
-  const downloadText = () => {
+  const downloadText = (raw = false) => {
     if (!extractedText) {
       setError("No text to download.");
       return;
     }
     
-    const blob = new Blob([extractedText], { type: "text/plain" });
+    const textToDownload = raw ? rawOcrData : extractedText;
+    const fileNameSuffix = raw ? "_raw" : "_formatted";
+    
+    const blob = new Blob([textToDownload], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `${file.name.replace(".pdf", "")}_extracted.txt`;
+    a.download = `${file.name.replace(".pdf", "")}${fileNameSuffix}.txt`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
-    setSuccess("Text downloaded successfully!");
+    setSuccess(`Text downloaded successfully as ${a.download}!`);
+    setShowDownloadOptions(false);
   };
 
   // Copy text to clipboard
@@ -194,7 +202,9 @@ export default function OcrExtractor() {
       return;
     }
     
-    navigator.clipboard.writeText(extractedText)
+    const textToCopy = viewMode === "raw" ? rawOcrData : extractedText;
+    
+    navigator.clipboard.writeText(textToCopy)
       .then(() => setSuccess("Text copied to clipboard!"))
       .catch((err) => setError(`Failed to copy text: ${err.message}`));
   };
@@ -204,6 +214,41 @@ export default function OcrExtractor() {
     const selectedLang = languages.find(l => l.code === language);
     return selectedLang ? selectedLang.name : LANGUAGE_NAMES[language] || language;
   };
+
+  // Format the OCR text to make it more readable
+  const formatOcrText = (text) => {
+    // This is where you could add more sophisticated formatting
+    // For now, just return the raw text
+    return text;
+  };
+
+  // Get the text to display based on the view mode
+  const getDisplayText = () => {
+    if (viewMode === "raw") {
+      return rawOcrData;
+    } else {
+      return formatOcrText(extractedText);
+    }
+  };
+
+  // Toggle download options dropdown
+  const toggleDownloadOptions = () => {
+    setShowDownloadOptions(!showDownloadOptions);
+  };
+
+  // Close download dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showDownloadOptions && !event.target.closest('.download-dropdown')) {
+        setShowDownloadOptions(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDownloadOptions]);
 
   return (
     <div className="ocr-extractor">
@@ -427,56 +472,104 @@ export default function OcrExtractor() {
       
       {extractedText && (
         <Card className="shadow-sm mb-4">
-          <Card.Header className="bg-light d-flex justify-content-between align-items-center py-3">
-            <div>
-              <h5 className="mb-1">Extracted Text</h5>
-              <div className="text-muted small">
-                <span className="fw-semibold">Language:</span> {getSelectedLanguageName()} | 
-                <span className="fw-semibold ms-2">Quality:</span> {dpi} DPI
-                {preprocess && <span className="ms-2 badge bg-info text-white">Preprocessed</span>}
+          <Card.Header className="bg-light py-3">
+            <div className="d-flex justify-content-between align-items-center flex-wrap">
+              <div className="mb-2 mb-md-0">
+                <h5 className="mb-1">Extracted Text</h5>
+                <div className="text-muted small">
+                  <span className="fw-semibold">Language:</span> {getSelectedLanguageName()} | 
+                  <span className="fw-semibold ms-2">Quality:</span> {dpi} DPI
+                  {preprocess && <span className="ms-2 badge bg-info text-white">Preprocessed</span>}
+                </div>
               </div>
-            </div>
-            <div>
-              <Button
-                variant="outline-secondary"
-                onClick={copyToClipboard}
-                className="me-2"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-clipboard me-1" viewBox="0 0 16 16">
-                  <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
-                  <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
-                </svg>
-                Copy to Clipboard
-              </Button>
-              <Button
-                variant="primary"
-                onClick={downloadText}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-download me-1" viewBox="0 0 16 16">
-                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                </svg>
-                Download as Text
-              </Button>
+              
+              <div className="d-flex flex-wrap">
+                {/* Toggle View Mode */}
+                <ButtonGroup className="me-2 mb-2 mb-md-0">
+                  <Button
+                    variant={viewMode === "readable" ? "primary" : "outline-primary"}
+                    onClick={() => setViewMode("readable")}
+                  >
+                    Readable
+                  </Button>
+                  <Button
+                    variant={viewMode === "raw" ? "primary" : "outline-primary"}
+                    onClick={() => setViewMode("raw")}
+                  >
+                    Raw
+                  </Button>
+                </ButtonGroup>
+                
+                {/* Copy and Download Buttons */}
+                <div className="d-flex">
+                  <Button
+                    variant="outline-secondary"
+                    onClick={copyToClipboard}
+                    className="me-2"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-clipboard me-1" viewBox="0 0 16 16">
+                      <path d="M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1v-1z"/>
+                      <path d="M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5h3zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3z"/>
+                    </svg>
+                    Copy
+                  </Button>
+                  
+                  <div className="position-relative download-dropdown">
+                    <Button
+                      variant="primary"
+                      onClick={toggleDownloadOptions}
+                      className="d-flex align-items-center"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-download me-1" viewBox="0 0 16 16">
+                        <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                        <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                      </svg>
+                      Download
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-chevron-down ms-2" viewBox="0 0 16 16">
+                        <path fillRule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                    </Button>
+                    
+                    {showDownloadOptions && (
+                      <div className="position-absolute end-0 mt-1 py-1 bg-white rounded shadow-sm" style={{ zIndex: 1000, minWidth: '200px' }}>
+                        <button 
+                          className="dropdown-item py-2 px-3"
+                          onClick={() => downloadText(false)}
+                        >
+                          Download Current View
+                        </button>
+                        <button 
+                          className="dropdown-item py-2 px-3"
+                          onClick={() => downloadText(true)}
+                        >
+                          Download Raw OCR Data
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
           </Card.Header>
           <Card.Body className="p-0">
             <div className="extracted-text-container">
               <pre 
-                className="extracted-text-pre m-0 p-4"
+                className={`extracted-text-pre m-0 p-4 ${viewMode === "raw" ? "raw-text" : "readable-text"}`}
                 style={{ 
                   height: "500px",
                   overflowY: "auto",
                   backgroundColor: "#ffffff",
                   border: "none",
-                  fontSize: "16px",
-                  lineHeight: "1.6",
-                  fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif", // More readable font
+                  fontSize: viewMode === "raw" ? "14px" : "16px",
+                  lineHeight: viewMode === "raw" ? "1.5" : "1.7",
+                  fontFamily: viewMode === "raw" 
+                    ? "'Consolas', 'Monaco', 'Courier New', monospace"
+                    : "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
                   whiteSpace: "pre-wrap",
                   wordWrap: "break-word"
                 }}
               >
-                {extractedText}
+                {getDisplayText()}
               </pre>
             </div>
           </Card.Body>
