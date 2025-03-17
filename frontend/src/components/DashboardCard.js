@@ -34,8 +34,8 @@ const DashboardCard = ({ title, value, icon, color, percentage, trend }) => {
   return (
     <div className={`rounded-lg shadow overflow-hidden bg-gradient-to-r ${colorClasses.bg}`}>
       <div className="p-5 text-center">
-        <div className={`inline-flex items-center justify-center h-14 w-14 rounded-full mb-4 ${colorClasses.icon}`}>
-          {icon}
+        <div className={`inline-flex items-center justify-center h-14 w-14 rounded-full mb-4 ${colorClasses.icon}`} style={{overflow: 'hidden'}}>
+          <div className="dashboard-icon" style={{width: '24px', height: '24px'}}>{icon}</div>
         </div>
         <h3 className="text-3xl font-bold text-white">{value}</h3>
         <p className="text-indigo-100 dark:text-indigo-200">{title}</p>
