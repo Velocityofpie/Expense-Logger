@@ -17,7 +17,20 @@ export const ThemeProvider = ({ children }) => {
   // Update localStorage and apply theme when darkMode changes
   useEffect(() => {
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
-    document.documentElement.classList.toggle('dark', darkMode);
+    
+    // Apply dark mode class to html element for Tailwind
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    // This is to handle Bootstrap components that don't respect Tailwind's dark mode
+    if (darkMode) {
+      document.body.classList.add('bootstrap-dark');
+    } else {
+      document.body.classList.remove('bootstrap-dark');
+    }
   }, [darkMode]);
 
   // Toggle dark mode

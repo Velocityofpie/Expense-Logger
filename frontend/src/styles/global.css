@@ -1,262 +1,108 @@
 /* frontend/src/styles/global.css */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
+/* Tailwind directives */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Base Styles */
-@layer base {
-  html {
-    @apply font-sans antialiased;
-  }
-  
-  /* Light Mode Defaults */
-  body {
-    @apply bg-gray-50 text-gray-900;
-  }
-  
-  h1, h2, h3, h4, h5, h6 {
-    @apply font-medium;
-  }
-  
-  h1 {
-    @apply text-2xl sm:text-3xl;
-  }
-  
-  h2 {
-    @apply text-xl sm:text-2xl;
-  }
-  
-  h3 {
-    @apply text-lg sm:text-xl;
-  }
-  
-  /* Remove scrollbar jumps when switching themes */
-  html {
-    scrollbar-width: thin;
-    scrollbar-color: #6366f1 transparent;
-  }
-  
-  /* Dark mode scrollbars */
-  .dark ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  .dark ::-webkit-scrollbar-track {
-    @apply bg-dark-bg;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb {
-    @apply bg-gray-600 rounded-full;
-  }
-  
-  .dark ::-webkit-scrollbar-thumb:hover {
-    @apply bg-gray-500;
-  }
+/* Base Styles - these come after Tailwind base to override if needed */
+body {
+  font-family: 'Inter', sans-serif;
+  @apply bg-gray-50 text-gray-900;
 }
 
-/* Reusable Components */
-@layer components {
-  /* Card component with light/dark support */
-  .card {
-    @apply bg-white dark:bg-dark-card rounded-lg shadow-sm dark:shadow-gray-900 
-           border border-gray-100 dark:border-dark-border
-           transition-all duration-200;
-  }
-  
-  .card-header {
-    @apply p-4 border-b border-gray-100 dark:border-dark-border;
-  }
-  
-  .card-body {
-    @apply p-4;
-  }
-  
-  /* Button variants */
-  .btn {
-    @apply inline-flex items-center justify-center px-4 py-2 
-           border border-transparent text-sm font-medium rounded-md 
-           shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2
-           transition-colors duration-200;
-  }
-  
-  .btn-primary {
-    @apply bg-primary-600 hover:bg-primary-700 text-white
-           dark:bg-primary-700 dark:hover:bg-primary-600
-           focus:ring-primary-500;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-600 hover:bg-gray-700 text-white
-           dark:bg-gray-700 dark:hover:bg-gray-600
-           focus:ring-gray-500;
-  }
-  
-  .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white
-           dark:bg-red-700 dark:hover:bg-red-600
-           focus:ring-red-500;
-  }
-  
-  .btn-outline {
-    @apply bg-white hover:bg-gray-50 
-           border-gray-300 text-gray-700
-           dark:bg-dark-card dark:text-dark-text-primary
-           dark:border-dark-border dark:hover:bg-gray-800;
-  }
-  
-  /* Form elements */
-  .form-input {
-    @apply block w-full px-3 py-2 
-           border border-gray-300 rounded-md shadow-sm
-           dark:bg-dark-card dark:border-dark-border dark:text-dark-text-primary
-           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500;
-  }
-  
-  .form-label {
-    @apply block text-sm font-medium text-gray-700 dark:text-dark-text-secondary mb-1;
-  }
-  
-  .form-select {
-    @apply block w-full px-3 py-2 
-           bg-white border border-gray-300 rounded-md shadow-sm
-           focus:outline-none focus:ring-primary-500 focus:border-primary-500
-           dark:bg-dark-card dark:border-dark-border dark:text-dark-text-primary;
-  }
-  
-  /* Badge styles */
-  .badge {
-    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-  }
-  
-  .badge-primary {
-    @apply bg-primary-100 text-primary-800 dark:bg-primary-900 dark:text-primary-200;
-  }
-  
-  .badge-success {
-    @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-  }
-  
-  .badge-warning {
-    @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-  }
-  
-  .badge-danger {
-    @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
-  }
-  
-  /* Table styling */
-  .table-container {
-    @apply overflow-x-auto rounded-lg border border-gray-200 
-           dark:border-dark-border shadow-sm;
-  }
-  
-  .table {
-    @apply min-w-full divide-y divide-gray-200 dark:divide-dark-border;
-  }
-  
-  .table-header {
-    @apply bg-gray-50 dark:bg-dark-card text-left py-3.5 px-4
-           text-xs font-medium text-gray-500 dark:text-dark-text-muted
-           uppercase tracking-wider;
-  }
-  
-  .table-row {
-    @apply hover:bg-gray-50 dark:hover:bg-gray-800;
-  }
-  
-  .table-cell {
-    @apply px-4 py-4 text-sm text-gray-500 dark:text-dark-text-secondary;
-  }
-  
-  /* Avatar styles */
-  .avatar {
-    @apply inline-flex items-center justify-center rounded-full overflow-hidden
-           bg-gray-100 dark:bg-gray-700;
-  }
-  
-  .avatar-text {
-    @apply text-gray-700 dark:text-white font-medium;
-  }
-}
-
-/* Custom Transitions */
-.fade-enter {
-  opacity: 0;
-}
-.fade-enter-active {
-  opacity: 1;
-  transition: opacity 200ms;
-}
-.fade-exit {
-  opacity: 1;
-}
-.fade-exit-active {
-  opacity: 0;
-  transition: opacity 200ms;
-}
-/* Global icon sizing fixes */
-/* Navigation icons */
-.navbar svg,
-nav svg {
-    width: 16px !important;
-    height: 16px !important;
-    max-width: 16px !important;
-    max-height: 16px !important;
-    flex-shrink: 0 !important;
-}
-  
-.navbar .nav-link svg,
-nav a svg {
-    margin-right: 8px !important;
-    display: inline-block !important;
-}
-
-/* Dashboard icons */
-.dashboard svg,
-.card svg,
-.btn svg,
-.dashboard-icon {
-    width: 20px !important;
-    height: 20px !important;
-    max-width: 20px !important;
-    max-height: 20px !important;
-    flex-shrink: 0 !important;
-}
-
-/* Ensure icon containers don't expand */
-.flex-shrink-0 {
-    flex-shrink: 0 !important;
+.dark body {
+  @apply bg-dark-bg text-dark-text-primary;
 }
 
 /* Fix for all SVG icons everywhere */
 svg {
-    overflow: visible !important;
-    box-sizing: content-box !important;
-    display: inline-block !important;
+  display: inline-block !important;
+  vertical-align: middle;
 }
 
-/* Give SVG icons reasonable defaults if not otherwise specified */
-svg:not([width]):not([height]):not([class*="w-"]):not([class*="h-"]) {
-    width: 20px !important;
-    height: 20px !important;
+/* Override Bootstrap styles with Tailwind */
+.btn-primary {
+  @apply bg-primary-600 hover:bg-primary-700 text-white;
 }
 
-/* Special fixes for dashboard empty state icon */
-.text-center svg.h-10,
-.text-center svg.h-12 {
-    width: 40px !important;
-    height: 40px !important;
-    max-width: 40px !important;
-    max-height: 40px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
-    display: block !important;
+.btn-secondary {
+  @apply bg-gray-600 hover:bg-gray-700 text-white;
 }
 
-/* Make sure inline icons align properly with text */
-button svg, a svg, .inline-icon {
-    vertical-align: middle !important;
+.btn-danger {
+  @apply bg-red-600 hover:bg-red-700 text-white;
+}
+
+.btn-success {
+  @apply bg-green-600 hover:bg-green-700 text-white;
+}
+
+/* Dark mode overrides for Bootstrap components */
+.dark .card {
+  @apply bg-dark-card border-dark-border;
+}
+
+.dark .table {
+  @apply text-dark-text-primary;
+}
+
+.dark .table thead th {
+  @apply bg-dark-nav text-dark-text-muted;
+}
+
+.dark .table-striped tbody tr:nth-of-type(odd) {
+  @apply bg-dark-bg;
+}
+
+.dark .form-control, 
+.dark .form-select {
+  @apply bg-dark-card border-dark-border text-dark-text-primary;
+}
+
+/* Fix icon sizing issues */
+.navbar svg,
+nav svg {
+  width: 16px !important;
+  height: 16px !important;
+}
+
+.dashboard-icon {
+  width: 24px !important;
+  height: 24px !important;
+}
+
+/* Ensure the Tailwind dark mode works properly */
+.dark .bg-white {
+  @apply bg-dark-card;
+}
+
+.dark .text-gray-700, 
+.dark .text-gray-900 {
+  @apply text-dark-text-primary;
+}
+
+.dark .text-gray-500, 
+.dark .text-gray-600 {
+  @apply text-dark-text-secondary;
+}
+
+.dark .border-gray-200, 
+.dark .border-gray-300 {
+  @apply border-dark-border;
+}
+
+/* Fix for Bootstrap modal in dark mode */
+.dark .modal-content {
+  @apply bg-dark-card;
+}
+
+.dark .modal-header,
+.dark .modal-footer {
+  @apply border-dark-border;
+}
+
+.dark .close {
+  @apply text-dark-text-primary;
 }

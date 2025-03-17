@@ -8,15 +8,14 @@ import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentCards from "./components/PaymentCards";
 import Wishlist from "./components/Wishlist";
 import { ThemeProvider } from "./context/ThemeContext";
-import "./styles/global.css";
 
 export default function App() {
     return (
         <ThemeProvider>
-            <div className="min-h-screen transition-colors duration-200 dark:bg-dark-bg dark:text-dark-text-primary">
+            <div className="min-h-screen transition-colors duration-200">
                 <Router>
                     <Navbar />
-                    <div className="container mx-auto px-4 m:px-6 lg:px-8 py-6">
+                    <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
                         <Routes>
                             <Route path="/" element={<Dashboard />} />
                             <Route path="/dashboard" element={<Dashboard />} />

@@ -1,6 +1,8 @@
-import React, { useEffect, useState } from "react";
+// frontend/src/pages/Dashboard.js
+import React, { useEffect, useState, useContext } from "react";
 import { Link } from "react-router-dom";
 import { fetchInvoices, fetchCategories, fetchTags } from "../api";
+import { ThemeContext } from "../context/ThemeContext";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Area, AreaChart
@@ -13,6 +15,7 @@ const COLORS = [
 ];
 
 export default function Dashboard() {
+  const { darkMode } = useContext(ThemeContext);
   const [invoices, setInvoices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
@@ -45,12 +48,12 @@ export default function Dashboard() {
           fetchTags()
         ]);
         
-        setInvoices(invoicesData);
-        setCategories(categoriesData);
-        setTags(tagsData);
+        setInvoices(invoicesData || []);
+        setCategories(categoriesData || []);
+        setTags(tagsData || []);
         
         // Calculate dashboard statistics
-        calculateStatistics(invoicesData);
+        calculateStatistics(invoicesData || []);
         
         setLoading(false);
       } catch (error) {
@@ -214,7 +217,7 @@ export default function Dashboard() {
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-3 text-gray-600">Loading dashboard data...</p>
+          <p className="mt-3 text-gray-600 dark:text-gray-400">Loading dashboard data...</p>
         </div>
       </div>
     );
@@ -223,7 +226,7 @@ export default function Dashboard() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 rounded-md">
+        <div className="bg-red-50 dark:bg-red-900/30 border-l-4 border-red-400 p-4 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -231,11 +234,11 @@ export default function Dashboard() {
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-red-700">{error}</p>
+              <p className="text-red-700 dark:text-red-200">{error}</p>
               <div className="mt-2">
                 <button 
                   onClick={() => window.location.reload()} 
-                  className="bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded-md text-sm font-medium"
+                  className="bg-red-100 hover:bg-red-200 dark:bg-red-800 dark:hover:bg-red-700 text-red-800 dark:text-red-200 px-3 py-1 rounded-md text-sm font-medium"
                 >
                   Try Again
                 </button>
@@ -254,39 +257,35 @@ export default function Dashboard() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Dashboard</h1>
         <div className="flex space-x-3">
           <button 
             onClick={() => window.location.reload()}
-            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             Refresh
           </button>
-          <div className="relative inline-block text-left">
-            <div>
-              <button 
-                type="button" 
-                className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
-                id="export-menu"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Export
-              </button>
-            </div>
-          </div>
+          <button 
+            type="button" 
+            className="inline-flex items-center px-3 py-2 border border-gray-300 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-700"
+            id="export-menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            Export
+          </button>
         </div>
       </div>
       
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow px-5 py-6 mb-6">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm px-5 py-6 mb-6">
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
           <div className="md:col-span-2">
-            <label htmlFor="year" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="year" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Filter by Year
             </label>
             <select
@@ -294,7 +293,7 @@ export default function Dashboard() {
               name="year"
               value={selectedYear}
               onChange={(e) => setSelectedYear(e.target.value)}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
             >
               <option value="All">All Years</option>
               {years.map(year => (
@@ -303,7 +302,7 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="status" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Filter by Status
             </label>
             <select
@@ -311,7 +310,7 @@ export default function Dashboard() {
               name="status"
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm rounded-md"
             >
               <option value="All">All Statuses</option>
               {statuses.map(status => (
@@ -320,7 +319,7 @@ export default function Dashboard() {
             </select>
           </div>
           <div className="md:col-span-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Chart Type
             </label>
             <div className="flex space-x-2">
@@ -329,7 +328,7 @@ export default function Dashboard() {
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-md ${
                   activeChart === 'monthly'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -341,7 +340,7 @@ export default function Dashboard() {
                 className={`flex-1 px-3 py-2 text-sm font-medium rounded-md ${
                   activeChart === 'area'
                   ? 'bg-primary-600 text-white'
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                  : 'bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600'
                 }`}
               >
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -355,10 +354,10 @@ export default function Dashboard() {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-        <div className="bg-gradient-to-r from-indigo-500 to-indigo-600 rounded-lg shadow overflow-hidden">
+        <div className="dashboard-stat-card bg-gradient-indigo">
           <div className="p-5 text-center">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-white bg-opacity-10 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="dashboard-icon text-white" style={{width: '24px', height: '24px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="dashboard-icon-container">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
               </svg>
             </div>
@@ -367,10 +366,10 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-purple-500 to-purple-600 rounded-lg shadow overflow-hidden">
+        <div className="dashboard-stat-card bg-gradient-purple">
           <div className="p-5 text-center">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-white bg-opacity-10 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="dashboard-icon text-white" style={{width: '24px', height: '24px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="dashboard-icon-container">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -379,10 +378,10 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-pink-500 to-pink-600 rounded-lg shadow overflow-hidden">
+        <div className="dashboard-stat-card bg-gradient-pink">
           <div className="p-5 text-center">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-white bg-opacity-10 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="dashboard-icon text-white" style={{width: '24px', height: '24px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="dashboard-icon-container">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
             </div>
@@ -391,10 +390,10 @@ export default function Dashboard() {
           </div>
         </div>
         
-        <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg shadow overflow-hidden">
+        <div className="dashboard-stat-card bg-gradient-blue">
           <div className="p-5 text-center">
-            <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-white bg-opacity-10 mb-4">
-              <svg xmlns="http://www.w3.org/2000/svg" className="dashboard-icon text-white" style={{width: '24px', height: '24px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div className="dashboard-icon-container">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
@@ -411,21 +410,21 @@ export default function Dashboard() {
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow overflow-hidden h-full">
-            <div className="p-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Spending Over Time</h2>
+          <div className="dashboard-chart-container">
+            <div className="dashboard-chart-header">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Spending Over Time</h2>
             </div>
-            <div className="p-5 h-80">
+            <div className="dashboard-chart-body">
               <ResponsiveContainer width="100%" height="100%">
                 {activeChart === 'monthly' ? (
                   <LineChart
                     data={chartData.monthly}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#f0f0f0"} />
+                    <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                    <YAxis stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                    <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{backgroundColor: darkMode ? '#1F2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb'}} />
                     <Line 
                       type="monotone" 
                       dataKey="amount" 
@@ -439,10 +438,10 @@ export default function Dashboard() {
                     data={chartData.monthly}
                     margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis dataKey="month" stroke="#6b7280" />
-                    <YAxis stroke="#6b7280" />
-                    <Tooltip formatter={(value) => formatCurrency(value)} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#f0f0f0"} />
+                    <XAxis dataKey="month" stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                    <YAxis stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                    <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{backgroundColor: darkMode ? '#1F2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb'}} />
                     <Area 
                       type="monotone" 
                       dataKey="amount" 
@@ -459,11 +458,11 @@ export default function Dashboard() {
         </div>
         
         <div>
-          <div className="bg-white rounded-lg shadow overflow-hidden h-full">
-            <div className="p-5 border-b border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900">Invoice Status</h2>
+          <div className="dashboard-chart-container">
+            <div className="dashboard-chart-header">
+              <h2 className="text-lg font-medium text-gray-900 dark:text-white">Invoice Status</h2>
             </div>
-            <div className="p-5 h-80">
+            <div className="dashboard-chart-body">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -479,8 +478,10 @@ export default function Dashboard() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => value} />
-                  <Legend />
+                  <Tooltip formatter={(value) => value} contentStyle={{backgroundColor: darkMode ? '#1F2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb'}} />
+                  <Legend 
+                    formatter={(value) => <span style={{color: darkMode ? '#E5E7EB' : '#374151'}}>{value}</span>}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -489,11 +490,11 @@ export default function Dashboard() {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Spending by Category</h2>
+        <div className="dashboard-chart-container">
+          <div className="dashboard-chart-header">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Spending by Category</h2>
           </div>
-          <div className="p-5 h-80">
+          <div className="dashboard-chart-body">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -509,28 +510,30 @@ export default function Dashboard() {
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip formatter={(value) => formatCurrency(value)} />
-                <Legend />
+                <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{backgroundColor: darkMode ? '#1F2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb'}} />
+                <Legend 
+                  formatter={(value) => <span style={{color: darkMode ? '#E5E7EB' : '#374151'}}>{value}</span>}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
         
-        <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
-            <h2 className="text-lg font-medium text-gray-900">Payment Methods</h2>
+        <div className="dashboard-chart-container">
+          <div className="dashboard-chart-header">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">Payment Methods</h2>
           </div>
-          <div className="p-5 h-80">
+          <div className="dashboard-chart-body">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData.paymentMethod}
                 layout="vertical"
                 margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
               >
-                <XAxis type="number" />
-                <YAxis type="category" dataKey="name" />
-                <CartesianGrid strokeDasharray="3 3" />
-                <Tooltip formatter={(value) => formatCurrency(value)} />
+                <XAxis type="number" stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                <YAxis type="category" dataKey="name" stroke={darkMode ? "#9CA3AF" : "#6b7280"} />
+                <CartesianGrid strokeDasharray="3 3" stroke={darkMode ? "#374151" : "#f0f0f0"} />
+                <Tooltip formatter={(value) => formatCurrency(value)} contentStyle={{backgroundColor: darkMode ? '#1F2937' : '#fff', borderColor: darkMode ? '#374151' : '#e5e7eb'}} />
                 <Bar dataKey="value" fill="#3b82f6">
                   {chartData.paymentMethod.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -543,111 +546,109 @@ export default function Dashboard() {
       </div>
       
       {/* Recent Invoices Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div className="px-4 py-5 sm:px-6 flex justify-between items-center">
-          <h2 className="text-lg leading-6 font-medium text-gray-900">Recent Invoices</h2>
+      <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
+        <div className="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg leading-6 font-medium text-gray-900 dark:text-white">Recent Invoices</h2>
           <Link 
             to="/invoices" 
-            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
           >
             View All
-            <svg xmlns="http://www.w3.org/2000/svg" className="dashboard-icon text-white" style={{width: '24px', height: '24px'}} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>
         </div>
-        <div className="border-t border-gray-200">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Order #
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Merchant
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Amount
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Categories
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {getFilteredInvoices().slice(0, 5).map((invoice) => (
-                  <tr key={invoice.invoice_id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <Link 
-                        to={`/invoice/${invoice.invoice_id}`} 
-                        className="text-indigo-600 hover:text-indigo-900"
-                      >
-                        {invoice.order_number || "-"}
-                      </Link>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.purchase_date || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {invoice.file_name || "-"}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      {formatCurrency(invoice.grand_total || 0)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span 
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                          ${
-                            invoice.status === "Paid" ? "bg-green-100 text-green-800" :
-                            invoice.status === "Open" ? "bg-blue-100 text-blue-800" :
-                            invoice.status === "Needs Attention" ? "bg-red-100 text-red-800" :
-                            "bg-gray-100 text-gray-800"
-                          }
-                        `}
-                      >
-                        {invoice.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex flex-wrap gap-1">
-                        {invoice.categories && invoice.categories.length > 0 ? (
-                          invoice.categories.map((cat, i) => (
-                            <span 
-                              key={i} 
-                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800"
-                            >
-                              {cat}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                            Uncategorized
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Order #
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Date
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Merchant
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Amount
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Status
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Categories
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+              {getFilteredInvoices().slice(0, 5).map((invoice) => (
+                <tr key={invoice.invoice_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <Link 
+                      to={`/invoice/${invoice.invoice_id}`} 
+                      className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                    >
+                      {invoice.order_number || "-"}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {invoice.purchase_date || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                    {invoice.file_name || "-"}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
+                    {formatCurrency(invoice.grand_total || 0)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span 
+                      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        ${
+                          invoice.status === "Paid" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200" :
+                          invoice.status === "Open" ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" :
+                          invoice.status === "Needs Attention" ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200" :
+                          "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+                        }
+                      `}
+                    >
+                      {invoice.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex flex-wrap gap-1">
+                      {invoice.categories && invoice.categories.length > 0 ? (
+                        invoice.categories.map((cat, i) => (
+                          <span 
+                            key={i} 
+                            className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200"
+                          >
+                            {cat}
                           </span>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-                {getFilteredInvoices().length === 0 && (
-                  <tr>
-                    <td colSpan="6" className="px-6 py-10 text-center text-gray-500">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-                      </svg>
-                      <p className="mt-2">No invoices found</p>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                        ))
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                          Uncategorized
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {getFilteredInvoices().length === 0 && (
+                <tr>
+                  <td colSpan="6" className="px-6 py-10 text-center text-gray-500 dark:text-gray-400">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                    </svg>
+                    <p className="mt-2">No invoices found</p>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

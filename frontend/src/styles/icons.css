@@ -1,0 +1,66 @@
+/* frontend/src/styles/icons.css */
+/* This file contains fixes for SVG icon sizing issues */
+
+/* Global icon sizing fixes */
+/* Navigation icons */
+.navbar svg,
+nav svg {
+    width: 16px !important;
+    height: 16px !important;
+    max-width: 16px !important;
+    max-height: 16px !important;
+    flex-shrink: 0 !important;
+}
+  
+.navbar .nav-link svg,
+nav a svg {
+    margin-right: 8px !important;
+    display: inline-block !important;
+}
+
+/* Dashboard icons */
+.dashboard svg,
+.card svg,
+.btn svg,
+.dashboard-icon {
+    width: 20px !important;
+    height: 20px !important;
+    max-width: 20px !important;
+    max-height: 20px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Ensure icon containers don't expand */
+.flex-shrink-0 {
+    flex-shrink: 0 !important;
+}
+
+/* Fix for all SVG icons everywhere */
+svg {
+    overflow: visible !important;
+    box-sizing: content-box !important;
+    display: inline-block !important;
+}
+
+/* Give SVG icons reasonable defaults if not otherwise specified */
+svg:not([width]):not([height]):not([class*="w-"]):not([class*="h-"]) {
+    width: 20px !important;
+    height: 20px !important;
+}
+
+/* Special fixes for dashboard empty state icon */
+.text-center svg.h-10,
+.text-center svg.h-12 {
+    width: 40px !important;
+    height: 40px !important;
+    max-width: 40px !important;
+    max-height: 40px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    display: block !important;
+}
+
+/* Make sure inline icons align properly with text */
+button svg, a svg, .inline-icon {
+    vertical-align: middle !important;
+}
