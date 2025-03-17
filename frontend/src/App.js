@@ -1,3 +1,4 @@
+// frontend/src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
@@ -6,19 +7,27 @@ import InvoiceExtractor from "./pages/InvoiceExtractor";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentCards from "./components/PaymentCards";
 import Wishlist from "./components/Wishlist";
+import { ThemeProvider } from "./context/ThemeContext";
+import "./styles/global.css";
 
 export default function App() {
     return (
-        <Router>
-            <Navbar />
-            <Routes>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/invoices" element={<InvoiceExtractor />} />
-                <Route path="/invoice/:id" element={<InvoiceDetail />} />
-                <Route path="/payment-cards" element={<PaymentCards />} />
-                <Route path="/wishlist" element={<Wishlist />} />
-            </Routes>
-        </Router>
+        <ThemeProvider>
+            <div className="min-h-screen transition-colors duration-200 dark:bg-dark-bg dark:text-dark-text-primary">
+                <Router>
+                    <Navbar />
+                    <div className="container mx-auto px-4 m:px-6 lg:px-8 py-6">
+                        <Routes>
+                            <Route path="/" element={<Dashboard />} />
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/invoices" element={<InvoiceExtractor />} />
+                            <Route path="/invoice/:id" element={<InvoiceDetail />} />
+                            <Route path="/payment-cards" element={<PaymentCards />} />
+                            <Route path="/wishlist" element={<Wishlist />} />
+                        </Routes>
+                    </div>
+                </Router>
+            </div>
+        </ThemeProvider>
     );
 }

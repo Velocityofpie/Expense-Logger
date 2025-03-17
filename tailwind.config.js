@@ -1,10 +1,14 @@
-/** @type {import('tailwindcss').Config} */
+// frontend/tailwind.config.js
 module.exports = {
     content: [
       "./src/**/*.{js,jsx,ts,tsx}",
     ],
+    darkMode: 'class', // use 'class' method for dark mode
     theme: {
       extend: {
+        fontFamily: {
+          sans: ['Inter', 'system-ui', 'sans-serif'],
+        },
         colors: {
           primary: {
             50: '#eef2ff',
@@ -19,33 +23,22 @@ module.exports = {
             900: '#312e81',
             950: '#1e1b4b',
           },
+          dark: {
+            bg: '#121212',
+            card: '#1e1e1e',
+            nav: '#272727',
+            border: '#383838',
+            text: {
+              primary: '#f3f4f6',
+              secondary: '#d1d5db',
+              muted: '#9ca3af',
+            },
+          },
         },
         boxShadow: {
-          card: '0 2px 8px 0 rgba(0, 0, 0, 0.05)',
           'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        },
-        fontFamily: {
-          sans: [
-            'Inter',
-            'ui-sans-serif',
-            'system-ui',
-            '-apple-system',
-            'BlinkMacSystemFont',
-            '"Segoe UI"',
-            'Roboto',
-            '"Helvetica Neue"',
-            'Arial',
-            '"Noto Sans"',
-            'sans-serif',
-            '"Apple Color Emoji"',
-            '"Segoe UI Emoji"',
-            '"Segoe UI Symbol"',
-            '"Noto Color Emoji"',
-          ],
         },
       },
     },
-    plugins: [
-      require('@tailwindcss/forms'),
-    ],
+    plugins: [],
   }
