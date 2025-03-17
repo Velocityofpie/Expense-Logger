@@ -3,7 +3,7 @@ import React, { useState, useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ThemeContext } from "../context/ThemeContext";
 
-export default function NavigationBar() {
+export default function Navbar() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState("User");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -26,6 +26,7 @@ export default function NavigationBar() {
     <nav className="bg-gray-800 dark:bg-dark-nav shadow-md transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Logo and Desktop Navigation */}
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link to="/" className="flex items-center">
@@ -35,6 +36,8 @@ export default function NavigationBar() {
                 <span className="ml-2 text-white font-bold text-lg">Expense Logger</span>
               </Link>
             </div>
+            
+            {/* Desktop Navigation Links */}
             <div className="hidden md:block">
               <div className="ml-10 flex items-baseline space-x-4">
                 <Link 
@@ -50,6 +53,7 @@ export default function NavigationBar() {
                   </svg>
                   Dashboard
                 </Link>
+                
                 <Link 
                   to="/invoices" 
                   className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
@@ -63,6 +67,7 @@ export default function NavigationBar() {
                   </svg>
                   Invoices
                 </Link>
+                
                 <Link 
                   to="/payment-cards" 
                   className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
@@ -76,6 +81,7 @@ export default function NavigationBar() {
                   </svg>
                   Payment Cards
                 </Link>
+                
                 <Link 
                   to="/wishlist" 
                   className={`px-3 py-2 rounded-md text-sm font-medium flex items-center ${
@@ -92,6 +98,8 @@ export default function NavigationBar() {
               </div>
             </div>
           </div>
+          
+          {/* Desktop Right Section (Theme Toggle & Auth) */}
           <div className="hidden md:block">
             <div className="ml-4 flex items-center md:ml-6">
               {/* Theme Toggle Button */}
@@ -111,6 +119,7 @@ export default function NavigationBar() {
                 )}
               </button>
 
+              {/* Auth Section (Profile or Login) */}
               {isAuthenticated ? (
                 <div className="ml-3 relative">
                   <div>
@@ -128,6 +137,8 @@ export default function NavigationBar() {
                       <span className="ml-2 text-white">{username}</span>
                     </button>
                   </div>
+                  
+                  {/* Profile Dropdown */}
                   {isProfileOpen && (
                     <div
                       className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none z-10"
@@ -155,29 +166,6 @@ export default function NavigationBar() {
                       >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    Sign out
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className="px-5">
-                <button
-                  onClick={toggleAuth}
-                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  Log in
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </nav>
-  );3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         Sign out
                       </button>
@@ -197,6 +185,8 @@ export default function NavigationBar() {
               )}
             </div>
           </div>
+          
+          {/* Mobile menu button */}
           <div className="-mr-2 flex md:hidden">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -220,6 +210,7 @@ export default function NavigationBar() {
       {/* Mobile menu, show/hide based on menu state */}
       {isMenuOpen && (
         <div className="md:hidden">
+          {/* Mobile Navigation Links */}
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-800 dark:bg-dark-nav">
             <Link
               to="/dashboard"
@@ -234,6 +225,7 @@ export default function NavigationBar() {
               </svg>
               Dashboard
             </Link>
+            
             <Link
               to="/invoices"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
@@ -247,6 +239,7 @@ export default function NavigationBar() {
               </svg>
               Invoices
             </Link>
+            
             <Link
               to="/payment-cards"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
@@ -260,6 +253,7 @@ export default function NavigationBar() {
               </svg>
               Payment Cards
             </Link>
+            
             <Link
               to="/wishlist"
               className={`block px-3 py-2 rounded-md text-base font-medium ${
@@ -273,6 +267,8 @@ export default function NavigationBar() {
               </svg>
               Wishlist
             </Link>
+            
+            {/* Mobile Theme Toggle Button */}
             <button
               onClick={toggleDarkMode}
               className="w-full flex items-center px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:bg-gray-700 hover:text-white"
@@ -294,6 +290,8 @@ export default function NavigationBar() {
               )}
             </button>
           </div>
+          
+          {/* Mobile Menu Auth Section */}
           <div className="pt-4 pb-3 border-t border-gray-700 dark:border-gray-600">
             {isAuthenticated ? (
               <>
@@ -327,4 +325,28 @@ export default function NavigationBar() {
                     className="block w-full text-left px-3 py-2 rounded-md text-base font-medium text-gray-400 hover:text-white hover:bg-gray-700"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Sign out
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="px-5">
+                <button
+                  onClick={toggleAuth}
+                  className="w-full flex justify-center items-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                  </svg>
+                  Log in
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </nav>
+  );
+}
