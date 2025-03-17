@@ -1,13 +1,13 @@
-// frontend/tailwind.config.js
+// tailwind.config.js
 module.exports = {
     content: [
       "./src/**/*.{js,jsx,ts,tsx}",
     ],
-    darkMode: 'class', // use 'class' method for dark mode
+    darkMode: 'class',
     theme: {
       extend: {
         fontFamily: {
-          sans: ['Inter', 'system-ui', 'sans-serif'],
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'Arial', 'sans-serif'],
         },
         colors: {
           primary: {
@@ -38,7 +38,13 @@ module.exports = {
         boxShadow: {
           'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
         },
+        transitionProperty: {
+          'height': 'height',
+          'spacing': 'margin, padding',
+        }
       },
     },
-    plugins: [],
+    plugins: [
+      require('@tailwindcss/forms'),
+    ],
   }
