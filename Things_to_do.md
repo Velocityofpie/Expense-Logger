@@ -24,6 +24,10 @@ Overall Tasks
 - [ ] Allow user to set auto approval or informed approval for auto uploads
 - [ ] Email scrapping for online order?
 
+
+- [ ] Adding emails templates to parse out the information like the ocr templates
+- [ ] Add template support for ignore/filter such as don't accept this pdf if the card don’t match on the list or the address 
+
 Login Page
 - [ ] Have sign up option similar to Linkwarden and Wishlist
 - [ ] Be able to enable or disable the signup option in settings or admin panel

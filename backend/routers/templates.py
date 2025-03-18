@@ -17,7 +17,7 @@ from schemas.template import (
     TemplateTestRequest,
     TemplateTestResponse
 )
-from backend.services.template import process_with_template
+from services.template import process_with_template
 
 router = APIRouter(
     prefix="/templates",
