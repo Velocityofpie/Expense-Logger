@@ -1,7 +1,6 @@
 // frontend/src/api.js
 
-// Update this line for Docker setup
-// The API_URL should match the Docker service name and port
+// Define API_URL
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
 // ─────────────────────────────────────────────────────────
@@ -108,25 +107,6 @@ export async function deleteInvoice(id) {
     }
 }
 
-// Hard delete an invoice
-export async function permanentlyDeleteInvoice(id) {
-    try {
-        const response = await fetch(`${API_URL}/delete-permanent/${id}`, {
-            method: "DELETE",
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to permanently delete invoice');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error permanently deleting invoice:", error);
-        throw error;
-    }
-}
-
 // ─────────────────────────────────────────────────────────
 // Tags & Categories
 // ─────────────────────────────────────────────────────────
@@ -169,52 +149,6 @@ export async function fetchCategories() {
 // Payment Management
 // ─────────────────────────────────────────────────────────
 
-// Add a new card
-export async function addCard(cardName, userId = 1) {
-    try {
-        const response = await fetch(`${API_URL}/cards/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ card_name: cardName, user_id: userId }),
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to add card');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error adding card:", error);
-        throw error;
-    }
-}
-
-// Add a new card number to an existing card
-export async function addCardNumber(cardId, lastFour, expirationDate) {
-    try {
-        const response = await fetch(`${API_URL}/card-numbers/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                card_id: cardId,
-                last_four: lastFour,
-                expiration_date: expirationDate,
-            }),
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to add card number');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error adding card number:", error);
-        throw error;
-    }
-}
-
 // Add a payment for an invoice
 export async function addPayment(invoiceId, cardNumberId, amount, transactionId) {
     try {
@@ -242,66 +176,144 @@ export async function addPayment(invoiceId, cardNumberId, amount, transactionId)
 }
 
 // ─────────────────────────────────────────────────────────
-// Wishlist Management
+// Template Management
 // ─────────────────────────────────────────────────────────
 
-// Add item to wishlist
-export async function addToWishlist(productName, productLink, userId = 1) {
-    try {
-        const response = await fetch(`${API_URL}/wishlist/`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                product_name: productName,
-                product_link: productLink,
-                user_id: userId,
-            }),
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to add to wishlist');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error adding to wishlist:", error);
-        throw error;
+// Fetch all templates
+export async function fetchTemplates() {
+  try {
+    const response = await fetch(`${API_URL}/templates/`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch templates');
     }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    throw error;
+  }
 }
 
-// Get user's wishlist
-export async function getWishlist(userId = 1) {
-    try {
-        const response = await fetch(`${API_URL}/wishlist/?user_id=${userId}`);
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to get wishlist');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error getting wishlist:", error);
-        throw error;
+// Fetch a single template by ID
+export async function fetchTemplateById(id) {
+  try {
+    const response = await fetch(`${API_URL}/templates/${id}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch template');
     }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    throw error;
+  }
 }
 
-// Remove item from wishlist
-export async function removeFromWishlist(wishlistId) {
-    try {
-        const response = await fetch(`${API_URL}/wishlist/${wishlistId}`, {
-            method: "DELETE",
-        });
-        
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.detail || 'Failed to remove from wishlist');
-        }
-        
-        return response.json();
-    } catch (error) {
-        console.error("Error removing from wishlist:", error);
-        throw error;
+// Create a new template
+export async function createTemplate(templateData) {
+  try {
+    const response = await fetch(`${API_URL}/templates/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templateData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to create template');
     }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error creating template:", error);
+    throw error;
+  }
+}
+
+// Update a template
+export async function updateTemplate(id, templateData) {
+  try {
+    const response = await fetch(`${API_URL}/templates/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templateData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to update template');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error updating template:", error);
+    throw error;
+  }
+}
+
+// Delete a template
+export async function deleteTemplate(id) {
+  try {
+    const response = await fetch(`${API_URL}/templates/${id}`, {
+      method: "DELETE",
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to delete template');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error deleting template:", error);
+    throw error;
+  }
+}
+
+// Import a template
+export async function importTemplate(formData) {
+  try {
+    const response = await fetch(`${API_URL}/templates/import`, {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to import template');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error importing template:", error);
+    throw error;
+  }
+}
+
+// Test a template against an invoice
+export async function testTemplate(templateId, invoiceId) {
+  try {
+    const response = await fetch(`${API_URL}/templates/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        template_id: templateId,
+        invoice_id: invoiceId
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to test template');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error testing template:", error);
+    throw error;
+  }
 }
