@@ -116,56 +116,65 @@ export default function InvoiceExtractor() {
   };
   
   // Updated handleUpload function in InvoiceExtractor.js
+  const [useTemplates, setUseTemplates] = useState(true);
 
-const handleUpload = async () => {
-  if (!file) {
-      alert("Please select a file to upload.");
-      return;
-  }
-  
-  try {
-      setIsUploading(true);
-      
-      const formData = new FormData();
-      formData.append("file", file);
-      
-      // Log for debugging
-      console.log("Uploading file:", file.name);
-      
-      const result = await uploadInvoice(formData);
-      
-      console.log("Upload result:", result);
-      
-      // Reset file state
-      setFile(null);
-      
-      // Reset file input element safely
-      const fileInput = document.getElementById('fileInput');
-      if (fileInput) {
-          // Create a new file input element to replace the current one
-          // This is the safest way to reset a file input
-          const newFileInput = document.createElement('input');
-          newFileInput.type = 'file';
-          newFileInput.id = 'fileInput';
-          newFileInput.className = fileInput.className;
-          newFileInput.accept = fileInput.accept;
-          newFileInput.addEventListener('change', handleFileSelect);
-          
-          // Replace the old input with the new one
-          fileInput.parentNode.replaceChild(newFileInput, fileInput);
-      }
-      
-      // Fetch all data to refresh the list
-      await fetchAllData();
-      
-      setIsUploading(false);
-      alert("File uploaded successfully!");
-  } catch (error) {
-      console.error("Error uploading file:", error);
-      setIsUploading(false);
-      alert(`Error uploading file: ${error.message || "Please try again."}`);
-  }
-};
+  // Update the handleUpload function
+  const handleUpload = async () => {
+    if (!file) {
+        alert("Please select a file to upload.");
+        return;
+    }
+    
+    try {
+        setIsUploading(true);
+        
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("use_templates", useTemplates);
+        
+        // Log for debugging
+        console.log("Uploading file:", file.name);
+        console.log("Use templates:", useTemplates);
+        
+        const result = await uploadInvoice(formData);
+        
+        console.log("Upload result:", result);
+        
+        // Reset file state
+        setFile(null);
+        
+        // Reset file input element safely
+        const fileInput = document.getElementById('fileInput');
+        if (fileInput) {
+            // Create a new file input element to replace the current one
+            // This is the safest way to reset a file input
+            const newFileInput = document.createElement('input');
+            newFileInput.type = 'file';
+            newFileInput.id = 'fileInput';
+            newFileInput.className = fileInput.className;
+            newFileInput.accept = fileInput.accept;
+            newFileInput.addEventListener('change', handleFileSelect);
+            
+            // Replace the old input with the new one
+            fileInput.parentNode.replaceChild(newFileInput, fileInput);
+        }
+        
+        // Fetch all data to refresh the list
+        await fetchAllData();
+        
+        setIsUploading(false);
+        
+        if (result.template_used) {
+          alert(`File uploaded successfully! Used template: ${result.template_used}`);
+        } else {
+          alert("File uploaded successfully!");
+        }
+    } catch (error) {
+        console.error("Error uploading file:", error);
+        setIsUploading(false);
+        alert(`Error uploading file: ${error.message || "Please try again."}`);
+    }
+  };
 
 // Make sure your file input has the correct ID
 // <Form.Control 
@@ -334,11 +343,26 @@ const handleUpload = async () => {
               <Form.Group className="mb-3">
                 <Form.Label>Select PDF File</Form.Label>
                 <Form.Control 
+                  id="fileInput"
                   type="file" 
-                  accept=".pdf"
+                  accept=".pdf,.png,.jpg,.jpeg"
                   onChange={handleFileSelect}
                 />
               </Form.Group>
+              {/* Add template toggle option */}
+              <Form.Group className="mb-3">
+                <Form.Check 
+                  type="checkbox"
+                  id="use-templates"
+                  label="Use OCR Templates for extraction"
+                  checked={useTemplates}
+                  onChange={(e) => setUseTemplates(e.target.checked)}
+                />
+                <Form.Text className="text-muted">
+                  Automatically match this invoice to available templates for better data extraction
+                </Form.Text>
+              </Form.Group>
+              
               <Button 
                 variant="primary" 
                 onClick={handleUpload} 

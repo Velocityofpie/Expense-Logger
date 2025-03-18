@@ -159,8 +159,11 @@ export default function OcrExtractor() {
       }
       
       const data = await response.json();
+      
+      // Store both raw and potentially formatted versions
+      setRawOcrData(data.text); 
       setExtractedText(data.text);
-      setRawOcrData(data.text); // Store raw data as well
+      
       setSuccess("Text extracted successfully!");
       
     } catch (error) {
@@ -173,36 +176,46 @@ export default function OcrExtractor() {
 
   // Download extracted text as a TXT file
   const downloadText = (raw = false) => {
-    if (!extractedText) {
+    if (!extractedText && !rawOcrData) {
       setError("No text to download.");
       return;
     }
     
-    const textToDownload = raw ? rawOcrData : extractedText;
+    // Choose which text to download based on parameter
+    const textToDownload = raw ? rawOcrData : getDisplayText();
     const fileNameSuffix = raw ? "_raw" : "_formatted";
     
-    const blob = new Blob([textToDownload], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${file.name.replace(".pdf", "")}${fileNameSuffix}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    
-    setSuccess(`Text downloaded successfully as ${a.download}!`);
-    setShowDownloadOptions(false);
+    try {
+      const blob = new Blob([textToDownload], { type: "text/plain" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${file.name.replace(".pdf", "")}${fileNameSuffix}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+      
+      setSuccess(`Text downloaded successfully as ${a.download}!`);
+      setShowDownloadOptions(false);
+    } catch (error) {
+      console.error("Download error:", error);
+      setError(`Failed to download text: ${error.message}`);
+    }
   };
 
   // Copy text to clipboard
   const copyToClipboard = () => {
-    if (!extractedText) {
+    if (!extractedText && !rawOcrData) {
       setError("No text to copy.");
       return;
     }
     
-    const textToCopy = viewMode === "raw" ? rawOcrData : extractedText;
+    const textToCopy = viewMode === "raw" ? rawOcrData : getDisplayText();
     
     navigator.clipboard.writeText(textToCopy)
       .then(() => setSuccess("Text copied to clipboard!"))
@@ -217,9 +230,28 @@ export default function OcrExtractor() {
 
   // Format the OCR text to make it more readable
   const formatOcrText = (text) => {
-    // This is where you could add more sophisticated formatting
-    // For now, just return the raw text
-    return text;
+    if (!text) return "";
+    
+    // Basic formatting to improve readability:
+    
+    // 1. Remove excessive empty lines (more than 2 consecutive)
+    let formatted = text.replace(/\n{3,}/g, "\n\n");
+    
+    // 2. Remove excessive spaces (more than 2 consecutive)
+    formatted = formatted.replace(/ {3,}/g, "  ");
+    
+    // 3. Clean up OCR page markers
+    formatted = formatted.replace(/----- Page \d+ -----/g, "\n\n--- New Page ---\n\n");
+    
+    // 4. Make paragraph breaks more visible
+    formatted = formatted.replace(/([.!?])\s*\n/g, "$1\n\n");
+    
+    // 5. Fix common OCR issues like 'l' instead of '1', etc.
+    formatted = formatted
+      .replace(/(\d)l(\d)/g, "$11$2")  // Replace digit-l-digit with digit-1-digit
+      .replace(/(\w)'(\w)/g, "$1'$2"); // Fix curly apostrophes
+      
+    return formatted;
   };
 
   // Get the text to display based on the view mode
@@ -470,7 +502,7 @@ export default function OcrExtractor() {
         </Card.Body>
       </Card>
       
-      {extractedText && (
+      {(extractedText || rawOcrData) && (
         <Card className="shadow-sm mb-4">
           <Card.Header className="bg-light py-3">
             <div className="d-flex justify-content-between align-items-center flex-wrap">

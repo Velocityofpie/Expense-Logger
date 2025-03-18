@@ -2,6 +2,7 @@
 import React, { useState } from "react";
 import { Tab, Nav, Card } from "react-bootstrap";
 import OcrExtractor from "../components/OcrExtractor";
+import TemplateManager from "../components/TemplateManager"; // Import the new component
 import "../styles/ocr-tool.css"; // Import the custom styles
 
 export default function Tools() {
@@ -28,6 +29,18 @@ export default function Tools() {
                     PDF OCR Extraction
                   </Nav.Link>
                 </Nav.Item>
+                <Nav.Item>
+                  <Nav.Link 
+                    eventKey="templates" 
+                    className="d-flex align-items-center"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-file-earmark-text me-2" viewBox="0 0 16 16">
+                      <path d="M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2zM9.5 3A1.5 1.5 0 0 0 11 4.5h2V9H3V2a1 1 0 0 1 1-1h5.5v2z"/>
+                      <path d="M3 12h10v2H3v-2z"/>
+                    </svg>
+                    OCR Templates
+                  </Nav.Link>
+                </Nav.Item>
                 {/* You can add more tool tabs here in the future */}
               </Nav>
             </div>
@@ -35,6 +48,9 @@ export default function Tools() {
             <Tab.Content>
               <Tab.Pane eventKey="ocr" className="p-4">
                 <OcrExtractor />
+              </Tab.Pane>
+              <Tab.Pane eventKey="templates" className="p-4">
+                <TemplateManager />
               </Tab.Pane>
             </Tab.Content>
           </Tab.Container>
