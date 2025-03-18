@@ -183,7 +183,7 @@ def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     extracted_text = extract_text_from_file(file_path)
     
     # Import here to avoid circular imports
-    from models.template import InvoiceTemplate
+    from backend.models.template import InvoiceTemplate
     
     # Get all active templates
     templates = db.query(InvoiceTemplate).filter(InvoiceTemplate.is_active == True).all()

@@ -1,7 +1,7 @@
 # backend/routers/templates.py
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks
-from fastapi.responses import FileResponse
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks, Form, Body
+from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy.orm import Session
 import os
 import json
@@ -17,7 +17,7 @@ from schemas.template import (
     TemplateTestRequest,
     TemplateTestResponse
 )
-from services.template import process_with_template
+from backend.services.template import process_with_template
 
 router = APIRouter(
     prefix="/templates",
@@ -186,8 +186,8 @@ async def import_template(
 @router.get("/{template_id}/export")
 async def export_template(
     template_id: int, 
-    db: Session = Depends(get_db),
-    background_tasks: BackgroundTasks
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
 ):
     """Export a template as a JSON file."""
     template = db.query(InvoiceTemplate).filter(InvoiceTemplate.template_id == template_id).first()

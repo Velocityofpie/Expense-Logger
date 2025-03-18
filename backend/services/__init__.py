@@ -1,5 +1,5 @@
 # backend/services/__init__.py
-from services.template import (
+from backend.services.template import (
     find_matching_template,
     match_template_to_text,
     process_with_template,

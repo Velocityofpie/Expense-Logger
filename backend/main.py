@@ -22,7 +22,7 @@ from routers.payments import router as payments_router
 from routers.wishlist import router as wishlist_router
 
 # Import services
-from services.template import find_matching_template, process_with_template, update_invoice_with_extracted_data
+from backend.services.template import find_matching_template, process_with_template, update_invoice_with_extracted_data
 from services.ocr import extract_text_from_file, OcrOptions, process_pdf_with_ocr, get_available_languages
 
 # Import utilities

@@ -4,6 +4,16 @@ import tempfile
 import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
+from typing import List, Dict, Optional, Union
+
+class OcrOptions:
+    """Options for OCR processing."""
+    def __init__(self, language="eng", dpi=300, preprocess=False, page_range=None):
+        self.language = language
+        self.dpi = dpi
+        self.preprocess = preprocess
+        self.page_range = page_range
+
 
 def extract_text_from_file(file_path: str) -> str:
     """Extract text content from a file (PDF or image)."""
@@ -50,15 +60,6 @@ def extract_text_from_image(image_path: str) -> str:
     
     # Extract text using OCR
     return pytesseract.image_to_string(image)
-
-
-class OcrOptions:
-    """Options for OCR processing."""
-    def __init__(self, language="eng", dpi=300, preprocess=False, page_range=None):
-        self.language = language
-        self.dpi = dpi
-        self.preprocess = preprocess
-        self.page_range = page_range
 
 
 def process_pdf_with_ocr(pdf_path: str, options: OcrOptions) -> str:
@@ -118,7 +119,7 @@ def preprocess_image(image):
     return gray
 
 
-def get_available_languages():
+def get_available_languages() -> List[Dict[str, str]]:
     """Get list of available OCR languages."""
     try:
         # This tries to get all available languages in Tesseract
