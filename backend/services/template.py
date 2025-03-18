@@ -1,60 +1,11 @@
-# backend/template_processor.py
-import os
+# backend/services/template.py
 import re
-import json
-import tempfile
-from typing import Dict, List, Optional, Union, Any
+from typing import Dict, Optional, Any
+from sqlalchemy.orm import Session
 from datetime import datetime
-from PIL import Image
-import pytesseract
-from pdf2image import convert_from_path
 
-def extract_text_from_file(file_path: str) -> str:
-    """Extract text content from a file (PDF or image)."""
-    try:
-        # Check if it's a PDF
-        if file_path.lower().endswith('.pdf'):
-            return extract_text_from_pdf(file_path)
-        # Check if it's an image
-        elif file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
-            return extract_text_from_image(file_path)
-        else:
-            return ""
-    except Exception as e:
-        print(f"Error extracting text: {e}")
-        return ""
-
-
-def extract_text_from_pdf(pdf_path: str) -> str:
-    """Extract text from a PDF file using OCR."""
-    # Create a temporary directory for extracted images
-    with tempfile.TemporaryDirectory() as temp_dir:
-        text = ""
-        
-        # Convert PDF pages to images
-        images = convert_from_path(pdf_path)
-        
-        # Process each page
-        for i, image in enumerate(images):
-            # Save image to temp file
-            image_path = os.path.join(temp_dir, f'page_{i}.png')
-            image.save(image_path, 'PNG')
-            
-            # Extract text using OCR
-            page_text = pytesseract.image_to_string(Image.open(image_path))
-            text += f"\n\n----- Page {i+1} -----\n\n{page_text}"
-        
-        return text
-
-
-def extract_text_from_image(image_path: str) -> str:
-    """Extract text from an image file using OCR."""
-    # Open the image
-    image = Image.open(image_path)
-    
-    # Extract text using OCR
-    return pytesseract.image_to_string(image)
-
+from services.ocr import extract_text_from_file
+from utils.helpers import parse_date
 
 def match_template_to_text(template_data: Dict, text: str) -> float:
     """Calculate how well a template matches the extracted text."""
@@ -137,7 +88,7 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
     }
 
 
-def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db):
+def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Session):
     """Update an invoice with data extracted using a template."""
     # Map extracted fields to invoice fields
     field_mapping = {
@@ -194,8 +145,8 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db):
     
     # Handle item details if available
     if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
-        # First, we'll clear existing items if we have item data
-        from main import InvoiceItem
+        # Import here to avoid circular imports
+        from models.invoice import InvoiceItem
         
         # Create new invoice items
         for item_data in extracted_data["item_details"]:
@@ -212,27 +163,27 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db):
     
     # Extract and set tags/categories if available
     if "tags" in extracted_data and isinstance(extracted_data["tags"], list):
-        from main import get_or_create_tag
+        from utils.helpers import get_or_create_tag
         
         for tag_name in extracted_data["tags"]:
             tag = get_or_create_tag(db, tag_name)
             invoice.tags.append(tag)
     
     if "categories" in extracted_data and isinstance(extracted_data["categories"], list):
-        from main import get_or_create_category
+        from utils.helpers import get_or_create_category
         
         for category_name in extracted_data["categories"]:
             category = get_or_create_category(db, category_name)
             invoice.categories.append(category)
 
 
-def find_matching_template(file_path: str, db) -> Optional[Any]:
+def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     """Find the best matching template for a document."""
     # Extract text from the file
     extracted_text = extract_text_from_file(file_path)
     
     # Import here to avoid circular imports
-    from main import InvoiceTemplate
+    from models.template import InvoiceTemplate
     
     # Get all active templates
     templates = db.query(InvoiceTemplate).filter(InvoiceTemplate.is_active == True).all()
