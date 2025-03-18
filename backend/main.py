@@ -1,10 +1,12 @@
 # backend/main.py
 import os
 from pathlib import Path
+from typing import Optional
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
+import tempfile
 
 # Import database
 from database import get_db, engine, Base
@@ -13,7 +15,11 @@ from database import get_db, engine, Base
 from models import *
 
 # Import routers
-from routers import invoices_router, templates_router, users_router, payments_router, wishlist_router
+from routers.invoice import router as invoices_router
+from routers.templates import router as templates_router
+from routers.users import router as users_router
+from routers.payments import router as payments_router
+from routers.wishlist import router as wishlist_router
 
 # Import services
 from services.template import find_matching_template, process_with_template, update_invoice_with_extracted_data
@@ -41,9 +47,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Create tables
-Base.metadata.create_all(bind=engine)
 
 # Include routers
 app.include_router(invoices_router)
@@ -217,6 +220,33 @@ async def get_ocr_languages():
         return {"languages": languages}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get languages: {str(e)}")
+
+
+# Create tables on startup
+@app.on_event("startup")
+async def startup_event():
+    # Create all tables in the database
+    Base.metadata.create_all(bind=engine)
+    
+    # Ensure default user exists
+    db = next(get_db())
+    try:
+        user = db.query(User).filter(User.user_id == 1).first()
+        if not user:
+            default_user = User(
+                user_id=1,
+                username="default",
+                password_hash="defaultpasswordhash",
+                email="default@example.com"
+            )
+            db.add(default_user)
+            db.commit()
+            print("Created default user")
+    except Exception as e:
+        db.rollback()
+        print(f"Error ensuring default user: {e}")
+    finally:
+        db.close()
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 # backend/routers/__init__.py
-from routers.invoice import router as invoices_router  # Change "invoices" to "invoice"
+from routers.invoice import router as invoices_router
 from routers.templates import router as templates_router
 from routers.users import router as users_router
 from routers.payments import router as payments_router

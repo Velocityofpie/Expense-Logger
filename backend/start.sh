@@ -8,42 +8,26 @@ done
 
 >&2 echo "Postgres is up - starting application"
 
-# Create tables if they don't exist
-python -c "from main import Base, engine; Base.metadata.create_all(engine)"
+# Create database schema if it doesn't exist
+PGPASSWORD=$DB_PASSWORD psql -h $DB_HOST -U $DB_USER -d $DB_NAME -c "
+CREATE TABLE IF NOT EXISTS users (
+    user_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN DEFAULT FALSE
+);
 
-# Create a default user if it doesn't exist
-python -c "
-from sqlalchemy import create_engine, text
-from sqlalchemy.orm import sessionmaker
-import os
-from datetime import datetime
-
-DB_HOST = os.environ.get('DB_HOST', 'postgres_db')
-DB_NAME = os.environ.get('DB_NAME', 'expense_logger')
-DB_USER = os.environ.get('DB_USER', 'postgres')
-DB_PASSWORD = os.environ.get('DB_PASSWORD', 'secret')
-
-DATABASE_URL = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}/{DB_NAME}'
-engine = create_engine(DATABASE_URL)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-db = SessionLocal()
-
-# Check if default user exists
-result = db.execute(text('SELECT count(*) FROM users WHERE user_id = 1')).scalar()
-
-if result == 0:
-    # Add default user
-    db.execute(text(\"\"\"
-        INSERT INTO users (user_id, username, password_hash, email, created_at, is_deleted) 
-        VALUES (1, 'default', 'defaultpasswordhash', 'default@example.com', :created_at, false)
-    \"\"\"), {'created_at': datetime.utcnow()})
-    db.commit()
-    print('Default user created')
-else:
-    print('Default user already exists')
-
-db.close()
+-- Create default user if not exists
+INSERT INTO users (user_id, username, password_hash, email, is_deleted)
+SELECT 1, 'default', 'defaultpasswordhash', 'default@example.com', false
+WHERE NOT EXISTS (SELECT 1 FROM users WHERE user_id = 1);
 "
+
+# Now let SQLAlchemy create the rest of the tables
+python -c "from main import Base, engine; Base.metadata.create_all(engine)"
 
 # Start application
 uvicorn main:app --host 0.0.0.0 --port 8000 --reload
