@@ -25,6 +25,7 @@ Overall Tasks
 - [ ] Email scrapping for online order?
 - [ ] Add ability to run ORC Template on invoices after being imported. Allow this in view->details
 - [ ] When running ORC Template test show which fields did not pass.
+- [ ] write a tool that will take OCR-template and know completed pdf entries and make a better one
 
 - [ ] Adding emails templates to parse out the information like the ocr templates
 - [ ] Add template support for ignore/filter such as don't accept this pdf if the card don’t match on the list or the address 
