@@ -24,6 +24,7 @@ Overall Tasks
 - [ ] Allow user to set auto approval or informed approval for auto uploads
 - [ ] Email scrapping for online order?
 - [ ] Add ability to run ORC Template on invoices after being imported. Allow this in view->details
+- [ ] When running ORC Template test show which fields did not pass.
 
 - [ ] Adding emails templates to parse out the information like the ocr templates
 - [ ] Add template support for ignore/filter such as don't accept this pdf if the card don’t match on the list or the address 
