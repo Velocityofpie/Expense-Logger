@@ -36,3 +36,16 @@ Login Page
 
 Things to fix
 - [ ] Changing "Status" on entries re-orders the entries 
+
+- [ ] yearly reports of expenses zip/tar file , also maybe a notifraction of when the yearly report is ready
+- [ ] chose which year,month,all output
+- [ ] for all output chose betweeen year-category or category-year, category
+- [ ] allow for attatch documents to line items 
+- [ ] line items comments?
+- [ ] line items cucurrency change and allow to put the converted rate  
+- [ ] line items Consumables check mark autoamatically off
+
+- [ ] custom themes 
+
+
+
