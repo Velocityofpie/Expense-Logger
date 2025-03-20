@@ -1,5 +1,6 @@
+// frontend/src/pages/InvoiceExtractor.js
 import React, { useState, useEffect } from "react";
-import { Button, Table, Form, Card, Row, Col, Badge, InputGroup, Dropdown } from "react-bootstrap";
+import { Button, Table, Form, Card, Row, Col, Badge, InputGroup, Dropdown, Collapse, Modal } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { fetchInvoices, uploadInvoice, addInvoiceEntry, deleteInvoice, fetchTags, fetchCategories } from "../api";
 
@@ -17,14 +18,17 @@ export default function InvoiceExtractor() {
   const [isLoading, setIsLoading] = useState(true);
   
   // State for file upload
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  const [useTemplates, setUseTemplates] = useState(true);
+  const [showManualEntry, setShowManualEntry] = useState(false);
   
   // State for adding a new invoice (no PDF)
   const [newInvoice, setNewInvoice] = useState({
     order_number: "",
     purchase_date: "",
-    file_name: "", // Merchant name in the context of the UI
+    file_name: "", 
+    merchant_name: "", // Separate merchant name field
     payment_method: "",
     grand_total: "",
     status: "Open",
@@ -47,6 +51,14 @@ export default function InvoiceExtractor() {
   // State for available tags and categories
   const [availableTags, setAvailableTags] = useState([]);
   const [availableCategories, setAvailableCategories] = useState([]);
+  
+  // State for new category/tag modal
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [showNewTagModal, setShowNewTagModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [newTagName, setNewTagName] = useState("");
+  const [categoryError, setCategoryError] = useState("");
+  const [tagError, setTagError] = useState("");
   
   // Fetch data on component mount
   useEffect(() => {
@@ -99,6 +111,7 @@ export default function InvoiceExtractor() {
       const searchMatch = !searchTerm || 
         (invoice.order_number && invoice.order_number.toLowerCase().includes(search)) ||
         (invoice.file_name && invoice.file_name.toLowerCase().includes(search)) ||
+        (invoice.merchant_name && invoice.merchant_name.toLowerCase().includes(search)) ||
         (invoice.notes && invoice.notes.toLowerCase().includes(search)) ||
         (invoice.payment_method && invoice.payment_method.toLowerCase().includes(search));
       
@@ -108,89 +121,80 @@ export default function InvoiceExtractor() {
     setFilteredInvoices(filtered);
   };
   
-  // Handle file selection
+  // Handle file selection with multiple file support
   const handleFileSelect = (e) => {
     if (e.target.files.length > 0) {
-      setFile(e.target.files[0]);
+      const newFiles = Array.from(e.target.files);
+      setFiles(prevFiles => [...prevFiles, ...newFiles]);
     }
   };
   
-  // Updated handleUpload function in InvoiceExtractor.js
-  const [useTemplates, setUseTemplates] = useState(true);
-
-  // Update the handleUpload function
+  // Remove a file from the selected files
+  const removeFile = (index) => {
+    setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  };
+  
+  // Handle file upload
   const handleUpload = async () => {
-    if (!file) {
-        alert("Please select a file to upload.");
-        return;
+    if (files.length === 0) {
+      alert("Please select files to upload.");
+      return;
     }
     
     try {
-        setIsUploading(true);
-        
+      setIsUploading(true);
+      
+      // Track upload results
+      const results = [];
+      
+      // Upload each file sequentially 
+      for (const file of files) {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("use_templates", useTemplates);
         
-        // Log for debugging
         console.log("Uploading file:", file.name);
         console.log("Use templates:", useTemplates);
         
-        const result = await uploadInvoice(formData);
-        
-        console.log("Upload result:", result);
-        
-        // Reset file state
-        setFile(null);
-        
-        // Reset file input element safely
-        const fileInput = document.getElementById('fileInput');
-        if (fileInput) {
-            // Create a new file input element to replace the current one
-            // This is the safest way to reset a file input
-            const newFileInput = document.createElement('input');
-            newFileInput.type = 'file';
-            newFileInput.id = 'fileInput';
-            newFileInput.className = fileInput.className;
-            newFileInput.accept = fileInput.accept;
-            newFileInput.addEventListener('change', handleFileSelect);
-            
-            // Replace the old input with the new one
-            fileInput.parentNode.replaceChild(newFileInput, fileInput);
+        try {
+          const result = await uploadInvoice(formData);
+          results.push({ fileName: file.name, success: true, result });
+        } catch (error) {
+          console.error(`Error uploading ${file.name}:`, error);
+          results.push({ fileName: file.name, success: false, error: error.message });
         }
-        
-        // Fetch all data to refresh the list
-        await fetchAllData();
-        
-        setIsUploading(false);
-        
-        if (result.template_used) {
-          alert(`File uploaded successfully! Used template: ${result.template_used}`);
-        } else {
-          alert("File uploaded successfully!");
-        }
+      }
+      
+      // Reset files state
+      setFiles([]);
+      
+      // Fetch all data to refresh the list
+      await fetchAllData();
+      
+      setIsUploading(false);
+      
+      // Show summary of upload results
+      const successCount = results.filter(r => r.success).length;
+      const failureCount = results.length - successCount;
+      
+      if (failureCount === 0) {
+        alert(`Successfully uploaded ${successCount} file(s)!`);
+      } else {
+        alert(`Uploaded ${successCount} file(s), failed to upload ${failureCount} file(s). Check console for details.`);
+      }
+      
     } catch (error) {
-        console.error("Error uploading file:", error);
-        setIsUploading(false);
-        alert(`Error uploading file: ${error.message || "Please try again."}`);
+      console.error("Error during upload process:", error);
+      setIsUploading(false);
+      alert(`Error during upload process: ${error.message || "Please try again."}`);
     }
   };
-
-// Make sure your file input has the correct ID
-// <Form.Control 
-//     id="fileInput"
-//     type="file" 
-//     accept=".pdf,.png,.jpg,.jpeg"
-//     onChange={handleFileSelect}
-// />
-
-// And update the file input element to include an id for resetting
-<Form.Control 
-    id="fileInput"
-    type="file" 
-    accept=".pdf,.png,.jpg,.jpeg"
-    onChange={handleFileSelect}
-/>
+  
+  // Toggle manual entry form
+  const toggleManualEntry = () => {
+    setShowManualEntry(!showManualEntry);
+  };
+  
   // Handle changes to new invoice fields
   const handleInvoiceChange = (e) => {
     const { name, value } = e.target;
@@ -216,6 +220,72 @@ export default function InvoiceExtractor() {
       ...newInvoice,
       categories: selectedOptions
     });
+  };
+  
+  // Add new category
+  const handleAddCategory = () => {
+    // Reset any previous errors
+    setCategoryError("");
+    
+    // Validate the new category name
+    if (!newCategoryName.trim()) {
+      setCategoryError("Category name cannot be empty");
+      return;
+    }
+    
+    // Check for duplicates
+    if (availableCategories.includes(newCategoryName.trim())) {
+      setCategoryError("This category already exists");
+      return;
+    }
+    
+    // In a real app, this would make an API call
+    // Here we'll just update the state directly
+    const updatedCategories = [...availableCategories, newCategoryName.trim()];
+    setAvailableCategories(updatedCategories);
+    
+    // Auto-select the new category
+    setNewInvoice({
+      ...newInvoice,
+      categories: [...newInvoice.categories, newCategoryName.trim()]
+    });
+    
+    // Reset and close modal
+    setNewCategoryName("");
+    setShowNewCategoryModal(false);
+  };
+  
+  // Add new tag
+  const handleAddTag = () => {
+    // Reset any previous errors
+    setTagError("");
+    
+    // Validate the new tag name
+    if (!newTagName.trim()) {
+      setTagError("Tag name cannot be empty");
+      return;
+    }
+    
+    // Check for duplicates
+    if (availableTags.includes(newTagName.trim())) {
+      setTagError("This tag already exists");
+      return;
+    }
+    
+    // In a real app, this would make an API call
+    // Here we'll just update the state directly
+    const updatedTags = [...availableTags, newTagName.trim()];
+    setAvailableTags(updatedTags);
+    
+    // Auto-select the new tag
+    setNewInvoice({
+      ...newInvoice,
+      tags: [...newInvoice.tags, newTagName.trim()]
+    });
+    
+    // Reset and close modal
+    setNewTagName("");
+    setShowNewTagModal(false);
   };
   
   // Add a new line item to the new invoice
@@ -247,7 +317,7 @@ export default function InvoiceExtractor() {
   // Submit a new invoice entry (no file)
   const handleSubmitInvoice = async () => {
     // Validation
-    if (!newInvoice.file_name) {
+    if (!newInvoice.merchant_name) {
       alert("Please enter a merchant name.");
       return;
     }
@@ -261,6 +331,8 @@ export default function InvoiceExtractor() {
       // Prepare data
       const invoiceData = {
         ...newInvoice,
+        // Use merchant_name for file_name if no specific file_name is provided
+        file_name: newInvoice.merchant_name,
         grand_total: parseFloat(newInvoice.grand_total),
         items: newItems
       };
@@ -272,6 +344,7 @@ export default function InvoiceExtractor() {
         order_number: "",
         purchase_date: "",
         file_name: "",
+        merchant_name: "",
         payment_method: "",
         grand_total: "",
         status: "Open",
@@ -299,8 +372,17 @@ export default function InvoiceExtractor() {
   };
   
   // View invoice details
-  const viewInvoice = (invoice) => {
+  const viewInvoiceDetails = (invoice) => {
     navigate(`/invoice/${invoice.invoice_id}`);
+  };
+  
+  // View invoice document/PDF
+  const viewInvoiceDocument = (invoice) => {
+    if (invoice.file_name) {
+      window.open(`${API_URL}/uploads/${encodeURIComponent(invoice.file_name)}`, '_blank');
+    } else {
+      alert("No document available for this invoice.");
+    }
   };
   
   // Delete an invoice
@@ -329,27 +411,60 @@ export default function InvoiceExtractor() {
   };
 
   return (
-    <div className="container-fluid p-4">
+    <div className="container-fluid p-2">
       <h1 className="mb-4">Invoice Management</h1>
       
-      <Row className="mb-5">
-        {/* File Upload Section */}
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h4>Upload Invoice PDF</h4>
-            </Card.Header>
-            <Card.Body>
+      <Card className="mb-3">
+        <Card.Header>
+          <div className="d-flex justify-content-between align-items-center">
+            <h4>Upload Invoice Files</h4>
+            <Button 
+              variant={showManualEntry ? "secondary" : "primary"}
+              onClick={toggleManualEntry}
+            >
+              {showManualEntry ? "Hide Manual Entry" : "Add Invoice Manually"}
+            </Button>
+          </div>
+        </Card.Header>
+        <Card.Body className="p-2">
+          <Row>
+            <Col md={showManualEntry ? 6 : 12}>
               <Form.Group className="mb-3">
-                <Form.Label>Select PDF File</Form.Label>
+                <Form.Label>Select PDF or Image Files</Form.Label>
                 <Form.Control 
                   id="fileInput"
                   type="file" 
                   accept=".pdf,.png,.jpg,.jpeg"
                   onChange={handleFileSelect}
+                  multiple
                 />
+                <Form.Text className="text-muted">
+                  You can select multiple files to upload at once
+                </Form.Text>
               </Form.Group>
-              {/* Add template toggle option */}
+            
+              {/* File list with remove buttons */}
+              {files.length > 0 && (
+                <div className="mb-3">
+                  <h6>Selected Files:</h6>
+                  <ul className="list-group">
+                    {files.map((file, index) => (
+                      <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
+                        <span className="text-truncate" style={{ maxWidth: '80%' }}>{file.name}</span>
+                        <Button 
+                          variant="outline-danger" 
+                          size="sm"
+                          onClick={() => removeFile(index)}
+                        >
+                          Remove
+                        </Button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            
+              {/* Template toggle option */}
               <Form.Group className="mb-3">
                 <Form.Check 
                   type="checkbox"
@@ -359,260 +474,281 @@ export default function InvoiceExtractor() {
                   onChange={(e) => setUseTemplates(e.target.checked)}
                 />
                 <Form.Text className="text-muted">
-                  Automatically match this invoice to available templates for better data extraction
+                  Automatically match invoices to available templates for better data extraction
                 </Form.Text>
               </Form.Group>
-              
+            
               <Button 
                 variant="primary" 
                 onClick={handleUpload} 
-                disabled={!file || isUploading}
+                disabled={files.length === 0 || isUploading}
+                className="w-100"
               >
-                {isUploading ? "Uploading..." : "Upload Invoice"}
+                {isUploading ? "Uploading..." : `Upload ${files.length} File${files.length !== 1 ? 's' : ''}`}
               </Button>
-            </Card.Body>
-          </Card>
-        </Col>
-        
-        {/* Add Invoice Section (No PDF) */}
-        <Col md={6}>
-          <Card>
-            <Card.Header>
-              <h4>Add Invoice (No PDF)</h4>
-            </Card.Header>
-            <Card.Body>
-              <Form>
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Merchant</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="file_name"
-                        value={newInvoice.file_name}
-                        onChange={handleInvoiceChange}
-                        placeholder="Enter merchant name"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Order Number</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="order_number"
-                        value={newInvoice.order_number}
-                        onChange={handleInvoiceChange}
-                        placeholder="Enter order number"
-                      />
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Purchase Date</Form.Label>
-                      <Form.Control
-                        type="date"
-                        name="purchase_date"
-                        value={newInvoice.purchase_date}
-                        onChange={handleInvoiceChange}
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Amount</Form.Label>
-                      <InputGroup>
-                        <InputGroup.Text>$</InputGroup.Text>
-                        <Form.Control
-                          type="number"
-                          step="0.01"
-                          name="grand_total"
-                          value={newInvoice.grand_total}
-                          onChange={handleInvoiceChange}
-                          placeholder="0.00"
-                        />
-                      </InputGroup>
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Payment Method</Form.Label>
-                      <Form.Control
-                        type="text"
-                        name="payment_method"
-                        value={newInvoice.payment_method}
-                        onChange={handleInvoiceChange}
-                        placeholder="Enter payment method"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Status</Form.Label>
-                      <Form.Select
-                        name="status"
-                        value={newInvoice.status}
-                        onChange={handleInvoiceChange}
-                      >
-                        {VALID_STATUSES.map(status => (
-                          <option key={status} value={status}>{status}</option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Row>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Tags</Form.Label>
-                      <Form.Select
-                        multiple
-                        name="tags"
-                        value={newInvoice.tags}
-                        onChange={handleTagsChange}
-                        style={{ height: "100px" }}
-                      >
-                        {availableTags.map(tag => (
-                          <option key={tag} value={tag}>{tag}</option>
-                        ))}
-                      </Form.Select>
-                      <Form.Text className="text-muted">
-                        Hold Ctrl/Cmd to select multiple
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Categories</Form.Label>
-                      <Form.Select
-                        multiple
-                        name="categories"
-                        value={newInvoice.categories}
-                        onChange={handleCategoriesChange}
-                        style={{ height: "100px" }}
-                      >
-                        {availableCategories.map(category => (
-                          <option key={category} value={category}>{category}</option>
-                        ))}
-                      </Form.Select>
-                      <Form.Text className="text-muted">
-                        Hold Ctrl/Cmd to select multiple
-                      </Form.Text>
-                    </Form.Group>
-                  </Col>
-                </Row>
-                
-                <Form.Group className="mb-3">
-                  <Form.Label>Notes</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    name="notes"
-                    value={newInvoice.notes}
-                    onChange={handleInvoiceChange}
-                    placeholder="Enter notes"
-                  />
-                </Form.Group>
-                
-                {/* Line Items */}
-                <h5 className="mt-4">Line Items</h5>
-                {newItems.length > 0 && (
-                  <Table striped bordered hover size="sm" className="mb-3">
-                    <thead>
-                      <tr>
-                        <th>Product</th>
-                        <th>Quantity</th>
-                        <th>Price</th>
-                        <th>Total</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {newItems.map((item, index) => (
-                        <tr key={index}>
-                          <td>
+            </Col>
+            
+            {/* Manual Invoice Entry (Collapsible) */}
+            {showManualEntry && (
+              <Col md={6}>
+                <Collapse in={showManualEntry}>
+                  <div>
+                    <h5 className="mb-3">Add Invoice (No PDF)</h5>
+                    <Form>
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Merchant Name</Form.Label>
                             <Form.Control
                               type="text"
-                              value={item.product_name}
-                              onChange={(e) => handleLineItemChange(index, "product_name", e.target.value)}
-                              size="sm"
-                              placeholder="Product name"
+                              name="merchant_name"
+                              value={newInvoice.merchant_name}
+                              onChange={handleInvoiceChange}
+                              placeholder="Enter merchant name"
                             />
-                          </td>
-                          <td>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Order Number</Form.Label>
                             <Form.Control
-                              type="number"
-                              min="1"
-                              value={item.quantity}
-                              onChange={(e) => handleLineItemChange(index, "quantity", parseInt(e.target.value))}
-                              size="sm"
+                              type="text"
+                              name="order_number"
+                              value={newInvoice.order_number}
+                              onChange={handleInvoiceChange}
+                              placeholder="Enter order number"
                             />
-                          </td>
-                          <td>
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Purchase Date</Form.Label>
                             <Form.Control
-                              type="number"
-                              step="0.01"
-                              value={item.unit_price}
-                              onChange={(e) => handleLineItemChange(index, "unit_price", parseFloat(e.target.value))}
-                              size="sm"
+                              type="date"
+                              name="purchase_date"
+                              value={newInvoice.purchase_date}
+                              onChange={handleInvoiceChange}
                             />
-                          </td>
-                          <td>
-                            {formatCurrency((item.quantity || 0) * (item.unit_price || 0))}
-                          </td>
-                          <td>
-                            <Button 
-                              variant="danger" 
-                              size="sm"
-                              onClick={() => removeLineItem(index)}
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Amount</Form.Label>
+                            <InputGroup>
+                              <InputGroup.Text>$</InputGroup.Text>
+                              <Form.Control
+                                type="number"
+                                step="0.01"
+                                name="grand_total"
+                                value={newInvoice.grand_total}
+                                onChange={handleInvoiceChange}
+                                placeholder="0.00"
+                              />
+                            </InputGroup>
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Payment Method</Form.Label>
+                            <Form.Control
+                              type="text"
+                              name="payment_method"
+                              value={newInvoice.payment_method}
+                              onChange={handleInvoiceChange}
+                              placeholder="Enter payment method"
+                            />
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label>Status</Form.Label>
+                            <Form.Select
+                              name="status"
+                              value={newInvoice.status}
+                              onChange={handleInvoiceChange}
                             >
-                              Remove
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </Table>
-                )}
-                
-                <Button 
-                  variant="outline-primary" 
-                  size="sm"
-                  onClick={addLineItem}
-                  className="mb-3"
-                >
-                  Add Line Item
-                </Button>
-                
-                <div className="d-grid">
-                  <Button 
-                    variant="success" 
-                    onClick={handleSubmitInvoice}
-                  >
-                    Add Invoice
-                  </Button>
-                </div>
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+                              {VALID_STATUSES.map(status => (
+                                <option key={status} value={status}>{status}</option>
+                              ))}
+                            </Form.Select>
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      
+                      <Row>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label className="d-flex justify-content-between">
+                              <span>Tags</span>
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="p-0 text-decoration-none" 
+                                onClick={() => setShowNewTagModal(true)}
+                              >
+                                + Add New
+                              </Button>
+                            </Form.Label>
+                            <Form.Select
+                              multiple
+                              name="tags"
+                              value={newInvoice.tags}
+                              onChange={handleTagsChange}
+                              style={{ height: "100px" }}
+                            >
+                              {availableTags.map(tag => (
+                                <option key={tag} value={tag}>{tag}</option>
+                              ))}
+                            </Form.Select>
+                            <Form.Text className="text-muted">
+                              Hold Ctrl/Cmd to select multiple
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                          <Form.Group className="mb-3">
+                            <Form.Label className="d-flex justify-content-between">
+                              <span>Categories</span>
+                              <Button 
+                                variant="link" 
+                                size="sm" 
+                                className="p-0 text-decoration-none" 
+                                onClick={() => setShowNewCategoryModal(true)}
+                              >
+                                + Add New
+                              </Button>
+                            </Form.Label>
+                            <Form.Select
+                              multiple
+                              name="categories"
+                              value={newInvoice.categories}
+                              onChange={handleCategoriesChange}
+                              style={{ height: "100px" }}
+                            >
+                              {availableCategories.map(category => (
+                                <option key={category} value={category}>{category}</option>
+                              ))}
+                            </Form.Select>
+                            <Form.Text className="text-muted">
+                              Hold Ctrl/Cmd to select multiple
+                            </Form.Text>
+                          </Form.Group>
+                        </Col>
+                      </Row>
+                      
+                      <Form.Group className="mb-3">
+                        <Form.Label>Notes</Form.Label>
+                        <Form.Control
+                          as="textarea"
+                          rows={3}
+                          name="notes"
+                          value={newInvoice.notes}
+                          onChange={handleInvoiceChange}
+                          placeholder="Enter notes"
+                        />
+                      </Form.Group>
+                      
+                      {/* Line Items */}
+                      <h6 className="mt-4">Line Items</h6>
+                      {newItems.length > 0 && (
+                        <Table striped bordered hover size="sm" className="mb-3">
+                          <thead>
+                            <tr>
+                              <th>Product</th>
+                              <th>Quantity</th>
+                              <th>Price</th>
+                              <th>Total</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {newItems.map((item, index) => (
+                              <tr key={index}>
+                                <td>
+                                  <Form.Control
+                                    type="text"
+                                    value={item.product_name}
+                                    onChange={(e) => handleLineItemChange(index, "product_name", e.target.value)}
+                                    size="sm"
+                                    placeholder="Product name"
+                                  />
+                                </td>
+                                <td>
+                                  <Form.Control
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={(e) => handleLineItemChange(index, "quantity", parseInt(e.target.value))}
+                                    size="sm"
+                                  />
+                                </td>
+                                <td>
+                                  <Form.Control
+                                    type="number"
+                                    step="0.01"
+                                    value={item.unit_price}
+                                    onChange={(e) => handleLineItemChange(index, "unit_price", parseFloat(e.target.value))}
+                                    size="sm"
+                                  />
+                                </td>
+                                <td>
+                                  {formatCurrency((item.quantity || 0) * (item.unit_price || 0))}
+                                </td>
+                                <td>
+                                  <Button 
+                                    variant="danger" 
+                                    size="sm"
+                                    onClick={() => removeLineItem(index)}
+                                  >
+                                    Remove
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </Table>
+                      )}
+                      
+                      <Button 
+                        variant="outline-primary" 
+                        size="sm"
+                        onClick={addLineItem}
+                        className="mb-3"
+                      >
+                        Add Line Item
+                      </Button>
+                      
+                      <div className="d-grid">
+                        <Button 
+                          variant="success" 
+                          onClick={handleSubmitInvoice}
+                        >
+                          Add Invoice
+                        </Button>
+                      </div>
+                    </Form>
+                  </div>
+                </Collapse>
+              </Col>
+            )}
+          </Row>
+        </Card.Body>
+      </Card>
       
       {/* Invoice List */}
-      <Card>
+      <Card className="mb-3">
         <Card.Header>
           <h4>Invoice List</h4>
         </Card.Header>
-        <Card.Body>
+        <Card.Body className="p-2">
           {/* Filter Controls */}
-          <Row className="mb-3">
+          <Row className="mb-3 g-2">
             <Col md={4}>
               <Form.Group>
                 <Form.Label>Search</Form.Label>
@@ -655,28 +791,39 @@ export default function InvoiceExtractor() {
           </Row>
           
           {isLoading ? (
-            <div className="text-center p-5">Loading invoices...</div>
+            <div className="text-center p-3">Loading invoices...</div>
           ) : (
-            <Table responsive striped hover>
-              <thead>
-                <tr>
-                  <th>Order #</th>
-                  <th>Date</th>
-                  <th>Merchant</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-                  <th>Payment Method</th>
-                  <th>Tags</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
+            <div className="table-responsive">
+              <Table responsive striped hover size="sm" className="small">
+                <thead>
+                  <tr>
+                    <th>Order #</th>
+                    <th style={{ width: "10%" }}>Date</th>
+                    <th style={{ width: "7%" }}>Merchant</th>
+                    <th style={{ width: "7%" }}>File Name</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                    <th>Categories</th>
+                    <th>Tags</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
               <tbody>
                 {filteredInvoices.length > 0 ? (
                   filteredInvoices.map(invoice => (
                     <tr key={invoice.invoice_id}>
                       <td>{invoice.order_number || "-"}</td>
-                      <td>{invoice.purchase_date || "-"}</td>
-                      <td>{invoice.file_name || "-"}</td>
+                      <td className="text-nowrap">{invoice.purchase_date || "-"}</td>
+                      <td>
+                        <div className="text-truncate" style={{ maxWidth: "100%" }}>
+                          {invoice.merchant_name || invoice.file_name || "-"}
+                        </div>
+                      </td>
+                      <td>{invoice.file_name ? (
+                        <span className="text-truncate d-inline-block" style={{ maxWidth: "100%" }}>
+                          {invoice.file_name.split('/').pop()}
+                        </span>
+                      ) : "-"}</td>
                       <td>{formatCurrency(invoice.grand_total)}</td>
                       <td>
                         <Badge 
@@ -690,14 +837,26 @@ export default function InvoiceExtractor() {
                           {invoice.status}
                         </Badge>
                       </td>
-                      <td>{invoice.payment_method || "-"}</td>
+                      <td>
+                        {invoice.categories && invoice.categories.length > 0 ? (
+                          invoice.categories.map((category, index) => (
+                            <Badge 
+                              key={index} 
+                              bg="secondary" 
+                              className="me-1 mb-1"
+                            >
+                              {category}
+                            </Badge>
+                          ))
+                        ) : "-"}
+                      </td>
                       <td>
                         {invoice.tags && invoice.tags.length > 0 ? (
                           invoice.tags.map((tag, index) => (
                             <Badge 
                               key={index} 
                               bg="info" 
-                              className="me-1"
+                              className="me-1 mb-1"
                             >
                               {tag}
                             </Badge>
@@ -705,36 +864,143 @@ export default function InvoiceExtractor() {
                         ) : "-"}
                       </td>
                       <td>
-                        <Button
-                          variant="outline-primary"
-                          size="sm"
-                          className="me-1"
-                          onClick={() => viewInvoice(invoice)}
-                        >
-                          View
-                        </Button>
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
-                          onClick={() => handleDeleteInvoice(invoice)}
-                        >
-                          Delete
-                        </Button>
+                        <div className="d-flex flex-nowrap">
+                          {invoice.file_name && (
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              className="me-1 py-0 px-1"
+                              onClick={() => viewInvoiceDocument(invoice)}
+                              title="View Document"
+                            >
+                              View
+                            </Button>
+                          )}
+                          <Button
+                            variant="outline-primary"
+                            size="sm"
+                            className="me-1 py-0 px-1"
+                            onClick={() => viewInvoiceDetails(invoice)}
+                            title="Edit Invoice"
+                          >
+                            Edit
+                          </Button>
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            className="py-0 px-1"
+                            onClick={() => handleDeleteInvoice(invoice)}
+                            title="Delete Invoice"
+                          >
+                            Del
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="8" className="text-center">
+                    <td colSpan="9" className="text-center">
                       No invoices found
                     </td>
                   </tr>
                 )}
               </tbody>
-            </Table>
+                          </Table>
+            </div>
           )}
         </Card.Body>
       </Card>
+      
+      {/* New Category Modal */}
+      <Modal 
+        show={showNewCategoryModal} 
+        onHide={() => {
+          setShowNewCategoryModal(false);
+          setCategoryError("");
+          setNewCategoryName("");
+        }}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add New Category</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Category Name</Form.Label>
+            <Form.Control
+              type="text"
+              value={newCategoryName}
+              onChange={(e) => setNewCategoryName(e.target.value)}
+              placeholder="Enter category name"
+              isInvalid={!!categoryError}
+            />
+            <Form.Control.Feedback type="invalid">
+              {categoryError}
+            </Form.Control.Feedback>
+            <Form.Text className="text-muted">
+              Categories help you organize and filter your invoices.
+            </Form.Text>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowNewCategoryModal(false);
+            setCategoryError("");
+            setNewCategoryName("");
+          }}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleAddCategory}>
+            Add Category
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      
+      {/* New Tag Modal */}
+      <Modal 
+        show={showNewTagModal} 
+        onHide={() => {
+          setShowNewTagModal(false);
+          setTagError("");
+          setNewTagName("");
+        }}
+        centered
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Add New Tag</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group>
+            <Form.Label>Tag Name</Form.Label>
+            <Form.Control
+              type="text"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              placeholder="Enter tag name"
+              isInvalid={!!tagError}
+            />
+            <Form.Control.Feedback type="invalid">
+              {tagError}
+            </Form.Control.Feedback>
+            <Form.Text className="text-muted">
+              Tags help you label and search for specific invoices.
+            </Form.Text>
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowNewTagModal(false);
+            setTagError("");
+            setNewTagName("");
+          }}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={handleAddTag}>
+            Add Tag
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
