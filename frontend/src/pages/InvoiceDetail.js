@@ -321,19 +321,26 @@ export default function InvoiceDetail() {
     return originalFileName;
   };
 
-  // Save changes to the invoice
+  // The saveInvoice function should be updated to use the merchant_name field
+  // but keep it separate from file_name handling
+
+  // Update invoice fields
   const saveInvoice = async () => {
     try {
       setIsSaving(true);
       
-      // Generate the new filename if needed
-      const newFileName = generateFileName(
-        invoice.merchant_name,
-        invoice.order_number,
-        invoice.file_name
-      );
+      // Generate the new filename ONLY if both merchant_name and order_number exist
+      let newFileName = invoice.file_name;
+      if (invoice.merchant_name && invoice.order_number) {
+        newFileName = generateFileName(
+          invoice.merchant_name,
+          invoice.order_number,
+          invoice.file_name
+        );
+      }
       
       const updatedInvoice = {
+        // Keep the merchant_name separate from file_name
         file_name: newFileName,
         merchant_name: invoice.merchant_name,
         order_number: invoice.order_number,
@@ -379,51 +386,6 @@ export default function InvoiceDetail() {
       console.error("Error saving invoice:", error);
       setError("Failed to update invoice. Please try again.");
       setIsSaving(false);
-    }
-  };
-
-  // Handle invoice deletion
-  const handleDelete = async () => {
-    try {
-      await deleteInvoice(invoice.invoice_id);
-      setShowDeleteModal(false);
-      navigate("/invoices", { state: { message: "Invoice deleted successfully!" } });
-    } catch (error) {
-      console.error("Error deleting invoice:", error);
-      setError("Failed to delete invoice. Please try again.");
-      setShowDeleteModal(false);
-    }
-  };
-
-  // Handle payment submission
-  const handlePaymentSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      await addPayment(
-        invoice.invoice_id,
-        parseInt(cardNumberId),
-        parseFloat(paymentAmount),
-        transactionId
-      );
-      
-      setSavedMessage("Payment added successfully!");
-      setTimeout(() => setSavedMessage(""), 3000);
-      
-      setShowPaymentForm(false);
-      setPaymentAmount("");
-      setCardNumberId("");
-      setTransactionId("");
-      
-      // Refresh invoice data
-      const refreshedData = await fetchInvoiceById(id);
-      setInvoice({
-        ...refreshedData,
-        merchant_name: refreshedData.merchant_name || ""
-      });
-    } catch (error) {
-      console.error("Error adding payment:", error);
-      setError("Failed to add payment. Please try again.");
     }
   };
 

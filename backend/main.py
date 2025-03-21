@@ -59,6 +59,8 @@ app.include_router(wishlist_router)
 # File Upload Endpoint
 # ─────────────────────────────────────────────────────────
 
+# backend/main.py - the part that needs updating
+
 @app.post("/upload/")
 async def upload_invoice(
     file: UploadFile = File(...),
@@ -89,10 +91,8 @@ async def upload_invoice(
         original_filename = file.filename
         safe_filename = "".join([c for c in original_filename if c.isalnum() or c in "._- "])
         
-        # Add timestamp to ensure uniqueness
-        from datetime import datetime
-        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-        unique_filename = f"{timestamp}_{safe_filename}"
+        # Use the safe filename without timestamp
+        unique_filename = safe_filename
         
         # Create the full file path
         file_path = UPLOAD_FOLDER / unique_filename

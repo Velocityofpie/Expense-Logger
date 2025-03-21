@@ -198,6 +198,7 @@ async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), us
         raise HTTPException(status_code=500, detail=str(e))
 
 
+# Update an existing invoice - modified version for router/invoice.py
 @router.put("/update/{invoice_id}")
 async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Session = Depends(get_db), user_id: int = 1):
     """Update an existing invoice."""
@@ -215,25 +216,20 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
             "payment_method": invoice.payment_method
         }
         
-        # Determine filename changes
+        # Get old filename
         old_filename = invoice.file_name or ""
         old_file_path = (UPLOAD_FOLDER / old_filename) if old_filename else None
         
-        # Prepare new merchant/order_number
-        merchant = invoice_data.file_name  # In this context, file_name is being used as merchant
-        order_number = invoice_data.order_number
-        
-        # Get file extension if a file existed
-        old_ext = ""
-        if old_filename:
-            _, old_ext = os.path.splitext(old_filename)
-        
-        # If merchant + order_number exist, create new filename with old extension
-        if merchant and order_number:
-            new_filename = f"{merchant} - Order# {order_number}{old_ext}"
-        else:
-            # Keep old filename if missing merchant/order_number
-            new_filename = old_filename
+        # Generate new filename if merchant and order number provided
+        new_filename = old_filename
+        if invoice_data.merchant_name and invoice_data.order_number:
+            # Get file extension if a file existed
+            old_ext = ""
+            if old_filename:
+                _, old_ext = os.path.splitext(old_filename)
+            
+            # Create new filename with format Merchant-Order#_OrderNumber.ext
+            new_filename = f"{invoice_data.merchant_name}-Order#_{invoice_data.order_number}{old_ext}"
         
         # If old file exists and name changed, rename on disk
         if old_filename and old_file_path and Path(old_file_path).exists() and (new_filename != old_filename):
@@ -250,36 +246,52 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
                 file_record.file_path = str(new_file_path)
         
         # Update invoice fields
-        if invoice_data.file_name is not None:
+        if invoice_data.merchant_name is not None:
+            invoice.merchant_name = invoice_data.merchant_name
+            
+        if new_filename != old_filename:
             invoice.file_name = new_filename
+            
         if invoice_data.order_number is not None:
             invoice.order_number = invoice_data.order_number
+            
         if invoice_data.purchase_date is not None:
             invoice.purchase_date = parse_date(invoice_data.purchase_date)
+            
         if invoice_data.payment_method is not None:
             invoice.payment_method = invoice_data.payment_method
+            
         if invoice_data.grand_total is not None:
             invoice.grand_total = invoice_data.grand_total
+            
         if invoice_data.status is not None:
             old_status = invoice.status
             invoice.status = invoice_data.status
             # Add status history if status changed
             if old_status != invoice_data.status:
                 add_status_history(db, invoice_id, invoice_data.status)
+                
         if invoice_data.notes is not None:
             invoice.notes = invoice_data.notes
+            
         if invoice_data.shipping_handling is not None:
             invoice.shipping_handling = invoice_data.shipping_handling
+            
         if invoice_data.estimated_tax is not None:
             invoice.estimated_tax = invoice_data.estimated_tax
+            
         if invoice_data.total_before_tax is not None:
             invoice.total_before_tax = invoice_data.total_before_tax
+            
         if invoice_data.billing_address is not None:
             invoice.billing_address = invoice_data.billing_address
+            
         if invoice_data.credit_card_transactions is not None:
             invoice.credit_card_transactions = invoice_data.credit_card_transactions
+            
         if invoice_data.gift_card_amount is not None:
             invoice.gift_card_amount = invoice_data.gift_card_amount
+            
         if invoice_data.refunded_amount is not None:
             invoice.refunded_amount = invoice_data.refunded_amount
         

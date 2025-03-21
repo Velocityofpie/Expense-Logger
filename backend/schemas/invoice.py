@@ -68,8 +68,11 @@ class InvoiceResponse(BaseModel):
         orm_mode = True
 
 
+# backend/schemas/invoice.py - Update the InvoiceUpdate schema
+
 class InvoiceUpdate(BaseModel):
     file_name: Optional[str] = None
+    merchant_name: Optional[str] = None  # Add separate merchant name field
     order_number: Optional[str] = None
     purchase_date: Optional[str] = None
     payment_method: Optional[str] = None

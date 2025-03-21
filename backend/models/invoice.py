@@ -6,12 +6,15 @@ from datetime import datetime
 from database import Base
 from models.base import TimestampMixin, SoftDeleteMixin
 
+# backend/models/invoice.py - Update the Invoice model to add merchant_name
+
 class Invoice(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "invoices"
     
     invoice_id = sa.Column(sa.Integer, primary_key=True)
     user_id = sa.Column(sa.Integer, sa.ForeignKey("users.user_id"))
     file_name = sa.Column(sa.String(255))
+    merchant_name = sa.Column(sa.String(255))  # Add separate merchant name field
     order_number = sa.Column(sa.String(50), unique=True)
     purchase_date = sa.Column(sa.Date)
     payment_method = sa.Column(sa.String(50))
