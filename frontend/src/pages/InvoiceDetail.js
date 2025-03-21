@@ -147,39 +147,39 @@ export default function InvoiceDetail() {
   }, [id]);
 
   // Separate function to load invoice details
-  const loadInvoiceDetails = async (invoiceId) => {
-    try {
-      // Fetch invoice details
-      const refreshedData = await fetchInvoiceById(id);
-      setInvoice({
-        ...refreshedData,
-        merchant_name: refreshedData.merchant_name || invoice.merchant_name || ""
-      });
-      setItems(invoiceData.items || []);
-      setTags(invoiceData.tags || []);
-      setCategories(invoiceData.categories || []);
-      
-      // Set PDF URL if filename exists
-      if (invoiceData.file_name) {
-        setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(invoiceData.file_name)}`);
-      } else {
-        setPdfUrl("");
+    const loadInvoiceDetails = async (invoiceId) => {
+      try {
+        // Fetch invoice details
+        const refreshedData = await fetchInvoiceById(id);
+        setInvoice({
+          ...refreshedData,
+          merchant_name: refreshedData.merchant_name || invoice.merchant_name || ""
+        });
+        setItems(refreshedData.items || []);
+        setTags(refreshedData.tags || []);
+        setCategories(refreshedData.categories || []);
+        
+        // Set PDF URL if filename exists
+        if (refreshedData.file_name) {
+          setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(refreshedData.file_name)}`);
+        } else {
+          setPdfUrl("");
+        }
+        
+        // Fetch available tags and categories
+        const [tagsData, categoriesData] = await Promise.all([
+          fetchTags(),
+          fetchCategories()
+        ]);
+        
+        setAvailableTags(tagsData);
+        setAvailableCategories(categoriesData);
+        
+      } catch (error) {
+        console.error("Error loading invoice:", error);
+        throw error;
       }
-      
-      // Fetch available tags and categories
-      const [tagsData, categoriesData] = await Promise.all([
-        fetchTags(),
-        fetchCategories()
-      ]);
-      
-      setAvailableTags(tagsData);
-      setAvailableCategories(categoriesData);
-      
-    } catch (error) {
-      console.error("Error loading invoice:", error);
-      throw error;
-    }
-  };
+    };
 
   // Navigate to previous invoice
   const goToPrevInvoice = () => {
