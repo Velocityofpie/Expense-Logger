@@ -77,11 +77,18 @@ export default function InvoiceExtractor() {
       setIsLoading(true);
       
       // Fetch invoices, tags, and categories
-      const [invoicesData, tagsData, categoriesData] = await Promise.all([
+      const [invoicesResponse, tagsData, categoriesData] = await Promise.all([
         fetchInvoices(),
         fetchTags(),
         fetchCategories()
       ]);
+      
+      // Check if invoicesResponse is an array or an object with invoices property
+      const invoicesData = Array.isArray(invoicesResponse) 
+        ? invoicesResponse 
+        : (invoicesResponse && invoicesResponse.invoices && Array.isArray(invoicesResponse.invoices)) 
+          ? invoicesResponse.invoices 
+          : [];
       
       setInvoices(invoicesData);
       setFilteredInvoices(invoicesData);
@@ -91,13 +98,23 @@ export default function InvoiceExtractor() {
       setIsLoading(false);
     } catch (error) {
       console.error("Error fetching data:", error);
+      // Make sure to set invoices to an empty array if the fetch fails
+      setInvoices([]);
+      setFilteredInvoices([]);
       setIsLoading(false);
     }
   };
-  
-  // Apply filters to the invoice list
+
+  // And also fix the applyFilters function to safely handle non-array invoices
   const applyFilters = () => {
     const { status, category, searchTerm } = filters;
+    
+    // Make sure invoices is an array before filtering
+    if (!Array.isArray(invoices)) {
+      console.error("invoices is not an array in applyFilters, using empty array instead");
+      setFilteredInvoices([]);
+      return;
+    }
     
     const filtered = invoices.filter(invoice => {
       // Status filter

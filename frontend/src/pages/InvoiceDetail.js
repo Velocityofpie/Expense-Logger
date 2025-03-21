@@ -403,6 +403,67 @@ export default function InvoiceDetail() {
     }).format(value);
   };
 
+  // Payment submission handler
+  const handlePaymentSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!cardNumberId) {
+      alert("Please enter a card number ID.");
+      return;
+    }
+    
+    if (!transactionId) {
+      alert("Please enter a transaction ID.");
+      return;
+    }
+    
+    try {
+      const result = await addPayment(
+        invoice.invoice_id,
+        cardNumberId,
+        paymentAmount || invoice.grand_total,
+        transactionId
+      );
+      
+      // Reset form
+      setCardNumberId("");
+      setTransactionId("");
+      setPaymentAmount("");
+      setShowPaymentForm(false);
+      
+      // Refresh invoice data to show updated payment status
+      await loadInvoiceDetails(id);
+      
+      // Show success message
+      setSavedMessage("Payment added successfully!");
+      setTimeout(() => setSavedMessage(""), 3000);
+      
+    } catch (error) {
+      console.error("Error adding payment:", error);
+      setError("Failed to add payment. Please try again.");
+    }
+  };
+
+  // Handle delete invoice
+  const handleDelete = async () => {
+    try {
+      // Close the modal first
+      setShowDeleteModal(false);
+      
+      // Call the API to delete the invoice
+      await deleteInvoice(invoice.invoice_id);
+      
+      // Show a confirmation and navigate back to invoices list
+      alert("Invoice deleted successfully.");
+      navigate("/invoices");
+      
+    } catch (error) {
+      console.error("Error deleting invoice:", error);
+      setError("Failed to delete invoice. Please try again.");
+      setShowDeleteModal(false);
+    }
+  };
+
   // Get status badge color
   const getStatusColor = (status) => {
     switch(status) {
