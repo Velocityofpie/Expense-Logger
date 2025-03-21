@@ -1,4 +1,4 @@
-// Updated InvoiceDetail.js with all the fixes
+// Updated InvoiceDetail.js with improved split view and date formatting
 
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
@@ -8,6 +8,66 @@ const API_URL = "http://localhost:8000";
 
 // Valid statuses for the dropdown
 const VALID_STATUSES = ["Open", "Paid", "Draft", "Needs Attention", "Resolved"];
+
+// Function to normalize date formats - accepts various common date formats
+const normalizeDateFormat = (dateString) => {
+  if (!dateString) return "";
+  
+  // Try to parse the date using different formats
+  let parsedDate;
+  
+  // Match common formats
+  // MM/DD/YYYY, MM-DD-YYYY
+  const usFormat = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/;
+  // YYYY/MM/DD, YYYY-MM-DD
+  const isoFormat = /^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/;
+  // DD/MM/YYYY, DD.MM.YYYY, DD-MM-YYYY
+  const euFormat = /^(\d{1,2})[\/\.\-](\d{1,2})[\/\.\-](\d{4})$/;
+  // Month name formats: Jan 1, 2023 or January 1, 2023
+  const nameFormat = /^([a-zA-Z]{3,9})\s+(\d{1,2}),?\s+(\d{4})$/;
+  
+  try {
+    // Handle ISO format (YYYY-MM-DD)
+    if (isoFormat.test(dateString)) {
+      return dateString; // Already in ISO format
+    }
+    // Handle US format (MM/DD/YYYY)
+    else if (usFormat.test(dateString)) {
+      const matches = dateString.match(usFormat);
+      const month = matches[1].padStart(2, '0');
+      const day = matches[2].padStart(2, '0');
+      const year = matches[3];
+      return `${year}-${month}-${day}`;
+    }
+    // Handle European format (DD/MM/YYYY)
+    else if (euFormat.test(dateString)) {
+      const matches = dateString.match(euFormat);
+      const day = matches[1].padStart(2, '0');
+      const month = matches[2].padStart(2, '0');
+      const year = matches[3];
+      return `${year}-${month}-${day}`;
+    }
+    // Handle month name format (Jan 1, 2023)
+    else if (nameFormat.test(dateString)) {
+      parsedDate = new Date(dateString);
+      if (!isNaN(parsedDate)) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+    }
+    // Last resort: Try to parse with Date constructor
+    else {
+      parsedDate = new Date(dateString);
+      if (!isNaN(parsedDate)) {
+        return parsedDate.toISOString().split('T')[0];
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing date:", e);
+  }
+  
+  // Return original string if parsing fails
+  return dateString;
+};
 
 export default function InvoiceDetail() {
   const { id } = useParams();
@@ -135,10 +195,25 @@ export default function InvoiceDetail() {
     }
   };
 
-  // Handle changes to invoice fields
+  // Handle changes to invoice fields with date normalization
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setInvoice({ ...invoice, [name]: value });
+    
+    // Apply date normalization for purchase_date
+    if (name === "purchase_date") {
+      const normalizedDate = normalizeDateFormat(value);
+      setInvoice({ ...invoice, [name]: normalizedDate });
+    } else {
+      setInvoice({ ...invoice, [name]: value });
+    }
+  };
+
+  // Handle paste event for the purchase_date field to auto-format pasted dates
+  const handleDatePaste = (e) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const normalizedDate = normalizeDateFormat(pastedText);
+    setInvoice({ ...invoice, purchase_date: normalizedDate });
   };
 
   // Handle changes to line items
@@ -565,76 +640,74 @@ export default function InvoiceDetail() {
         </button>
       </div>
 
+      {/* Tabs - Always visible now, regardless of split view */}
+      <div className="mb-6">
+        <div className="border-b border-gray-200">
+          <nav className="flex -mb-px">
+            <button
+              className={`py-4 px-6 border-b-2 font-medium text-sm ${
+                activeTab === "details"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setActiveTab("details")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Details
+            </button>
+            <button
+              className={`py-4 px-6 border-b-2 font-medium text-sm ${
+                activeTab === "items"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setActiveTab("items")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              Line Items
+            </button>
+            <button
+              className={`py-4 px-6 border-b-2 font-medium text-sm ${
+                activeTab === "payments"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setActiveTab("payments")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+              Payments
+            </button>
+            <button
+              className={`py-4 px-6 border-b-2 font-medium text-sm ${
+                activeTab === "document"
+                  ? "border-blue-500 text-blue-600"
+                  : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              }`}
+              onClick={() => setActiveTab("document")}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Document
+            </button>
+          </nav>
+        </div>
+      </div>
+
       {/* Main Content Area - Split or Regular View */}
       <div className={`${splitView ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
         {/* Left Side (Details/Items/Payments) */}
         <div className={splitView ? 'col-span-1' : ''}>
-          {/* Tabs - Only show these tabs in the left panel during split view or in regular view */}
-          {!splitView && (
-            <div className="mb-6">
-              <div className="border-b border-gray-200">
-                <nav className="flex -mb-px">
-                  <button
-                    className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                      activeTab === "details"
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                    onClick={() => setActiveTab("details")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Details
-                  </button>
-                  <button
-                    className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                      activeTab === "items"
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                    onClick={() => setActiveTab("items")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                    Line Items
-                  </button>
-                  <button
-                    className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                      activeTab === "payments"
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                    onClick={() => setActiveTab("payments")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
-                    </svg>
-                    Payments
-                  </button>
-                  <button
-                    className={`py-4 px-6 border-b-2 font-medium text-sm ${
-                      activeTab === "document"
-                        ? "border-blue-500 text-blue-600"
-                        : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                    }`}
-                    onClick={() => setActiveTab("document")}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                    </svg>
-                    Document
-                  </button>
-                </nav>
-              </div>
-            </div>
-          )}
-
-          {/* Left Panel Content */}
+          {/* Left Panel Content - Now we'll show only the active tab content */}
           <div className="bg-white rounded-lg shadow-sm">
             {/* Details Tab */}
-            {(!splitView && activeTab === "details" || (splitView && activeTab !== "document")) && (
+            {activeTab === "details" && (
               <div className="p-6">
                 <h3 className="text-lg font-medium mb-4">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -656,6 +729,7 @@ export default function InvoiceDetail() {
                         name="purchase_date"
                         value={invoice.purchase_date || ""}
                         onChange={handleInputChange}
+                        onPaste={handleDatePaste}
                         className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                       />
                     </div>
@@ -925,7 +999,7 @@ export default function InvoiceDetail() {
               )}
 
               {/* Items Tab */}
-              {((!splitView && activeTab === "items") || (splitView && activeTab === "items")) && (
+              {activeTab === "items" && (
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">Line Items</h3>
@@ -1070,7 +1144,7 @@ export default function InvoiceDetail() {
               )}
 
               {/* Payments Tab */}
-              {((!splitView && activeTab === "payments") || (splitView && activeTab === "payments")) && (
+              {activeTab === "payments" && (
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium">Payment Information</h3>
@@ -1105,21 +1179,6 @@ export default function InvoiceDetail() {
                       <h5 className="text-lg font-medium mb-4">Add New Payment</h5>
                       <form onSubmit={handlePaymentSubmit}>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
-                            <div className="flex">
-                              <span className="inline-flex items-center px-3 bg-white text-gray-500 border border-r-0 border-gray-300 rounded-l-md">$</span>
-                              <input
-                                type="number"
-                                step="0.01"
-                                value={paymentAmount}
-                                onChange={(e) => setPaymentAmount(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                                placeholder="0.00"
-                                required
-                              />
-                            </div>
-                          </div>
                           <div>
                             <label className="block text-xs font-medium text-gray-500 mb-1">Card Number ID</label>
                             <input
@@ -1212,8 +1271,8 @@ export default function InvoiceDetail() {
           </div>
         </div>
 
-        {/* Right Side (PDF Document in Split View) */}
-        {((!splitView && activeTab === "document") || (splitView)) && (
+        {/* Right Side (PDF Document in Split View or if Document tab is active) */}
+        {(splitView || (!splitView && activeTab === "document")) && (
           <div className={splitView ? 'col-span-1' : ''}>
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
