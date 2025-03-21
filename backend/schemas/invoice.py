@@ -21,6 +21,7 @@ class InvoiceItemBase(BaseModel):
 class InvoiceCreate(BaseModel):
     user_id: Optional[int] = None
     file_name: Optional[str] = None
+    merchant_name: Optional[str] = None  # Add merchant_name field
     order_number: Optional[str] = None
     purchase_date: Optional[str] = None
     payment_method: Optional[str] = None
@@ -46,6 +47,7 @@ class InvoiceResponse(BaseModel):
     invoice_id: int
     user_id: Optional[int] = None
     file_name: Optional[str] = None
+    merchant_name: Optional[str] = None  # Add merchant_name field to response
     order_number: Optional[str] = None
     purchase_date: Optional[str] = None
     payment_method: Optional[str] = None

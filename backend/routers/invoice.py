@@ -41,6 +41,7 @@ async def get_invoices(db: Session = Depends(get_db), user_id: Optional[int] = N
                 invoice_id=invoice.invoice_id,
                 user_id=invoice.user_id,
                 file_name=invoice.file_name,
+                merchant_name=invoice.merchant_name,  # Include merchant_name in response
                 order_number=invoice.order_number,
                 purchase_date=invoice.purchase_date.isoformat() if invoice.purchase_date else None,
                 payment_method=invoice.payment_method,
@@ -89,6 +90,7 @@ async def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
             invoice_id=invoice.invoice_id,
             user_id=invoice.user_id,
             file_name=invoice.file_name,
+            merchant_name=invoice.merchant_name,  # Include merchant_name in response
             order_number=invoice.order_number,
             purchase_date=invoice.purchase_date.isoformat() if invoice.purchase_date else None,
             payment_method=invoice.payment_method,
@@ -131,6 +133,7 @@ async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), us
         new_invoice = Invoice(
             user_id=user_id,  # Default user ID if auth not implemented
             file_name="",
+            merchant_name=entry_data.merchant_name,  # Add merchant_name field
             order_number=entry_data.order_number,
             purchase_date=parse_date(entry_data.purchase_date),
             payment_method=entry_data.payment_method,
@@ -185,6 +188,7 @@ async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), us
             table_name="invoices",
             record_id=new_invoice.invoice_id,
             new_data={
+                "merchant_name": new_invoice.merchant_name,  # Include merchant_name in audit
                 "order_number": new_invoice.order_number,
                 "purchase_date": new_invoice.purchase_date.isoformat() if new_invoice.purchase_date else None,
                 "status": new_invoice.status
@@ -402,7 +406,7 @@ async def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user_id
             action="DELETE",
             table_name="invoices",
             record_id=invoice_id,
-            old_data={"file_name": filename, "is_deleted": False},
+            old_data={"file_name": filename, "merchant_name": invoice.merchant_name, "is_deleted": False},  # Add merchant_name
             new_data={"is_deleted": True}
         )
         
@@ -437,7 +441,7 @@ async def delete_invoice_permanent(invoice_id: int, db: Session = Depends(get_db
             action="HARD_DELETE",
             table_name="invoices",
             record_id=invoice_id,
-            old_data={"file_name": filename}
+            old_data={"file_name": filename, "merchant_name": invoice.merchant_name}  # Add merchant_name
         )
         
         # Hard delete the record (cascade will handle related records)
