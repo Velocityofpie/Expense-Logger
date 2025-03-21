@@ -47,5 +47,8 @@ Things to fix
 
 - [ ] custom themes 
 
+- [ ] able to create custom pdf for those that dont have (tools) with custom logo input
+- [ ] Create a pdf for making a invoice to someone 
+- [ ] item type
 
 

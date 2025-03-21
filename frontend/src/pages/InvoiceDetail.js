@@ -1,7 +1,8 @@
-// frontend/src/pages/InvoiceDetail.js
+// Updated InvoiceDetail.js with all the fixes
+
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { fetchInvoiceById, updateInvoice, deleteInvoice, fetchTags, fetchCategories, addPayment } from "../api";
+import { fetchInvoiceById, fetchInvoices, updateInvoice, deleteInvoice, fetchTags, fetchCategories, addPayment } from "../api";
 
 const API_URL = "http://localhost:8000";
 
@@ -49,53 +50,90 @@ export default function InvoiceDetail() {
   
   // Split view state
   const [splitView, setSplitView] = useState(false);
+  
+  // Navigation state
+  const [allInvoices, setAllInvoices] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(-1);
 
-  // Fetch invoice details when the component mounts or id changes
+  // Fetch all invoices for navigation and the current invoice details
   useEffect(() => {
-    async function loadInvoiceAndOptions() {
+    async function loadInvoicesAndOptions() {
       try {
         setIsLoading(true);
         setError(null);
         
+        // Fetch all invoices for navigation
+        const invoicesData = await fetchInvoices();
+        setAllInvoices(invoicesData);
+        
+        // Find current invoice index
+        const index = invoicesData.findIndex(inv => inv.invoice_id === parseInt(id));
+        setCurrentIndex(index);
+        
         // Fetch invoice details
-        const invoiceData = await fetchInvoiceById(id);
-        setInvoice({
-          ...invoiceData,
-          // Separate merchant name from file name if needed
-          merchant_name: invoiceData.merchant_name || invoiceData.file_name || ""
-        });
-        setItems(invoiceData.items || []);
-        setTags(invoiceData.tags || []);
-        setCategories(invoiceData.categories || []);
-        
-        // Set PDF URL if filename exists
-        if (invoiceData.file_name) {
-          setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(invoiceData.file_name)}`);
-        } else {
-          setPdfUrl("");
-        }
-        
-        // Fetch available tags and categories
-        const [tagsData, categoriesData] = await Promise.all([
-          fetchTags(),
-          fetchCategories()
-        ]);
-        
-        setAvailableTags(tagsData);
-        setAvailableCategories(categoriesData);
+        await loadInvoiceDetails(id);
         
         setIsLoading(false);
       } catch (error) {
-        console.error("Error loading invoice:", error);
+        console.error("Error loading invoices:", error);
         setError("Failed to load invoice data. Please try again.");
         setIsLoading(false);
       }
     }
     
     if (id) {
-      loadInvoiceAndOptions();
+      loadInvoicesAndOptions();
     }
   }, [id]);
+
+  // Separate function to load invoice details
+  const loadInvoiceDetails = async (invoiceId) => {
+    try {
+      // Fetch invoice details
+      const invoiceData = await fetchInvoiceById(invoiceId);
+      setInvoice({
+        ...invoiceData,
+        merchant_name: invoiceData.merchant_name || ""
+      });
+      setItems(invoiceData.items || []);
+      setTags(invoiceData.tags || []);
+      setCategories(invoiceData.categories || []);
+      
+      // Set PDF URL if filename exists
+      if (invoiceData.file_name) {
+        setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(invoiceData.file_name)}`);
+      } else {
+        setPdfUrl("");
+      }
+      
+      // Fetch available tags and categories
+      const [tagsData, categoriesData] = await Promise.all([
+        fetchTags(),
+        fetchCategories()
+      ]);
+      
+      setAvailableTags(tagsData);
+      setAvailableCategories(categoriesData);
+      
+    } catch (error) {
+      console.error("Error loading invoice:", error);
+      throw error;
+    }
+  };
+
+  // Navigate to previous invoice
+  const goToPrevInvoice = () => {
+    if (currentIndex > 0) {
+      navigate(`/invoice/${allInvoices[currentIndex - 1].invoice_id}`);
+    }
+  };
+
+  // Navigate to next invoice
+  const goToNextInvoice = () => {
+    if (currentIndex < allInvoices.length - 1) {
+      navigate(`/invoice/${allInvoices[currentIndex + 1].invoice_id}`);
+    }
+  };
 
   // Handle changes to invoice fields
   const handleInputChange = (e) => {
@@ -192,12 +230,36 @@ export default function InvoiceDetail() {
     setCategories(categories.filter(category => category !== categoryToRemove));
   };
 
+  // Generate filename based on merchant and order number
+  const generateFileName = (merchantName, orderNumber, originalFileName) => {
+    // If both merchant and order number are filled
+    if (merchantName && orderNumber) {
+      // Get the file extension from the original filename
+      const originalExt = originalFileName ? 
+        originalFileName.substring(originalFileName.lastIndexOf('.')) : '';
+      
+      // Create new filename with format Merchant-Order#_OrderNumber.ext
+      return `${merchantName}-Order#_${orderNumber}${originalExt}`;
+    }
+    
+    // If either merchant or order number is missing, return the original filename
+    return originalFileName;
+  };
+
   // Save changes to the invoice
   const saveInvoice = async () => {
     try {
       setIsSaving(true);
+      
+      // Generate the new filename if needed
+      const newFileName = generateFileName(
+        invoice.merchant_name,
+        invoice.order_number,
+        invoice.file_name
+      );
+      
       const updatedInvoice = {
-        file_name: invoice.file_name,
+        file_name: newFileName,
         merchant_name: invoice.merchant_name,
         order_number: invoice.order_number,
         purchase_date: invoice.purchase_date,
@@ -226,11 +288,17 @@ export default function InvoiceDetail() {
       const refreshedData = await fetchInvoiceById(id);
       setInvoice({
         ...refreshedData,
-        merchant_name: refreshedData.merchant_name || refreshedData.file_name || ""
+        merchant_name: refreshedData.merchant_name || ""
       });
       setItems(refreshedData.items || []);
       setTags(refreshedData.tags || []);
       setCategories(refreshedData.categories || []);
+      
+      // Update PDF URL with new filename if changed
+      if (refreshedData.file_name) {
+        setPdfUrl(`${API_URL}/uploads/${encodeURIComponent(refreshedData.file_name)}`);
+      }
+      
       setIsSaving(false);
     } catch (error) {
       console.error("Error saving invoice:", error);
@@ -276,7 +344,7 @@ export default function InvoiceDetail() {
       const refreshedData = await fetchInvoiceById(id);
       setInvoice({
         ...refreshedData,
-        merchant_name: refreshedData.merchant_name || refreshedData.file_name || ""
+        merchant_name: refreshedData.merchant_name || ""
       });
     } catch (error) {
       console.error("Error adding payment:", error);
@@ -287,10 +355,6 @@ export default function InvoiceDetail() {
   // Toggle split view
   const toggleSplitView = () => {
     setSplitView(!splitView);
-    // If switching to split view, make sure document tab is visible
-    if (!splitView && activeTab !== "document") {
-      setActiveTab("details");
-    }
   };
 
   // Format currency
@@ -395,6 +459,29 @@ export default function InvoiceDetail() {
         </div>
         
         <div className="mt-4 sm:mt-0 flex items-center space-x-2">
+          {/* Navigation buttons */}
+          <button 
+            className={`flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 ${currentIndex <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={goToPrevInvoice}
+            disabled={currentIndex <= 0}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Prev
+          </button>
+          
+          <button 
+            className={`flex items-center px-3 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 ${currentIndex >= allInvoices.length - 1 ? 'opacity-50 cursor-not-allowed' : ''}`}
+            onClick={goToNextInvoice}
+            disabled={currentIndex >= allInvoices.length - 1}
+          >
+            Next
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+          
           <button 
             className="flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
             onClick={() => navigate("/invoices")}
@@ -482,7 +569,7 @@ export default function InvoiceDetail() {
       <div className={`${splitView ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : ''}`}>
         {/* Left Side (Details/Items/Payments) */}
         <div className={splitView ? 'col-span-1' : ''}>
-          {/* Tabs - Only show these tabs in the left panel during split view */}
+          {/* Tabs - Only show these tabs in the left panel during split view or in regular view */}
           {!splitView && (
             <div className="mb-6">
               <div className="border-b border-gray-200">
@@ -547,567 +634,571 @@ export default function InvoiceDetail() {
           {/* Left Panel Content */}
           <div className="bg-white rounded-lg shadow-sm">
             {/* Details Tab */}
-            {(!splitView && activeTab === "details" || splitView) && (
+            {(!splitView && activeTab === "details" || (splitView && activeTab !== "document")) && (
               <div className="p-6">
                 <h3 className="text-lg font-medium mb-4">Basic Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Order Number</label>
-                    <input
-                      type="text"
-                      name="order_number"
-                      value={invoice.order_number || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter order number"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Purchase Date</label>
-                    <input
-                      type="date"
-                      name="purchase_date"
-                      value={invoice.purchase_date || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    />
-                  </div>
-                  
-                  {/* Separate Merchant and File Name fields */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Merchant Name</label>
-                    <input
-                      type="text"
-                      name="merchant_name"
-                      value={invoice.merchant_name || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter merchant name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">File Name</label>
-                    <input
-                      type="text"
-                      name="file_name"
-                      value={invoice.file_name || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Original file name"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Grand Total</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        name="grand_total"
-                        value={invoice.grand_total || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
-                    <select
-                      name="status"
-                      value={invoice.status || "Open"}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                    >
-                      {VALID_STATUSES.map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Payment Method</label>
-                    <input
-                      type="text"
-                      name="payment_method"
-                      value={invoice.payment_method || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter payment method"
-                    />
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
-                    <textarea
-                      rows={3}
-                      name="notes"
-                      value={invoice.notes || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter notes"
-                    />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-medium mt-6 mb-4">Additional Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Shipping & Handling</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        name="shipping_handling"
-                        value={invoice.shipping_handling || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Estimated Tax</label>
-                    <div className="flex">
-                      <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
-                      <input
-                        type="number"
-                        step="0.01"
-                        name="estimated_tax"
-                        value={invoice.estimated_tax || ""}
-                        onChange={handleInputChange}
-                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="0.00"
-                      />
-                    </div>
-                  </div>
-                  <div className="md:col-span-2">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Billing Address</label>
-                    <textarea
-                      rows={2}
-                      name="billing_address"
-                      value={invoice.billing_address || ""}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      placeholder="Enter billing address"
-                    />
-                  </div>
-                </div>
-
-                <h3 className="text-lg font-medium mt-6 mb-4">Tags & Categories</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Tags Section with Add/Remove functionality */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2">Tags</label>
-                    
-                    {/* Selected tags with remove option */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {tags.map((tag) => (
-                        <div 
-                          key={tag} 
-                          className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center"
-                        >
-                          {tag}
-                          <button 
-                            className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
-                            onClick={() => removeTag(tag)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Add new tag */}
-                    <div className="flex">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Order Number</label>
                       <input
                         type="text"
-                        value={newTag}
-                        onChange={(e) => setNewTag(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-l-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="Add a new tag"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddTag();
-                          }
-                        }}
+                        name="order_number"
+                        value={invoice.order_number || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Enter order number"
                       />
-                      <button
-                        type="button"
-                        onClick={handleAddTag}
-                        className="px-3 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 focus:outline-none"
-                      >
-                        Add
-                      </button>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Purchase Date</label>
+                      <input
+                        type="date"
+                        name="purchase_date"
+                        value={invoice.purchase_date || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      />
                     </div>
                     
-                    <label className="block text-xs font-medium text-gray-500 mt-3 mb-1">Available Tags</label>
-                    <select
-                      multiple
-                      value={tags}
-                      onChange={handleTagChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      style={{ height: "100px" }}
-                    >
-                      {availableTags.map((tag) => (
-                        <option key={tag} value={tag}>
-                          {tag}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Hold Ctrl (or Cmd on Mac) to select multiple tags
-                    </p>
-                  </div>
-                  
-                  {/* Categories Section with Add/Remove functionality */}
-                  <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-2">Categories</label>
-                    
-                    {/* Selected categories with remove option */}
-                    <div className="flex flex-wrap gap-2 mb-2">
-                      {categories.map((category) => (
-                        <div 
-                          key={category} 
-                          className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm flex items-center"
-                        >
-                          {category}
-                          <button 
-                            className="ml-1 text-green-600 hover:text-green-800 focus:outline-none"
-                            onClick={() => removeCategory(category)}
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    {/* Add new category */}
-                    <div className="flex">
+                    {/* Separate Merchant and File Name fields */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Merchant Name</label>
                       <input
                         type="text"
-                        value={newCategory}
-                        onChange={(e) => setNewCategory(e.target.value)}
-                        className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-l-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                        placeholder="Add a new category"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            handleAddCategory();
-                          }
-                        }}
+                        name="merchant_name"
+                        value={invoice.merchant_name || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Enter merchant name"
                       />
-                      <button
-                        type="button"
-                        onClick={handleAddCategory}
-                        className="px-3 py-2 bg-green-500 text-white rounded-r-md hover:bg-green-600 focus:outline-none"
-                      >
-                        Add
-                      </button>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">File Name</label>
+                      <input
+                        type="text"
+                        name="file_name"
+                        value={invoice.file_name || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Original file name"
+                        disabled
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        File will be renamed automatically if merchant and order number are provided
+                      </p>
                     </div>
                     
-                    <label className="block text-xs font-medium text-gray-500 mt-3 mb-1">Available Categories</label>
-                    <select
-                      multiple
-                      value={categories}
-                      onChange={handleCategoryChange}
-                      className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                      style={{ height: "100px" }}
-                    >
-                      {availableCategories.map((category) => (
-                        <option key={category} value={category}>
-                          {category}
-                        </option>
-                      ))}
-                    </select>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Hold Ctrl (or Cmd on Mac) to select multiple categories
-                    </p>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Grand Total</label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="grand_total"
+                          value={invoice.grand_total || ""}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Status</label>
+                      <select
+                        name="status"
+                        value={invoice.status || "Open"}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                      >
+                        {VALID_STATUSES.map((status) => (
+                          <option key={status} value={status}>{status}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Payment Method</label>
+                      <input
+                        type="text"
+                        name="payment_method"
+                        value={invoice.payment_method || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Enter payment method"
+                      />
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Notes</label>
+                      <textarea
+                        rows={3}
+                        name="notes"
+                        value={invoice.notes || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Enter notes"
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-medium mt-6 mb-4">Additional Details</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Shipping & Handling</label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="shipping_handling"
+                          value={invoice.shipping_handling || ""}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Estimated Tax</label>
+                      <div className="flex">
+                        <span className="inline-flex items-center px-3 bg-gray-50 text-gray-500 border-0 border-r-0 rounded-l-md">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          name="estimated_tax"
+                          value={invoice.estimated_tax || ""}
+                          onChange={handleInputChange}
+                          className="w-full px-3 py-2 bg-gray-50 border-0 rounded-r-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="0.00"
+                        />
+                      </div>
+                    </div>
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Billing Address</label>
+                      <textarea
+                        rows={2}
+                        name="billing_address"
+                        value={invoice.billing_address || ""}
+                        onChange={handleInputChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        placeholder="Enter billing address"
+                      />
+                    </div>
+                  </div>
+
+                  <h3 className="text-lg font-medium mt-6 mb-4">Tags & Categories</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Tags Section with Add/Remove functionality */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-2">Tags</label>
+                      
+                      {/* Selected tags with remove option */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {tags.map((tag) => (
+                          <div 
+                            key={tag} 
+                            className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm flex items-center"
+                          >
+                            {tag}
+                            <button 
+                              className="ml-1 text-blue-600 hover:text-blue-800 focus:outline-none"
+                              onClick={() => removeTag(tag)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Add new tag */}
+                      <div className="flex">
+                        <input
+                          type="text"
+                          value={newTag}
+                          onChange={(e) => setNewTag(e.target.value)}
+                          className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-l-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="Add a new tag"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddTag();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddTag}
+                          className="px-3 py-2 bg-blue-500 text-white rounded-r-md hover:bg-blue-600 focus:outline-none"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      
+                      <label className="block text-xs font-medium text-gray-500 mt-3 mb-1">Available Tags</label>
+                      <select
+                        multiple
+                        value={tags}
+                        onChange={handleTagChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        style={{ height: "100px" }}
+                      >
+                        {availableTags.map((tag) => (
+                          <option key={tag} value={tag}>
+                            {tag}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Hold Ctrl (or Cmd on Mac) to select multiple tags
+                      </p>
+                    </div>
+                    
+                    {/* Categories Section with Add/Remove functionality */}
+                    <div>
+                      <label className="block text-xs font-medium text-gray-500 mb-2">Categories</label>
+                      
+                      {/* Selected categories with remove option */}
+                      <div className="flex flex-wrap gap-2 mb-2">
+                        {categories.map((category) => (
+                          <div 
+                            key={category} 
+                            className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-sm flex items-center"
+                          >
+                            {category}
+                            <button 
+                              className="ml-1 text-green-600 hover:text-green-800 focus:outline-none"
+                              onClick={() => removeCategory(category)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      {/* Add new category */}
+                      <div className="flex">
+                        <input
+                          type="text"
+                          value={newCategory}
+                          onChange={(e) => setNewCategory(e.target.value)}
+                          className="flex-1 px-3 py-2 bg-gray-50 border-0 rounded-l-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                          placeholder="Add a new category"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              handleAddCategory();
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddCategory}
+                          className="px-3 py-2 bg-green-500 text-white rounded-r-md hover:bg-green-600 focus:outline-none"
+                        >
+                          Add
+                        </button>
+                      </div>
+                      
+                      <label className="block text-xs font-medium text-gray-500 mt-3 mb-1">Available Categories</label>
+                      <select
+                        multiple
+                        value={categories}
+                        onChange={handleCategoryChange}
+                        className="w-full px-3 py-2 bg-gray-50 border-0 rounded-md shadow-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                        style={{ height: "100px" }}
+                      >
+                        {availableCategories.map((category) => (
+                          <option key={category} value={category}>
+                            {category}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Hold Ctrl (or Cmd on Mac) to select multiple categories
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Items Tab */}
-            {(!splitView && activeTab === "items" || (splitView && !pdfUrl)) && (
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">Line Items</h3>
-                  <button 
-                    className="flex items-center px-3 py-2 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600"
-                    onClick={addItem}
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                    </svg>
-                    Add Item
-                  </button>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Product Name
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
-                          Quantity
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
-                          Unit Price ($)
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
-                          Total
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
-                          Product Link
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
-                          Condition
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
-                          Actions
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {items.length > 0 ? (
-                        items.map((item, index) => (
-                          <tr key={index}>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={item.product_name || ""}
-                                onChange={(e) => handleItemChange(index, "product_name", e.target.value)}
-                                className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
-                                placeholder="Product name"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="number"
-                                min="0" // Allow 0 quantity
-                                value={item.quantity !== null && item.quantity !== undefined ? item.quantity : ""}
-                                onChange={(e) => handleItemChange(index, "quantity", e.target.value === "" ? null : parseInt(e.target.value))}
-                                className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex items-center">
-                                <span className="text-gray-500 mr-1">$</span>
+              {/* Items Tab */}
+              {((!splitView && activeTab === "items") || (splitView && activeTab === "items")) && (
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Line Items</h3>
+                    <button 
+                      className="flex items-center px-3 py-2 bg-blue-500 text-white text-sm rounded-md hover:bg-blue-600"
+                      onClick={addItem}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                      Add Item
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Product Name
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                            Quantity
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                            Unit Price ($)
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                            Total
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                            Product Link
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/8">
+                            Condition
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/12">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {items.length > 0 ? (
+                          items.map((item, index) => (
+                            <tr key={index}>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="text"
+                                  value={item.product_name || ""}
+                                  onChange={(e) => handleItemChange(index, "product_name", e.target.value)}
+                                  className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
+                                  placeholder="Product name"
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
                                 <input
                                   type="number"
-                                  step="0.01"
-                                  min="0"
-                                  value={item.unit_price !== null && item.unit_price !== undefined ? item.unit_price : ""}
-                                  onChange={(e) => handleItemChange(index, "unit_price", e.target.value === "" ? null : parseFloat(e.target.value))}
+                                  min="0" // Allow 0 quantity
+                                  value={item.quantity !== null && item.quantity !== undefined ? item.quantity : ""}
+                                  onChange={(e) => handleItemChange(index, "quantity", e.target.value === "" ? null : parseInt(e.target.value))}
                                   className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
                                 />
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right">
-                              {item.quantity !== null && item.unit_price !== null 
-                                ? formatCurrency((item.quantity || 0) * (item.unit_price || 0))
-                                : "-"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <input
-                                type="text"
-                                value={item.product_link || ""}
-                                onChange={(e) => handleItemChange(index, "product_link", e.target.value)}
-                                className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
-                                placeholder="Product URL"
-                              />
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <select
-                                value={item.condition || "New"}
-                                onChange={(e) => handleItemChange(index, "condition", e.target.value)}
-                                className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
-                              >
-                                <option value="New">New</option>
-                                <option value="Used">Used</option>
-                                <option value="Refurbished">Refurbished</option>
-                              </select>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                              <button 
-                                className="p-1 text-red-600 hover:text-red-900 focus:outline-none"
-                                onClick={() => removeItem(index)}
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                </svg>
-                              </button>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <div className="flex items-center">
+                                  <span className="text-gray-500 mr-1">$</span>
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={item.unit_price !== null && item.unit_price !== undefined ? item.unit_price : ""}
+                                    onChange={(e) => handleItemChange(index, "unit_price", e.target.value === "" ? null : parseFloat(e.target.value))}
+                                    className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
+                                  />
+                                </div>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right">
+                                {item.quantity !== null && item.unit_price !== null 
+                                  ? formatCurrency((item.quantity || 0) * (item.unit_price || 0))
+                                  : "-"}
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <input
+                                  type="text"
+                                  value={item.product_link || ""}
+                                  onChange={(e) => handleItemChange(index, "product_link", e.target.value)}
+                                  className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
+                                  placeholder="Product URL"
+                                />
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap">
+                                <select
+                                  value={item.condition || "New"}
+                                  onChange={(e) => handleItemChange(index, "condition", e.target.value)}
+                                  className="w-full px-2 py-1 bg-transparent border-b border-gray-200 focus:border-blue-500 focus:ring-0 focus:outline-none"
+                                >
+                                  <option value="New">New</option>
+                                  <option value="Used">Used</option>
+                                  <option value="Refurbished">Refurbished</option>
+                                </select>
+                              </td>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <button 
+                                  className="p-1 text-red-600 hover:text-red-900 focus:outline-none"
+                                  onClick={() => removeItem(index)}
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                  </svg>
+                                </button>
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                              </svg>
+                              No line items found. Click "Add Item" to add products.
                             </td>
                           </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan="7" className="px-6 py-10 text-center text-gray-500">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                            </svg>
-                            No line items found. Click "Add Item" to add products.
-                          </td>
-                        </tr>
+                        )}
+                      </tbody>
+                      {items.length > 0 && (
+                        <tfoot className="bg-gray-50">
+                          <tr>
+                            <td colSpan="3" className="px-6 py-4 text-right font-medium">Subtotal:</td>
+                            <td className="px-6 py-4 text-right font-medium">
+                              {formatCurrency(items.reduce((sum, item) => {
+                                const quantity = item.quantity !== null ? item.quantity : 0;
+                                const unitPrice = item.unit_price !== null ? item.unit_price : 0;
+                                return sum + (quantity * unitPrice);
+                              }, 0))}
+                            </td>
+                            <td colSpan="3"></td>
+                          </tr>
+                        </tfoot>
                       )}
-                    </tbody>
-                    {items.length > 0 && (
-                      <tfoot className="bg-gray-50">
-                        <tr>
-                          <td colSpan="3" className="px-6 py-4 text-right font-medium">Subtotal:</td>
-                          <td className="px-6 py-4 text-right font-medium">
-                            {formatCurrency(items.reduce((sum, item) => {
-                              const quantity = item.quantity !== null ? item.quantity : 0;
-                              const unitPrice = item.unit_price !== null ? item.unit_price : 0;
-                              return sum + (quantity * unitPrice);
-                            }, 0))}
-                          </td>
-                          <td colSpan="3"></td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
+                    </table>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Payments Tab */}
-            {(!splitView && activeTab === "payments") && (
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-medium">Payment Information</h3>
-                  <button 
-                    className={`flex items-center px-3 py-2 text-sm rounded-md ${
-                      showPaymentForm 
-                        ? "bg-gray-500 text-white hover:bg-gray-600" 
-                        : "bg-blue-500 text-white hover:bg-blue-600"
-                    }`}
-                    onClick={() => setShowPaymentForm(!showPaymentForm)}
-                  >
-                    {showPaymentForm ? (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                        Cancel
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                        </svg>
-                        Add Payment
-                      </>
-                    )}
-                  </button>
-                </div>
+              {/* Payments Tab */}
+              {((!splitView && activeTab === "payments") || (splitView && activeTab === "payments")) && (
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Payment Information</h3>
+                    <button 
+                      className={`flex items-center px-3 py-2 text-sm rounded-md ${
+                        showPaymentForm 
+                          ? "bg-gray-500 text-white hover:bg-gray-600" 
+                          : "bg-blue-500 text-white hover:bg-blue-600"
+                      }`}
+                      onClick={() => setShowPaymentForm(!showPaymentForm)}
+                    >
+                      {showPaymentForm ? (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          Cancel
+                        </>
+                      ) : (
+                        <>
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                          </svg>
+                          Add Payment
+                        </>
+                      )}
+                    </button>
+                  </div>
 
-                {showPaymentForm && (
-                  <div className="bg-gray-50 rounded-lg mb-6 p-6">
-                    <h5 className="text-lg font-medium mb-4">Add New Payment</h5>
-                    <form onSubmit={handlePaymentSubmit}>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
-                          <div className="flex">
-                            <span className="inline-flex items-center px-3 bg-white text-gray-500 border border-r-0 border-gray-300 rounded-l-md">$</span>
+                  {showPaymentForm && (
+                    <div className="bg-gray-50 rounded-lg mb-6 p-6">
+                      <h5 className="text-lg font-medium mb-4">Add New Payment</h5>
+                      <form onSubmit={handlePaymentSubmit}>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Amount</label>
+                            <div className="flex">
+                              <span className="inline-flex items-center px-3 bg-white text-gray-500 border border-r-0 border-gray-300 rounded-l-md">$</span>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={paymentAmount}
+                                onChange={(e) => setPaymentAmount(e.target.value)}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                                placeholder="0.00"
+                                required
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Card Number ID</label>
                             <input
                               type="number"
-                              step="0.01"
-                              value={paymentAmount}
-                              onChange={(e) => setPaymentAmount(e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-r-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                              placeholder="0.00"
+                              value={cardNumberId}
+                              onChange={(e) => setCardNumberId(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                              placeholder="Card ID"
+                              required
+                            />
+                            <p className="text-xs text-gray-500 mt-1">
+                              Enter the ID of the card to use
+                            </p>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Transaction ID</label>
+                            <input
+                              type="text"
+                              value={transactionId}
+                              onChange={(e) => setTransactionId(e.target.value)}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
+                              placeholder="Transaction ID"
                               required
                             />
                           </div>
+                          <div className="md:col-span-3 flex justify-end">
+                            <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                              Submit Payment
+                            </button>
+                          </div>
                         </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Card Number ID</label>
-                          <input
-                            type="number"
-                            value={cardNumberId}
-                            onChange={(e) => setCardNumberId(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="Card ID"
-                            required
-                          />
-                          <p className="text-xs text-gray-500 mt-1">
-                            Enter the ID of the card to use
-                          </p>
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-gray-500 mb-1">Transaction ID</label>
-                          <input
-                            type="text"
-                            value={transactionId}
-                            onChange={(e) => setTransactionId(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
-                            placeholder="Transaction ID"
-                            required
-                          />
-                        </div>
-                        <div className="md:col-span-3 flex justify-end">
-                          <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                            Submit Payment
-                          </button>
-                        </div>
-                      </div>
-                    </form>
-                  </div>
-                )}
+                      </form>
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <h6 className="text-sm text-gray-500 mb-1">Total Due</h6>
-                    <p className="text-3xl font-bold">{formatCurrency(invoice.grand_total || 0)}</p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div className="bg-gray-50 rounded-lg p-6 text-center">
+                      <h6 className="text-sm text-gray-500 mb-1">Total Due</h6>
+                      <p className="text-3xl font-bold">{formatCurrency(invoice.grand_total || 0)}</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-6 text-center">
+                      <h6 className="text-sm text-gray-500 mb-1">Amount Paid</h6>
+                      <p className="text-3xl font-bold text-green-500">$0.00</p>
+                    </div>
+                    <div className="bg-gray-50 rounded-lg p-6 text-center">
+                      <h6 className="text-sm text-gray-500 mb-1">Balance</h6>
+                      <p className="text-3xl font-bold text-red-500">{formatCurrency(invoice.grand_total || 0)}</p>
+                    </div>
                   </div>
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <h6 className="text-sm text-gray-500 mb-1">Amount Paid</h6>
-                    <p className="text-3xl font-bold text-green-500">$0.00</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-6 text-center">
-                    <h6 className="text-sm text-gray-500 mb-1">Balance</h6>
-                    <p className="text-3xl font-bold text-red-500">{formatCurrency(invoice.grand_total || 0)}</p>
-                  </div>
-                </div>
 
-                <h6 className="font-medium mb-3">Payment History</h6>
-                <div className="overflow-x-auto border rounded-lg">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                      <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Transaction ID
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Card
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Amount
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          Status
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      <tr>
-                        <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <h6 className="font-medium mb-3">Payment History</h6>
+                  <div className="overflow-x-auto border rounded-lg">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Date
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Transaction ID
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Card
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Amount
+                          </th>
+                          <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Status
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        <tr>
+                          <td colSpan="5" className="px-6 py-10 text-center text-gray-500">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10 mx-auto mb-2 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                           </svg>
                           <p className="mt-2">No payment history available yet</p>
@@ -1122,7 +1213,7 @@ export default function InvoiceDetail() {
         </div>
 
         {/* Right Side (PDF Document in Split View) */}
-        {((!splitView && activeTab === "document") || (splitView && pdfUrl)) && (
+        {((!splitView && activeTab === "document") || (splitView)) && (
           <div className={splitView ? 'col-span-1' : ''}>
             <div className="bg-white rounded-lg shadow-sm p-6">
               <div className="flex justify-between items-center mb-4">
