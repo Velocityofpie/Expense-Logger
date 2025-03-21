@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Table, Form, Card, Row, Col, Badge, InputGroup, Dropdown, Collapse, Modal } from "react-bootstrap";
 import { useNavigate } from "react-router-dom";
 import { fetchInvoices, uploadInvoice, addInvoiceEntry, deleteInvoice, fetchTags, fetchCategories } from "../api";
+import InvoiceTable from "../components/InvoiceTable";
 
 const API_URL = "http://localhost:8000";
 
@@ -410,6 +411,37 @@ export default function InvoiceExtractor() {
     }).format(value);
   };
 
+
+const handleBatchDelete = async (invoiceIds) => {
+  if (!window.confirm(`Are you sure you want to delete ${invoiceIds.length} selected invoices? This action cannot be undone.`)) {
+    return;
+  }
+  
+  try {
+    // Create a counter for successful deletions
+    let successCount = 0;
+    
+    // Delete each invoice sequentially
+    for (const id of invoiceIds) {
+      try {
+        await deleteInvoice(id);
+        successCount++;
+      } catch (error) {
+        console.error(`Error deleting invoice ${id}:`, error);
+      }
+    }
+    
+    // Refresh the invoice list
+    fetchAllData();
+    
+    // Show success message
+    alert(`Successfully deleted ${successCount} of ${invoiceIds.length} invoices.`);
+  } catch (error) {
+    console.error("Error during batch delete:", error);
+    alert("An error occurred during the batch delete operation.");
+  }
+};
+
   return (
     <div className="container-fluid p-2">
       <h1 className="mb-4">Invoice Management</h1>
@@ -789,126 +821,15 @@ export default function InvoiceExtractor() {
               </Form.Group>
             </Col>
           </Row>
-          
-          {isLoading ? (
-            <div className="text-center p-3">Loading invoices...</div>
-          ) : (
-            <div className="table-responsive">
-              <Table responsive striped hover size="sm" className="small">
-                <thead>
-                  <tr>
-                    <th>Order #</th>
-                    <th style={{ width: "10%" }}>Date</th>
-                    <th style={{ width: "7%" }}>Merchant</th>
-                    <th style={{ width: "7%" }}>File Name</th>
-                    <th>Amount</th>
-                    <th>Status</th>
-                    <th>Categories</th>
-                    <th>Tags</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-              <tbody>
-                {filteredInvoices.length > 0 ? (
-                  filteredInvoices.map(invoice => (
-                    <tr key={invoice.invoice_id}>
-                      <td>{invoice.order_number || "-"}</td>
-                      <td className="text-nowrap">{invoice.purchase_date || "-"}</td>
-                      <td>
-                        <div className="text-truncate" style={{ maxWidth: "100%" }}>
-                          {invoice.merchant_name || invoice.file_name || "-"}
-                        </div>
-                      </td>
-                      <td>{invoice.file_name ? (
-                        <span className="text-truncate d-inline-block" style={{ maxWidth: "100%" }}>
-                          {invoice.file_name.split('/').pop()}
-                        </span>
-                      ) : "-"}</td>
-                      <td>{formatCurrency(invoice.grand_total)}</td>
-                      <td>
-                        <Badge 
-                          bg={
-                            invoice.status === "Paid" ? "success" :
-                            invoice.status === "Open" ? "primary" :
-                            invoice.status === "Needs Attention" ? "danger" :
-                            "secondary"
-                          }
-                        >
-                          {invoice.status}
-                        </Badge>
-                      </td>
-                      <td>
-                        {invoice.categories && invoice.categories.length > 0 ? (
-                          invoice.categories.map((category, index) => (
-                            <Badge 
-                              key={index} 
-                              bg="secondary" 
-                              className="me-1 mb-1"
-                            >
-                              {category}
-                            </Badge>
-                          ))
-                        ) : "-"}
-                      </td>
-                      <td>
-                        {invoice.tags && invoice.tags.length > 0 ? (
-                          invoice.tags.map((tag, index) => (
-                            <Badge 
-                              key={index} 
-                              bg="info" 
-                              className="me-1 mb-1"
-                            >
-                              {tag}
-                            </Badge>
-                          ))
-                        ) : "-"}
-                      </td>
-                      <td>
-                        <div className="d-flex flex-nowrap">
-                          {invoice.file_name && (
-                            <Button
-                              variant="outline-secondary"
-                              size="sm"
-                              className="me-1 py-0 px-1"
-                              onClick={() => viewInvoiceDocument(invoice)}
-                              title="View Document"
-                            >
-                              View
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline-primary"
-                            size="sm"
-                            className="me-1 py-0 px-1"
-                            onClick={() => viewInvoiceDetails(invoice)}
-                            title="Edit Invoice"
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            variant="outline-danger"
-                            size="sm"
-                            className="py-0 px-1"
-                            onClick={() => handleDeleteInvoice(invoice)}
-                            title="Delete Invoice"
-                          >
-                            Del
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="9" className="text-center">
-                      No invoices found
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-                          </Table>
-            </div>
-          )}
+      {/* Use the new InvoiceTable component */}
+          <InvoiceTable 
+            invoices={filteredInvoices}
+            isLoading={isLoading}
+            onView={viewInvoiceDocument}
+            onEdit={viewInvoiceDetails}
+            onDelete={handleDeleteInvoice}
+            onBatchDelete={handleBatchDelete}
+          />
         </Card.Body>
       </Card>
       

@@ -106,3 +106,35 @@ nav svg {
 .dark .close {
   @apply text-dark-text-primary;
 }
+
+/* Add to your global.css or create a new file */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.table-active {
+  background-color: rgba(0, 0, 0, 0.075);
+}
+
+.fs-6 {
+  font-size: 1rem !important;
+}
+
+.gap-1 {
+  gap: 0.25rem !important;
+}
+
+.gap-3 {
+  gap: 1rem !important;
+}
+
+/* Add more space to the action icons */
+.btn-link svg {
+  transition: transform 0.2s ease;
+}
+
+.btn-link:hover svg {
+  transform: scale(1.2);
+}
