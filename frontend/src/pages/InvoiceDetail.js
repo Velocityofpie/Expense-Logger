@@ -150,10 +150,10 @@ export default function InvoiceDetail() {
   const loadInvoiceDetails = async (invoiceId) => {
     try {
       // Fetch invoice details
-      const invoiceData = await fetchInvoiceById(invoiceId);
+      const refreshedData = await fetchInvoiceById(id);
       setInvoice({
-        ...invoiceData,
-        merchant_name: invoiceData.merchant_name || ""
+        ...refreshedData,
+        merchant_name: refreshedData.merchant_name || invoice.merchant_name || ""
       });
       setItems(invoiceData.items || []);
       setTags(invoiceData.tags || []);
@@ -324,7 +324,7 @@ export default function InvoiceDetail() {
   // The saveInvoice function should be updated to use the merchant_name field
   // but keep it separate from file_name handling
 
-  // Update invoice fields
+// Update invoice fields
   const saveInvoice = async () => {
     try {
       setIsSaving(true);
@@ -342,7 +342,7 @@ export default function InvoiceDetail() {
       const updatedInvoice = {
         // Keep the merchant_name separate from file_name
         file_name: newFileName,
-        merchant_name: invoice.merchant_name,
+        merchant_name: invoice.merchant_name, // Ensure this is included in the update payload
         order_number: invoice.order_number,
         purchase_date: invoice.purchase_date,
         payment_method: invoice.payment_method,

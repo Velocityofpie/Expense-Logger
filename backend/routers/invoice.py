@@ -198,7 +198,7 @@ async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), us
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# Update an existing invoice - modified version for router/invoice.py
+# Update an existing invoice
 @router.put("/update/{invoice_id}")
 async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Session = Depends(get_db), user_id: int = 1):
     """Update an existing invoice."""
@@ -211,6 +211,7 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
         # Store old data for audit log
         old_data = {
             "file_name": invoice.file_name,
+            "merchant_name": invoice.merchant_name, # Add merchant_name to old_data
             "order_number": invoice.order_number,
             "status": invoice.status,
             "payment_method": invoice.payment_method
@@ -247,7 +248,7 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
         
         # Update invoice fields
         if invoice_data.merchant_name is not None:
-            invoice.merchant_name = invoice_data.merchant_name
+            invoice.merchant_name = invoice_data.merchant_name  # Make sure to update merchant_name
             
         if new_filename != old_filename:
             invoice.file_name = new_filename
@@ -347,6 +348,7 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
             old_data=old_data,
             new_data={
                 "file_name": invoice.file_name,
+                "merchant_name": invoice.merchant_name,  # Include merchant_name in new_data
                 "order_number": invoice.order_number,
                 "status": invoice.status,
                 "payment_method": invoice.payment_method
@@ -358,7 +360,6 @@ async def update_invoice(invoice_id: int, invoice_data: InvoiceUpdate, db: Sessi
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.get("/uploads/{filename}")
 async def get_uploaded_file(filename: str):
