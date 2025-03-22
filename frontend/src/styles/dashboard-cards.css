@@ -1,0 +1,127 @@
+/* frontend/src/styles/dashboard-cards.css */
+/* Special styling for dashboard cards and stats */
+
+/* Stats Cards */
+.dashboard-stat-card {
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .dashboard-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+  
+  /* Card gradients */
+  .bg-gradient-indigo {
+    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
+  }
+  
+  .bg-gradient-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
+  }
+  
+  .bg-gradient-pink {
+    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+  }
+  
+  .bg-gradient-blue {
+    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+  }
+  
+  /* Card icon containers */
+  .dashboard-icon-container {
+    width: 56px;
+    height: 56px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin-bottom: 1rem;
+  }
+  
+  .dashboard-icon-container svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+  }
+  
+  /* Dashboard chart containers */
+  .dashboard-chart-container {
+    height: 20rem;
+    background-color: white;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  
+  .dark .dashboard-chart-container {
+    background-color: #1e1e1e;
+  }
+  
+  .dashboard-chart-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid rgba(229, 231, 235, 1);
+  }
+  
+  .dark .dashboard-chart-header {
+    border-bottom-color: rgba(55, 65, 81, 1);
+  }
+  
+  .dashboard-chart-body {
+    padding: 1.25rem;
+    height: calc(100% - 4rem);
+  }
+  
+  /* Badges for recent invoices */
+  .dashboard-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.625rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .dashboard-badge-primary {
+    background-color: rgba(79, 70, 229, 0.1);
+    color: #4f46e5;
+  }
+  
+  .dark .dashboard-badge-primary {
+    background-color: rgba(79, 70, 229, 0.2);
+    color: #818cf8;
+  }
+  
+  .dashboard-badge-success {
+    background-color: rgba(5, 150, 105, 0.1);
+    color: #059669;
+  }
+  
+  .dark .dashboard-badge-success {
+    background-color: rgba(5, 150, 105, 0.2);
+    color: #10b981;
+  }
+  
+  .dashboard-badge-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: #f59e0b;
+  }
+  
+  .dark .dashboard-badge-warning {
+    background-color: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+  }
+  
+  .dashboard-badge-danger {
+    background-color: rgba(220, 38, 38, 0.1);
+    color: #dc2626;
+  }
+  
+  .dark .dashboard-badge-danger {
+    background-color: rgba(220, 38, 38, 0.2);
+    color: #ef4444;
+  }
