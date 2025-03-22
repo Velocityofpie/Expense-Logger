@@ -51,4 +51,5 @@ Things to fix
 - [ ] Create a pdf for making a invoice to someone 
 - [ ] item type
 
-
+- [ ] Payment method cash, card, money transfer app, when you select card a new drop down will appear and card will allow you to select 
+- [ ]Payment Cards looks like a credit card 
