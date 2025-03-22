@@ -1,0 +1,25 @@
+{
+    "semi": true,
+    "tabWidth": 2,
+    "printWidth": 100,
+    "singleQuote": true,
+    "trailingComma": "es5",
+    "bracketSpacing": true,
+    "bracketSameLine": false,
+    "arrowParens": "avoid",
+    "endOfLine": "lf",
+    "overrides": [
+      {
+        "files": "*.{ts,tsx}",
+        "options": {
+          "parser": "typescript"
+        }
+      },
+      {
+        "files": "*.{css,scss}",
+        "options": {
+          "singleQuote": false
+        }
+      }
+    ]
+  }

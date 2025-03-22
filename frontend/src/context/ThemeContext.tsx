@@ -1,46 +1,60 @@
 // src/context/ThemeContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import { ThemeMode } from '../types/common.types';
 
-// Define the theme context props interface
-export interface ThemeContextProps {
+/**
+ * Interface for theme context
+ */
+interface ThemeContextType {
   darkMode: boolean;
   toggleDarkMode: () => void;
   setDarkMode: (isDark: boolean) => void;
+  theme: ThemeMode;
 }
 
-// Create the context
-export const ThemeContext = createContext<ThemeContextProps | undefined>(undefined);
+// Create context with default values
+export const ThemeContext = createContext<ThemeContextType>({
+  darkMode: false,
+  toggleDarkMode: () => {},
+  setDarkMode: () => {},
+  theme: 'light',
+});
 
-// Define props for the provider component
+/**
+ * Theme provider props
+ */
 interface ThemeProviderProps {
   children: ReactNode;
+  defaultTheme?: ThemeMode;
 }
 
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // Initialize dark mode from localStorage or user preference
+/**
+ * Theme provider component for light/dark mode
+ */
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
+  children, 
+  defaultTheme = 'light' 
+}) => {
+  // Initialize dark mode from localStorage or system preference
   const [darkMode, setDarkMode] = useState<boolean>(() => {
-    // Try to get theme preference from localStorage
+    // Check localStorage first
     const savedTheme = localStorage.getItem('darkMode');
-    // Check if user has a system preference
-    const prefersDark = window.matchMedia && 
-                       window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    // Return saved preference or system preference
-    return savedTheme ? JSON.parse(savedTheme) : prefersDark;
+    if (savedTheme !== null) {
+      return JSON.parse(savedTheme);
+    }
+    
+    // If no saved preference, check system preference
+    const prefersDark = window.matchMedia && 
+      window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // If no system preference, use default theme
+    return prefersDark || defaultTheme === 'dark';
   });
-
-  // Toggle dark mode function
-  const toggleDarkMode = (): void => {
-    setDarkMode(!darkMode);
-  };
-
-  // Set dark mode with a specific value
-  const setDarkModeValue = (isDark: boolean): void => {
-    setDarkMode(isDark);
-  };
 
   // Update localStorage and apply theme when darkMode changes
   useEffect(() => {
+    // Save to localStorage
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     
     // Apply dark mode class to html element for Tailwind
@@ -50,7 +64,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       document.documentElement.classList.remove('dark');
     }
     
-    // Handle Bootstrap components that don't respect Tailwind's dark mode
+    // Handle Bootstrap components
     if (darkMode) {
       document.body.classList.add('bootstrap-dark');
     } else {
@@ -60,34 +74,51 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 
   // Listen for system theme changes
   useEffect(() => {
+    // Only apply if no user preference is set
+    if (localStorage.getItem('darkMode') !== null) {
+      return;
+    }
+    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     
-    // Define the handler function
     const handleChange = (e: MediaQueryListEvent): void => {
-      // Only change if the user hasn't explicitly set a preference
-      if (!localStorage.getItem('darkMode')) {
-        setDarkMode(e.matches);
-      }
+      setDarkMode(e.matches);
     };
     
-    // Add listener for changes
     mediaQuery.addEventListener('change', handleChange);
     
-    // Cleanup listener
     return () => {
       mediaQuery.removeEventListener('change', handleChange);
     };
   }, []);
 
+  /**
+   * Toggle between light and dark mode
+   */
+  const toggleDarkMode = (): void => {
+    setDarkMode(!darkMode);
+  };
+
+  /**
+   * Set dark mode directly
+   */
+  const setDarkModeState = (isDark: boolean): void => {
+    setDarkMode(isDark);
+  };
+
+  // Context value
+  const contextValue: ThemeContextType = {
+    darkMode,
+    toggleDarkMode,
+    setDarkMode: setDarkModeState,
+    theme: darkMode ? 'dark' : 'light',
+  };
+
   return (
-    <ThemeContext.Provider
-      value={{
-        darkMode,
-        toggleDarkMode,
-        setDarkMode: setDarkModeValue
-      }}
-    >
+    <ThemeContext.Provider value={contextValue}>
       {children}
     </ThemeContext.Provider>
   );
 };
+
+export default ThemeContext;

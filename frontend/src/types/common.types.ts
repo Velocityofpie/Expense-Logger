@@ -1,93 +1,224 @@
-import { ReactNode } from 'react';
+// src/types/common.types.ts
 
-// Interface for children prop
-export interface ChildrenProps {
-  children?: ReactNode;
+/**
+ * Interface for generic API response
+ */
+export interface ApiResponse<T> {
+  data: T;
+  status: number;
+  message?: string;
+  success: boolean;
 }
 
-// Interface for class name prop
-export interface ClassNameProps {
+/**
+ * Interface for error response
+ */
+export interface ApiErrorResponse {
+  status: number;
+  message: string;
+  errors?: Record<string, string[]>;
+}
+
+/**
+ * Interface for pagination parameters
+ */
+export interface PaginationParams {
+  page?: number;
+  limit?: number;
+  sortBy?: string;
+  sortDirection?: 'asc' | 'desc';
+}
+
+/**
+ * Interface for pagination metadata
+ */
+export interface PaginationMeta {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+/**
+ * Interface for paginated response
+ */
+export interface PaginatedResponse<T> {
+  items: T[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Type for chart data
+ */
+export interface ChartData {
+  name: string;
+  value: number;
+}
+
+/**
+ * Interface for user authentication
+ */
+export interface AuthUser {
+  user_id: number;
+  username: string;
+  email: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at?: string;
+}
+
+/**
+ * Interface for authentication tokens
+ */
+export interface AuthTokens {
+  accessToken: string;
+  refreshToken?: string;
+  tokenType: string;
+  expiresIn: number;
+}
+
+/**
+ * Interface for login credentials
+ */
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  rememberMe?: boolean;
+}
+
+/**
+ * Interface for register data
+ */
+export interface RegisterData {
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+}
+
+/**
+ * Utility type to make specific properties required
+ */
+export type RequireProps<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+/**
+ * Utility type to make all properties required
+ */
+export type RequireAll<T> = { [P in keyof T]-?: T[P] };
+
+/**
+ * Utility type to make some properties optional
+ */
+export type PartialProps<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
+
+/**
+ * Type for button variants
+ */
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost';
+
+/**
+ * Type for button sizes
+ */
+export type ButtonSize = 'sm' | 'md' | 'lg';
+
+/**
+ * Type for form field validation state
+ */
+export type ValidationState = 'valid' | 'invalid' | 'warning' | 'neutral';
+
+/**
+ * Type for toast notification variants
+ */
+export type ToastVariant = 'success' | 'error' | 'warning' | 'info';
+
+/**
+ * Type for theme modes
+ */
+export type ThemeMode = 'light' | 'dark';
+
+/**
+ * Type for notification position
+ */
+export type NotificationPosition = 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left' | 'top-center' | 'bottom-center';
+
+/**
+ * Interface for notification
+ */
+export interface Notification {
+  id: string;
+  title?: string;
+  message: string;
+  variant: ToastVariant;
+  duration?: number;
+  position?: NotificationPosition;
+  onClose?: () => void;
+  autoClose?: boolean;
+}
+
+/**
+ * Type for component event handlers
+ */
+export type EventHandler<E extends React.SyntheticEvent = React.SyntheticEvent> = (event: E) => void;
+
+/**
+ * Interface for component with children
+ */
+export interface WithChildren {
+  children: React.ReactNode;
+}
+
+/**
+ * Type for component with class name
+ */
+export interface WithClassName {
   className?: string;
 }
 
-// Combined interface for common props
-export interface CommonProps extends ChildrenProps, ClassNameProps {
-  id?: string;
+/**
+ * Type for component with test ID for testing
+ */
+export interface WithTestId {
+  'data-testid'?: string;
 }
 
-// Interface for basic form element props
-export interface FormElementProps extends CommonProps {
-  name?: string;
+/**
+ * Type for base component props
+ */
+export type BaseComponentProps = WithChildren & WithClassName & WithTestId;
+
+/**
+ * Type for component with ref
+ */
+export type WithRef<T> = {
+  ref?: React.Ref<T>;
+};
+
+/**
+ * Type for component that can be disabled
+ */
+export interface Disableable {
   disabled?: boolean;
-  required?: boolean;
-  readOnly?: boolean;
-  autoFocus?: boolean;
 }
 
-// Interface for text input props
-export interface TextInputProps extends FormElementProps {
-  value?: string;
-  defaultValue?: string;
-  onChange?: (event: React.ChangeEvent<HTMLInputElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLInputElement>) => void;
-  onFocus?: (event: React.FocusEvent<HTMLInputElement>) => void;
-  placeholder?: string;
-  type?: 'text' | 'email' | 'password' | 'search' | 'tel' | 'url' | 'number';
-  min?: number;
-  max?: number;
-  step?: number;
-  pattern?: string;
-  autoComplete?: string;
+/**
+ * Type for route metadata
+ */
+export interface RouteMetadata {
+  title: string;
+  description?: string;
+  icon?: React.ReactNode;
+  requiresAuth?: boolean;
+  requiresAdmin?: boolean;
+  exact?: boolean;
 }
 
-// Interface for select props
-export interface SelectProps extends FormElementProps {
-  value?: string | string[];
-  defaultValue?: string | string[];
-  onChange?: (event: React.ChangeEvent<HTMLSelectElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLSelectElement>) => void;
-  onFocus?: (event: React.FocusEvent<HTMLSelectElement>) => void;
-  options?: { value: string; label: string }[];
-  multiple?: boolean;
-}
+/**
+ * Type for screen breakpoints
+ */
+export type Breakpoint = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
-// Interface for text area props
-export interface TextAreaProps extends FormElementProps {
-  value?: string;
-  defaultValue?: string;
-  onChange?: (event: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onBlur?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
-  onFocus?: (event: React.FocusEvent<HTMLTextAreaElement>) => void;
-  placeholder?: string;
-  rows?: number;
-  cols?: number;
-  maxLength?: number;
-  minLength?: number;
-  wrap?: 'hard' | 'soft';
-  autoComplete?: string;
-}
-
-// Interface for button props
-export interface ButtonProps extends CommonProps {
-  type?: 'button' | 'submit' | 'reset';
-  disabled?: boolean;
-  onClick?: (event: React.MouseEvent<HTMLButtonElement>) => void;
-  variant?: 'primary' | 'secondary' | 'danger' | 'success' | 'outline' | 'ghost';
-  size?: 'sm' | 'md' | 'lg';
-  icon?: ReactNode;
-  iconPosition?: 'left' | 'right';
-  isLoading?: boolean;
-  fullWidth?: boolean;
-}
-
-// Interface for theme context
-export interface ThemeContextProps {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-}
-
-// Types for size variants
-export type Size = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
-
-// Types for color variants
-export type ColorVariant = 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info';
+/**
+ * Interface for responsive value based on breakpoints
+ */
+export type ResponsiveValue<T> = T | Partial<Record<Breakpoint, T>>;

@@ -1,67 +1,41 @@
-import 'styled-components';
+// src/types/styled.d.ts
+import 'tailwindcss/tailwind.css';
 
-// Extend the styled-components DefaultTheme
-declare module 'styled-components' {
-  export interface DefaultTheme {
-    colors: {
-      primary: string;
-      secondary: string;
-      success: string;
-      danger: string;
-      warning: string;
-      info: string;
-      light: string;
-      dark: string;
-      text: {
-        primary: string;
-        secondary: string;
-        muted: string;
-      };
-      background: {
-        primary: string;
-        secondary: string;
-        card: string;
-      };
-      border: string;
-    };
-    fontSizes: {
-      xs: string;
-      sm: string;
-      md: string;
-      lg: string;
-      xl: string;
-      xxl: string;
-    };
-    spacing: {
-      xs: string;
-      sm: string;
-      md: string;
-      lg: string;
-      xl: string;
-    };
-    borderRadius: {
-      sm: string;
-      md: string;
-      lg: string;
-      full: string;
-    };
-    breakpoints: {
-      xs: string;
-      sm: string;
-      md: string;
-      lg: string;
-      xl: string;
-    };
-    shadows: {
-      sm: string;
-      md: string;
-      lg: string;
-      xl: string;
-    };
-    transitions: {
-      fast: string;
-      normal: string;
-      slow: string;
-    };
-  }
+// This file contains TypeScript declarations for modules without types
+
+declare module '*.svg' {
+  import React = require('react');
+  export const ReactComponent: React.FC<React.SVGProps<SVGSVGElement>>;
+  const src: string;
+  export default src;
+}
+
+declare module '*.jpg' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.png' {
+  const content: string;
+  export default content;
+}
+
+declare module '*.json' {
+  const content: any;
+  export default content;
+}
+
+// Environment variables
+interface ProcessEnv {
+  NODE_ENV: 'development' | 'production' | 'test';
+  REACT_APP_API_URL: string;
+  // Add other environment variables here
+}
+
+// Extend Window interface for custom properties
+interface Window {
+  env?: {
+    API_URL?: string;
+    // Other runtime environment variables
+  };
 }

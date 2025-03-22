@@ -1,163 +1,247 @@
-import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios';
-import { APIError } from '../../types/api.types';
+// src/services/api/client.ts
+import { ApiResponse, ApiErrorResponse } from '../../types/common.types';
 
-// Define the base URL from environment variables
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+/**
+ * Interface for request options
+ */
+interface RequestOptions extends RequestInit {
+  params?: Record<string, string | number | boolean | undefined>;
+  withCredentials?: boolean;
+}
 
-// Create a custom axios instance with default configurations
-const axiosInstance: AxiosInstance = axios.create({
-  baseURL: API_URL,
-  timeout: 30000, // 30 seconds timeout
-  headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json',
-  },
-});
+/**
+ * Interface for request headers
+ */
+interface RequestHeaders {
+  [key: string]: string;
+}
 
-// Request interceptor - modify requests before they are sent
-axiosInstance.interceptors.request.use(
-  (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    // Get the token from localStorage if it exists
-    const token = localStorage.getItem('token');
-    
-    // If token exists, add it to the headers
-    if (token && config.headers) {
-      config.headers['Authorization'] = `Bearer ${token}`;
-    }
-    
-    return config;
-  },
-  (error: AxiosError): Promise<AxiosError> => {
-    // Handle request errors
-    console.error('Request error:', error);
-    return Promise.reject(error);
+/**
+ * Class providing a typed API client for making HTTP requests
+ */
+class ApiClient {
+  private baseUrl: string;
+  private defaultHeaders: RequestHeaders;
+  
+  /**
+   * Create a new API client
+   * @param baseUrl Base URL for API requests
+   */
+  constructor(baseUrl: string) {
+    this.baseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    this.defaultHeaders = {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+    };
   }
-);
-
-// Response interceptor - process responses before they are handled
-axiosInstance.interceptors.response.use(
-  (response: AxiosResponse): AxiosResponse => {
-    // Handle successful responses
-    return response;
-  },
-  (error: AxiosError): Promise<AxiosError> => {
-    // Handle response errors
-    const errorResponse = error.response?.data as APIError;
+  
+  /**
+   * Set default headers for all requests
+   * @param headers Headers to set
+   */
+  public setDefaultHeaders(headers: RequestHeaders): void {
+    this.defaultHeaders = {
+      ...this.defaultHeaders,
+      ...headers,
+    };
+  }
+  
+  /**
+   * Set authentication token for all requests
+   * @param token Authentication token
+   */
+  public setAuthToken(token: string): void {
+    this.defaultHeaders['Authorization'] = `Bearer ${token}`;
+  }
+  
+  /**
+   * Clear authentication token
+   */
+  public clearAuthToken(): void {
+    delete this.defaultHeaders['Authorization'];
+  }
+  
+  /**
+   * Create URL with query parameters
+   * @param url Base URL
+   * @param params Query parameters
+   * @returns Full URL with query parameters
+   */
+  private createUrl(url: string, params?: Record<string, string | number | boolean | undefined>): string {
+    const fullUrl = url.startsWith('/') ? `${this.baseUrl}${url}` : `${this.baseUrl}/${url}`;
     
-    // Handle authentication errors
-    if (error.response?.status === 401) {
-      // Clear token and redirect to login page if not already there
-      localStorage.removeItem('token');
-      
-      // Check if the current page is not the login page
-      if (!window.location.pathname.includes('/login')) {
-        // Redirect to login page
-        window.location.href = '/login';
-      }
+    if (!params) {
+      return fullUrl;
     }
     
-    // Create a more informative error message
-    const enhancedError: APIError = {
-      detail: errorResponse?.detail || error.message,
-      status: error.response?.status,
-      path: error.config?.url,
+    // Filter out undefined values
+    const filteredParams = Object.entries(params)
+      .filter(([_, value]) => value !== undefined)
+      .reduce((acc, [key, value]) => {
+        acc[key] = String(value);
+        return acc;
+      }, {} as Record<string, string>);
+    
+    const searchParams = new URLSearchParams(filteredParams);
+    return `${fullUrl}?${searchParams.toString()}`;
+  }
+  
+  /**
+   * Make a request to the API
+   * @param url API endpoint
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  private async request<T>(url: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    const { params, withCredentials, ...fetchOptions } = options;
+    
+    const headers = {
+      ...this.defaultHeaders,
+      ...options.headers,
     };
     
-    // Attach the enhanced error to the original error
-    error.response = {
-      ...error.response,
-      data: enhancedError,
-    } as AxiosResponse;
+    const fetchUrl = this.createUrl(url, params);
     
-    return Promise.reject(error);
+    try {
+      const response = await fetch(fetchUrl, {
+        ...fetchOptions,
+        headers,
+        credentials: withCredentials ? 'include' : 'same-origin',
+      });
+      
+      const contentType = response.headers.get('Content-Type') || '';
+      let data;
+      
+      if (contentType.includes('application/json')) {
+        data = await response.json();
+      } else if (contentType.includes('text/')) {
+        data = await response.text();
+      } else {
+        data = await response.blob();
+      }
+      
+      if (!response.ok) {
+        const errorData = data as ApiErrorResponse;
+        throw {
+          status: response.status,
+          message: errorData.message || response.statusText,
+          errors: errorData.errors,
+        };
+      }
+      
+      return {
+        data: data as T,
+        status: response.status,
+        message: 'Success',
+        success: true,
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw {
+          status: 0,
+          message: error.message,
+          success: false,
+        };
+      }
+      
+      throw error;
+    }
   }
-);
-
-// Generic GET request with type parameter for response data
-export const get = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  try {
-    const response = await axiosInstance.get<T>(url, config);
-    return response.data;
-  } catch (error) {
-    throw handleError(error as AxiosError);
-  }
-};
-
-// Generic POST request with type parameters for request and response data
-export const post = async <T, D = any>(
-  url: string, 
-  data?: D, 
-  config?: AxiosRequestConfig
-): Promise<T> => {
-  try {
-    const response = await axiosInstance.post<T>(url, data, config);
-    return response.data;
-  } catch (error) {
-    throw handleError(error as AxiosError);
-  }
-};
-
-// Generic PUT request with type parameters for request and response data
-export const put = async <T, D = any>(
-  url: string, 
-  data?: D, 
-  config?: AxiosRequestConfig
-): Promise<T> => {
-  try {
-    const response = await axiosInstance.put<T>(url, data, config);
-    return response.data;
-  } catch (error) {
-    throw handleError(error as AxiosError);
-  }
-};
-
-// Generic PATCH request with type parameters for request and response data
-export const patch = async <T, D = any>(
-  url: string, 
-  data?: D, 
-  config?: AxiosRequestConfig
-): Promise<T> => {
-  try {
-    const response = await axiosInstance.patch<T>(url, data, config);
-    return response.data;
-  } catch (error) {
-    throw handleError(error as AxiosError);
-  }
-};
-
-// Generic DELETE request with type parameter for response data
-export const del = async <T>(url: string, config?: AxiosRequestConfig): Promise<T> => {
-  try {
-    const response = await axiosInstance.delete<T>(url, config);
-    return response.data;
-  } catch (error) {
-    throw handleError(error as AxiosError);
-  }
-};
-
-// Helper function to handle errors
-const handleError = (error: AxiosError): Error => {
-  const errorResponse = error.response?.data as APIError;
   
-  // Create a more user-friendly error message
-  const errorMessage = errorResponse?.detail || error.message || 'An unexpected error occurred';
+  /**
+   * Make a GET request
+   * @param url API endpoint
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async get<T>(url: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'GET',
+    });
+  }
   
-  // Create a custom error with the error message
-  const customError = new Error(errorMessage);
+  /**
+   * Make a POST request
+   * @param url API endpoint
+   * @param data Request body
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async post<T>(url: string, data?: any, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'POST',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
   
-  // Attach the original error and response for debugging
-  (customError as any).originalError = error;
-  (customError as any).response = error.response;
+  /**
+   * Make a PUT request
+   * @param url API endpoint
+   * @param data Request body
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async put<T>(url: string, data?: any, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PUT',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
   
-  return customError;
-};
+  /**
+   * Make a PATCH request
+   * @param url API endpoint
+   * @param data Request body
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async patch<T>(url: string, data?: any, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'PATCH',
+      body: data ? JSON.stringify(data) : undefined,
+    });
+  }
+  
+  /**
+   * Make a DELETE request
+   * @param url API endpoint
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async delete<T>(url: string, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    return this.request<T>(url, {
+      ...options,
+      method: 'DELETE',
+    });
+  }
+  
+  /**
+   * Upload a file
+   * @param url API endpoint
+   * @param formData FormData object with file(s)
+   * @param options Request options
+   * @returns Promise with the response
+   */
+  public async upload<T>(url: string, formData: FormData, options: RequestOptions = {}): Promise<ApiResponse<T>> {
+    // Remove Content-Type header so the browser can set it with the correct boundary
+    const headers = { ...this.defaultHeaders };
+    delete headers['Content-Type'];
+    
+    return this.request<T>(url, {
+      ...options,
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+  }
+}
 
-// Export the axios instance and utility functions
-export default {
-  axiosInstance,
-  get,
-  post,
-  put,
-  patch,
-  delete: del,
-};
+// Create and export a singleton instance
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const apiClient = new ApiClient(API_URL);
+
+export default apiClient;

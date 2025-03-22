@@ -1,6 +1,5 @@
-# frontend/Dockerfile
-
-FROM node:16-alpine
+# Dockerfile
+FROM node:16-alpine as build
 
 # Set working directory
 WORKDIR /app
@@ -9,13 +8,25 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install dependencies
-RUN npm install
+RUN npm ci
 
-# Copy app source code
+# Copy the rest of the code
 COPY . .
 
-# Expose port 3000
-EXPOSE 3000
+# Type check and build
+RUN npm run type-check && npm run build
 
-# Start app
-CMD ["npm", "start"]
+# Production image
+FROM nginx:stable-alpine as production
+
+# Copy built assets from the build stage
+COPY --from=build /app/build /usr/share/nginx/html
+
+# Copy custom nginx config
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
