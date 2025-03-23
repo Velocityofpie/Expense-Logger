@@ -7,7 +7,7 @@ import InvoiceExtractor from "./pages/InvoiceExtractor";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentCards from "./components/PaymentCards";
 import Wishlist from "./components/Wishlist";
-import Tools from "./pages/Tools"; // Import the new Tools page
+import Tools from "./pages/Tools";
 import { ThemeProvider } from "./context/ThemeContext";
 import ExpenseTrackerPage from "./pages/ExpenseTrackerPage";
 
@@ -26,7 +26,8 @@ export default function App() {
                             <Route path="/expenses" element={<ExpenseTrackerPage />} />
                             <Route path="/payment-cards" element={<PaymentCards />} />
                             <Route path="/wishlist" element={<Wishlist />} />
-                            <Route path="/tools" element={<Tools />} /> {/* New Tools route */}
+                            <Route path="/expenses" element={<ExpenseTrackerPage />} /> {/* Use ExpenseTrackerPage for expenses */}
+                            <Route path="/tools" element={<Tools />} />
                         </Routes>
                     </div>
                 </Router>
