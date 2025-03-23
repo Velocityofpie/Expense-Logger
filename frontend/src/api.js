@@ -46,6 +46,34 @@ export async function uploadInvoice(formData) {
     }
 }
 
+// Fetch expense data (used by ExpenseTrackerPage component)
+export async function fetchExpenseData(viewBy = 'category', category = 'All', dateFilter = 'all') {
+  try {
+    // Build the query string based on parameters
+    let url = `${API_URL}/expenses/summary/?view_by=${viewBy}`;
+    
+    if (category && category !== 'All') {
+      url += `&category=${encodeURIComponent(category)}`;
+    }
+    
+    if (dateFilter && dateFilter !== 'all') {
+      url += `&date_filter=${dateFilter}`;
+    }
+    
+    const response = await fetch(url);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch expense data');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching expense data:", error);
+    throw error;
+  }
+}
+
 // Add a new invoice entry (no file)
 export async function addInvoiceEntry(invoiceData) {
     try {
@@ -321,60 +349,6 @@ export async function testTemplate(templateId, invoiceId) {
 // frontend/src/api.js
 
 // Add a new expense
-export async function addExpense(expenseData) {
-  try {
-    // Transform to the format expected by your backend
-    const invoiceData = {
-      merchant_name: expenseData.store,
-      order_number: expenseData.orderNumber,
-      purchase_date: expenseData.date,
-      payment_method: expenseData.creditCard,
-      grand_total: expenseData.total,
-      status: "Open",
-      categories: [expenseData.category],
-      items: expenseData.products.map(product => ({
-        product_name: product.name,
-        quantity: product.quantity,
-        unit_price: product.price
-      }))
-    };
-    
-    // Call your existing addInvoiceEntry function
-    const result = await addInvoiceEntry(invoiceData);
-    return result;
-  } catch (error) {
-    console.error("Error adding expense:", error);
-    throw error;
-  }
-}
-
-// Update existing expense
-export async function updateExpense(id, expenseData) {
-  try {
-    // Transform to the format expected by your backend
-    const invoiceData = {
-      merchant_name: expenseData.store,
-      order_number: expenseData.orderNumber,
-      purchase_date: expenseData.date,
-      payment_method: expenseData.creditCard,
-      grand_total: expenseData.total,
-      categories: [expenseData.category],
-      items: expenseData.products.map(product => ({
-        product_name: product.name,
-        quantity: product.quantity,
-        unit_price: product.price
-      }))
-    };
-    
-    // Call your existing updateInvoice function
-    const result = await updateInvoice(id, invoiceData);
-    return result;
-  } catch (error) {
-    console.error("Error updating expense:", error);
-    throw error;
-  }
-}
-
 export async function addExpense(expenseData) {
   try {
     // Transform to the format expected by your backend
