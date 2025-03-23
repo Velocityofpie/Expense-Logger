@@ -8,8 +8,9 @@ import ExpenseSummary from './expense/ExpenseSummary';
 import ExpenseGroups from './expense/ExpenseGroups';
 import ExpenseForm from './expense/ExpenseForm';
 import ExpenseStats from './expense/ExpenseStats';
+import { fetchExpenseData, addExpense, updateExpense, deleteInvoice } from '../api';
 
-const ExpenseTracker = ({ initialData }) => {
+const ExpenseTracker = ({ initialData, categories }) => {
   // State for active main tab (Camera, Server, Home Network)
   const [activeMainTab, setActiveMainTab] = useState('Camera');
   
@@ -25,30 +26,27 @@ const ExpenseTracker = ({ initialData }) => {
     direction: 'desc'
   });
   
+  // State for expense data
+  const [groupedData, setGroupedData] = useState([]);
+  const [filteredData, setFilteredData] = useState([]);
+  
   // Confirmation modal state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
 
-  // Categories for each tab - these could be fetched from your backend
-  const categoriesByTab = {
+  // Categories for each tab
+  const [categoriesByTab, setCategoriesByTab] = useState({
     'Camera': ['All', 'Cameras', 'Lenses', 'Accessories', 'Storage', 'Tripods'],
     'Server': ['All', 'CPUs', 'Storage', 'RAM', 'Cases', 'Cooling'],
     'Home Network': ['All', 'Routers', 'Switches', 'Access Points', 'Cables', 'Security']
-  };
+  });
 
   // Credit card options - these could be fetched from your backend Cards model
-  const creditCardOptions = [
+  const [creditCardOptions, setCreditCardOptions] = useState([
     'Amazon.com Visa Signature ending in 0000',
     'Capital one Venture X ending in 0000',
     'United Visa ending in 0000'
-  ];
-
-  // Mock Data for each tab - this would be replaced with data from your backend
-  const [mockDataByTab, setMockDataByTab] = useState({
-    'Camera': [],
-    'Server': [],
-    'Home Network': []
-  });
+  ]);
 
   // New item state
   const [newItem, setNewItem] = useState({
@@ -59,195 +57,88 @@ const ExpenseTracker = ({ initialData }) => {
     products: []
   });
 
-  // Fetch data from backend when component mounts
+  // Initialize on mount with API data if available
   useEffect(() => {
-    const fetchExpenseData = async () => {
-      try {
-        setIsLoading(true);
-        
-        // In a real implementation, you would fetch data from your API
-        // Example:
-        // const response = await fetch('/api/expenses');
-        // const data = await response.json();
-        
-        // For now, we'll use mock data
-        const mockData = {
-          'Camera': [
-            {
-              id: 1,
-              store: 'Amazon', // This will be merchant_name from your model
-              orderNumber: 'Order # CAM-001',
-              date: 'July 21, 2024',
-              category: 'Accessories',
-              creditCard: 'United Visa ending in 0000',
-              total: 59.99,
-              products: [
-                { name: 'SmallRig Cage Kit for Sony A670', price: 59.99, quantity: 1 }
-              ]
-            },
-            // More camera items...
-          ],
-          'Server': [
-            // Server items...
-          ],
-          'Home Network': [
-            // Network items...
-          ]
-        };
-        
-        setMockDataByTab(mockData);
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching expense data:', error);
-        setIsLoading(false);
-      }
-    };
-    
-    fetchExpenseData();
-  }, []);
-
-  // Get the currently active data based on the main tab selection
-  const currentTabData = mockDataByTab[activeMainTab] || [];
-  const currentCategories = categoriesByTab[activeMainTab] || [];
-  
-  // Apply filters
-  const applyFilters = () => {
-    // Apply search filter
-    const searchFiltered = currentTabData.filter(item => {
-      if (!searchTerm) return true;
-      const searchLower = searchTerm.toLowerCase();
-      
-      // Search in store, category, products, and order number
-      return (
-        item.store.toLowerCase().includes(searchLower) ||
-        item.category.toLowerCase().includes(searchLower) ||
-        item.orderNumber.toLowerCase().includes(searchLower) ||
-        item.creditCard.toLowerCase().includes(searchLower) ||
-        item.products.some(product => 
-          product.name.toLowerCase().includes(searchLower)
-        )
-      );
-    });
-    
-    // Filter by category
-    const categoryFiltered = filterDataByCategory(searchFiltered, selectedCategory);
-    
-    // Filter by date range
-    const dateFiltered = filterDataByDate(categoryFiltered, dateFilter);
-    
-    // Apply sorting
-    return _.orderBy(
-      dateFiltered, 
-      [item => {
-        if (sortConfig.key === 'date') {
-          return new Date(item.date);
-        }
-        if (sortConfig.key === 'total') {
-          return parseFloat(item.total);
-        }
-        if (typeof item[sortConfig.key] === 'string') {
-          return item[sortConfig.key].toLowerCase();
-        }
-        return item[sortConfig.key];
-      }],
-      [sortConfig.direction]
-    );
-  };
-  
-  const filteredData = applyFilters();
-  
-  // Calculate the sum of filtered items
-  const filteredTotal = filteredData.reduce((sum, item) => sum + item.total, 0);
-
-  // Calculate total across all tabs for percentage calculations
-  const totalAllTabs = Object.values(mockDataByTab)
-    .flatMap(tab => tab)
-    .reduce((sum, item) => sum + item.total, 0);
-  
-  const tabPercentage = totalAllTabs > 0 ? (filteredTotal / totalAllTabs) * 100 : 0;
-
-  // Get data for current view
-  const getViewData = () => {
-    if (currentView === 'itemType') {
-      // Group by item type (using a mapping of product names to item types)
-      return _.chain(filteredData)
-        .groupBy(item => {
-          // Map product names to appropriate item types
-          const productName = item.products[0]?.name || '';
-          // Logic to determine item type based on product name
-          if (productName.includes('Camera') || productName.includes('Alpha')) {
-            return 'Cameras';
-          } else if (productName.includes('Lens') || productName.includes('SONY E')) {
-            return 'Lenses';
-          } else if (productName.includes('Storage') || productName.includes('SDXC') || productName.includes('SSD')) {
-            return 'Storage';
-          }
-          // More mappings...
-          else {
-            // Try to match with categories as fallback
-            const category = item.category;
-            return category !== 'All' ? category : 'Other';
-          }
-        })
-        .map((items, itemType) => ({
-          name: itemType,
-          count: items.length,
-          total: _.sumBy(items, 'total'),
-          items: items
-        }))
-        .orderBy(['total'], ['desc'])
-        .value();
-    } else if (currentView === 'store') {
-      // Group by store (merchant_name)
-      return _.chain(filteredData)
-        .groupBy('store')
-        .map((items, store) => ({
-          name: store,
-          count: items.length,
-          total: _.sumBy(items, 'total'),
-          items: items
-        }))
-        .orderBy(['total'], ['desc'])
-        .value();
-    } else if (currentView === 'date') {
-      // Group by month
-      return _.chain(filteredData)
-        .groupBy(item => {
-          const dateParts = item.date.split(' ');
-          return `${dateParts[0]} ${dateParts[2] || ''}`;
-        })
-        .map((items, month) => ({
-          name: month,
-          count: items.length,
-          total: _.sumBy(items, 'total'),
-          items: items
-        }))
-        .orderBy(['name'], ['desc'])
-        .value();
-    } else if (currentView === 'card') {
-      // Group by credit card
-      return _.chain(filteredData)
-        .groupBy('creditCard')
-        .map((items, card) => ({
-          name: card,
-          count: items.length,
-          total: _.sumBy(items, 'total'),
-          items: items
-        }))
-        .orderBy(['total'], ['desc'])
-        .value();
+    if (initialData && initialData.length > 0) {
+      setGroupedData(initialData);
+      applySearch(initialData);
+    } else {
+      loadExpenseData();
     }
     
-    return [];
+    // If categories are provided, update the Camera categories
+    if (categories && categories.length > 0) {
+      setCategoriesByTab(prev => ({
+        ...prev,
+        'Camera': categories
+      }));
+    }
+  }, [initialData, categories]);
+
+  // Load expense data from API
+  const loadExpenseData = async () => {
+    try {
+      setIsLoading(true);
+      const data = await fetchExpenseData(currentView, selectedCategory, dateFilter);
+      setGroupedData(data);
+      applySearch(data);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error loading expense data:", error);
+      setIsLoading(false);
+    }
   };
-  
-  const groupedData = getViewData();
+
+  // Effect to reload data when view or filters change
+  useEffect(() => {
+    loadExpenseData();
+  }, [currentView, selectedCategory, dateFilter, activeMainTab]);
+
+  // Apply search filter to grouped data
+  const applySearch = (data) => {
+    if (!searchTerm) {
+      setFilteredData(flattenGroupedData(data));
+      return;
+    }
+
+    const search = searchTerm.toLowerCase();
+    
+    // Create a flattened array of all items from all groups
+    const flatItems = flattenGroupedData(data);
+    
+    // Filter by search term
+    const filtered = flatItems.filter(item => 
+      item.store.toLowerCase().includes(search) ||
+      item.orderNumber.toLowerCase().includes(search) ||
+      item.category.toLowerCase().includes(search) ||
+      item.creditCard.toLowerCase().includes(search) ||
+      (item.products && item.products.some(p => p.name.toLowerCase().includes(search)))
+    );
+    
+    setFilteredData(filtered);
+  };
+
+  // Flatten grouped data for filtering
+  const flattenGroupedData = (groups) => {
+    return groups.reduce((acc, group) => [...acc, ...group.items], []);
+  };
+
+  // Effect to apply search when search term changes
+  useEffect(() => {
+    applySearch(groupedData);
+  }, [searchTerm]);
+
+  // Calculate stats for filtered data
+  const calculateFilteredTotal = () => {
+    return filteredData.reduce((sum, item) => sum + item.total, 0);
+  };
 
   // Function to reset category when changing main tabs
   const handleMainTabChange = (tab) => {
     setActiveMainTab(tab);
     setSelectedCategory('All');
     setSearchTerm('');
+    // Will trigger the useEffect to reload data
   };
 
   // Handler for sort button clicks
@@ -265,60 +156,80 @@ const ExpenseTracker = ({ initialData }) => {
   };
 
   // Delete an item
-  const handleDeleteItem = () => {
+  const handleDeleteItem = async () => {
     if (!itemToDelete) return;
     
-    setMockDataByTab(prev => ({
-      ...prev,
-      [activeMainTab]: prev[activeMainTab].filter(item => item.id !== itemToDelete)
-    }));
-    
-    // In a real implementation:
-    /*
     try {
-      await fetch(`/api/invoices/${itemToDelete}`, {
-        method: 'DELETE'
-      });
+      setIsLoading(true);
       
-      // Update local state or refetch data
+      // Call the backend API to delete the invoice
+      await deleteInvoice(itemToDelete);
+      
+      // Reload the data
+      await loadExpenseData();
+      
+      setShowDeleteConfirm(false);
+      setItemToDelete(null);
+      setIsLoading(false);
     } catch (error) {
       console.error('Error deleting expense:', error);
+      setIsLoading(false);
     }
-    */
-    
-    setShowDeleteConfirm(false);
-    setItemToDelete(null);
   };
 
   // Handle form submission of new expense
-  const handleAddItem = (formData) => {
-    setIsLoading(true);
-    
-    // Create new item from form data
-    const newId = Math.max(...(mockDataByTab[activeMainTab].map(item => item.id) || [0])) + 1;
-    const itemToAdd = {
-      id: newId,
-      store: formData.store,
-      orderNumber: `Order# ${activeMainTab.substring(0, 3).toUpperCase()}-${String(newId).padStart(3, '0')}`,
-      date: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      category: formData.category || categoriesByTab[activeMainTab][1],
-      creditCard: formData.creditCard || creditCardOptions[0],
-      total: formData.total,
-      products: formData.products
-    };
-    
-    // Update state for the demo
-    setMockDataByTab(prev => ({
-      ...prev,
-      [activeMainTab]: [...prev[activeMainTab], itemToAdd]
-    }));
-    
-    // Simulate API delay
-    setTimeout(() => {
-      setIsLoading(false);
+  const handleAddItem = async (formData) => {
+    try {
+      setIsLoading(true);
+      
+      // Call backend API to add expense
+      await addExpense(formData);
+      
+      // Reload data
+      await loadExpenseData();
+      
+      // Reset UI state
       setShowAddForm(false);
-    }, 500);
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error adding expense:", error);
+      setIsLoading(false);
+      alert("Error adding expense: " + error.message);
+    }
   };
+
+  // Sort the grouped data based on the sort configuration
+  const getSortedGroupedData = () => {
+    // Sort items within each group
+    return groupedData.map(group => {
+      const sortedItems = _.orderBy(
+        group.items,
+        [item => {
+          if (sortConfig.key === 'date') {
+            return new Date(item.date);
+          }
+          if (sortConfig.key === 'total') {
+            return parseFloat(item.total);
+          }
+          if (typeof item[sortConfig.key] === 'string') {
+            return item[sortConfig.key].toLowerCase();
+          }
+          return item[sortConfig.key];
+        }],
+        [sortConfig.direction]
+      );
+      
+      return { ...group, items: sortedItems };
+    });
+  };
+
+  // Calculate the filtered total amount
+  const filteredTotal = calculateFilteredTotal();
+  
+  // Calculate total across all data for percentage calculations
+  const totalAllData = flattenGroupedData(groupedData).reduce((sum, item) => sum + item.total, 0);
+  
+  const tabPercentage = totalAllData > 0 ? (filteredTotal / totalAllData) * 100 : 0;
 
   return (
     <div className="p-4 bg-gray-50 max-w-full overflow-auto">
@@ -349,7 +260,7 @@ const ExpenseTracker = ({ initialData }) => {
       {showAddForm && (
         <ExpenseForm 
           onSubmit={handleAddItem} 
-          categories={currentCategories.filter(cat => cat !== 'All')}
+          categories={categoriesByTab[activeMainTab].filter(cat => cat !== 'All')}
           creditCardOptions={creditCardOptions}
           isLoading={isLoading}
         />
@@ -358,7 +269,7 @@ const ExpenseTracker = ({ initialData }) => {
       {/* Main Tabs for Camera, Server, Home Network */}
       <div className="border-b mb-6 bg-white rounded-lg shadow">
         <div className="flex space-x-1 p-1">
-          {Object.keys(mockDataByTab).map((tab) => (
+          {Object.keys(categoriesByTab).map((tab) => (
             <button
               key={tab}
               onClick={() => handleMainTabChange(tab)}
@@ -376,7 +287,7 @@ const ExpenseTracker = ({ initialData }) => {
       
       {/* Filters */}
       <ExpenseFilters 
-        categories={currentCategories}
+        categories={categoriesByTab[activeMainTab]}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         dateFilter={dateFilter}
@@ -387,90 +298,105 @@ const ExpenseTracker = ({ initialData }) => {
         setCurrentView={setCurrentView}
       />
       
-      {/* Summary Stats */}
-      <ExpenseSummary 
-        filteredTotal={filteredTotal}
-        purchaseCount={filteredData.length}
-        tabPercentage={tabPercentage}
-        filteredData={filteredData}
-      />
-      
-      {/* Groups of expenses */}
-      <ExpenseGroups 
-        groupedData={groupedData}
-        handleSort={handleSort}
-        sortConfig={sortConfig}
-        formatCurrency={formatCurrency}
-        onDeleteItem={confirmDeleteItem}
-      />
-      
-      {/* No results message */}
-      {groupedData.length === 0 && (
-        <div className="bg-white rounded-lg shadow p-6 text-center">
-          <svg
-            className="mx-auto h-12 w-12 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-            aria-hidden="true"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={1}
-              d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-            />
-          </svg>
-          <h3 className="mt-2 text-xl font-medium text-gray-900">No data found</h3>
-          <p className="mt-1 text-gray-500">
-            No expenses match your current filter criteria.
-          </p>
-          <div className="mt-6">
-            <button
-              onClick={() => {
-                setSelectedCategory('All');
-                setDateFilter('all');
-                setSearchTerm('');
-              }}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-            >
-              Reset Filters
-            </button>
-          </div>
+      {/* Loading indicator */}
+      {isLoading && (
+        <div className="flex justify-center items-center p-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
         </div>
       )}
       
-      {/* Export actions */}
-      <div className="mt-8 flex justify-end space-x-4">
-        <button
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-            <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-          </svg>
-          Export CSV
-        </button>
-        <button
-          onClick={() => {
-            setSelectedCategory('All');
-            setDateFilter('all');
-            setSearchTerm('');
-            setSortConfig({ key: 'date', direction: 'desc' });
-          }}
-          className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-        >
-          <svg className="mr-2 -ml-1 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-          </svg>
-          Reset All Filters
-        </button>
-      </div>
-      
-      {/* Footer with summary stats */}
-      <ExpenseStats 
-        filteredData={filteredData}
-        formatCurrency={formatCurrency}
-      />
+      {!isLoading && (
+        <>
+          {/* Summary Stats */}
+          <ExpenseSummary 
+            filteredTotal={filteredTotal}
+            purchaseCount={filteredData.length}
+            tabPercentage={tabPercentage}
+            filteredData={filteredData}
+          />
+          
+          {/* Groups of expenses */}
+          <ExpenseGroups 
+            groupedData={getSortedGroupedData()}
+            handleSort={handleSort}
+            sortConfig={sortConfig}
+            formatCurrency={formatCurrency}
+            onDeleteItem={confirmDeleteItem}
+          />
+          
+          {/* No results message */}
+          {groupedData.length === 0 && !isLoading && (
+            <div className="bg-white rounded-lg shadow p-6 text-center">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                />
+              </svg>
+              <h3 className="mt-2 text-xl font-medium text-gray-900">No data found</h3>
+              <p className="mt-1 text-gray-500">
+                No expenses match your current filter criteria.
+              </p>
+              <div className="mt-6">
+                <button
+                  onClick={() => {
+                    setSelectedCategory('All');
+                    setDateFilter('all');
+                    setSearchTerm('');
+                  }}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Reset Filters
+                </button>
+              </div>
+            </div>
+          )}
+          
+          {/* Export actions */}
+          {groupedData.length > 0 && (
+            <div className="mt-8 flex justify-end space-x-4">
+              <button
+                className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="mr-2 -ml-1 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                </svg>
+                Export CSV
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedCategory('All');
+                  setDateFilter('all');
+                  setSearchTerm('');
+                  setSortConfig({ key: 'date', direction: 'desc' });
+                }}
+                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                <svg className="mr-2 -ml-1 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Reset All Filters
+              </button>
+            </div>
+          )}
+          
+          {/* Footer with summary stats */}
+          {groupedData.length > 0 && (
+            <ExpenseStats 
+              filteredData={filteredData}
+              formatCurrency={formatCurrency}
+            />
+          )}
+        </>
+      )}
       
       {/* Delete Confirmation Modal */}
       <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)}>

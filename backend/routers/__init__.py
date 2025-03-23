@@ -4,6 +4,7 @@ from routers.templates import router as templates_router
 from routers.user import router as users_router
 from routers.payment import router as payments_router
 from routers.wishlist import router as wishlist_router
+from routers.expense import router as expense_router  # Add this line
 
 __all__ = [
     'invoices_router',
@@ -11,4 +12,5 @@ __all__ = [
     'users_router',
     'payments_router',
     'wishlist_router',
+    'expense_router',  # Add this line
 ]

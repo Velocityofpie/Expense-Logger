@@ -374,3 +374,59 @@ export async function updateExpense(id, expenseData) {
     throw error;
   }
 }
+
+export async function addExpense(expenseData) {
+  try {
+    // Transform to the format expected by your backend
+    const invoiceData = {
+      merchant_name: expenseData.store,
+      order_number: expenseData.orderNumber,
+      purchase_date: expenseData.date,
+      payment_method: expenseData.creditCard,
+      grand_total: expenseData.total,
+      status: "Open",
+      categories: [expenseData.category],
+      items: expenseData.products.map(product => ({
+        product_name: product.name,
+        quantity: product.quantity,
+        unit_price: product.price,
+        item_type: product.item_type || expenseData.category  // Set item_type from product or default to category
+      }))
+    };
+    
+    // Call your existing addInvoiceEntry function
+    const result = await addInvoiceEntry(invoiceData);
+    return result;
+  } catch (error) {
+    console.error("Error adding expense:", error);
+    throw error;
+  }
+}
+
+// Update existing expense
+export async function updateExpense(id, expenseData) {
+  try {
+    // Transform to the format expected by your backend
+    const invoiceData = {
+      merchant_name: expenseData.store,
+      order_number: expenseData.orderNumber,
+      purchase_date: expenseData.date,
+      payment_method: expenseData.creditCard,
+      grand_total: expenseData.total,
+      categories: [expenseData.category],
+      items: expenseData.products.map(product => ({
+        product_name: product.name,
+        quantity: product.quantity,
+        unit_price: product.price,
+        item_type: product.item_type || expenseData.category  // Set item_type from product or default to category
+      }))
+    };
+    
+    // Call your existing updateInvoice function
+    const result = await updateInvoice(id, invoiceData);
+    return result;
+  } catch (error) {
+    console.error("Error updating expense:", error);
+    throw error;
+  }
+}

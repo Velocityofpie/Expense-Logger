@@ -56,6 +56,7 @@ class InvoiceItem(Base):
     paid_by = sa.Column(sa.String(50))
     used_date = sa.Column(sa.Date)
     expiration_date = sa.Column(sa.Date)
+    item_type = sa.Column(sa.String(100))  # Add this new field
     
     # Computed property
     @property

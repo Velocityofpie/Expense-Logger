@@ -5,8 +5,8 @@ import { formatCurrency } from '../../utils/expenseHelpers';
 const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => {
   const [formData, setFormData] = useState({
     store: '',
-    category: '',
-    creditCard: '',
+    category: categories && categories.length > 0 ? categories[0] : '',
+    creditCard: creditCardOptions && creditCardOptions.length > 0 ? creditCardOptions[0] : '',
     total: 0,
     products: []
   });
@@ -15,7 +15,8 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
   const [currentProduct, setCurrentProduct] = useState({
     name: '',
     price: 0,
-    quantity: 1
+    quantity: 1,
+    item_type: '' // Add item_type field
   });
 
   // Handle form field changes
@@ -55,12 +56,18 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
       return;
     }
     
+    // Set item_type to category if not specified
+    const productToAdd = {
+      ...currentProduct,
+      item_type: currentProduct.item_type || formData.category
+    };
+    
     setFormData(prev => ({
       ...prev,
-      products: [...prev.products, { ...currentProduct }],
+      products: [...prev.products, productToAdd],
       // Update total if it's 0
       total: prev.total === 0 
-        ? currentProduct.price * currentProduct.quantity 
+        ? productToAdd.price * productToAdd.quantity 
         : prev.total
     }));
     
@@ -68,7 +75,8 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
     setCurrentProduct({
       name: '',
       price: 0,
-      quantity: 1
+      quantity: 1,
+      item_type: ''
     });
   };
   
@@ -105,14 +113,23 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
       return;
     }
     
-    // Call parent's onSubmit
-    onSubmit(formData);
+    // Make sure all products have item_type set
+    const productsWithItemTypes = formData.products.map(product => ({
+      ...product,
+      item_type: product.item_type || formData.category
+    }));
+    
+    // Call parent's onSubmit with updated products
+    onSubmit({
+      ...formData,
+      products: productsWithItemTypes
+    });
     
     // Reset form
     setFormData({
       store: '',
-      category: '',
-      creditCard: '',
+      category: categories && categories.length > 0 ? categories[0] : '',
+      creditCard: creditCardOptions && creditCardOptions.length > 0 ? creditCardOptions[0] : '',
       total: 0,
       products: []
     });
@@ -205,6 +222,7 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
                 <thead>
                   <tr>
                     <th className="px-4 py-2 text-left">Product</th>
+                    <th className="px-4 py-2 text-left">Item Type</th>
                     <th className="px-4 py-2 text-right">Price</th>
                     <th className="px-4 py-2 text-right">Qty</th>
                     <th className="px-4 py-2 text-right">Total</th>
@@ -215,6 +233,7 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
                   {formData.products.map((product, index) => (
                     <tr key={index}>
                       <td className="px-4 py-2">{product.name}</td>
+                      <td className="px-4 py-2">{product.item_type || formData.category}</td>
                       <td className="px-4 py-2 text-right">{formatCurrency(product.price)}</td>
                       <td className="px-4 py-2 text-right">{product.quantity}</td>
                       <td className="px-4 py-2 text-right">
@@ -239,7 +258,7 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
           )}
           
           {/* Add Product Form */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 p-4 bg-gray-50 rounded-md">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 p-4 bg-gray-50 rounded-md">
             <div className="md:col-span-2">
               <input
                 type="text"
@@ -249,6 +268,19 @@ const ExpenseForm = ({ onSubmit, categories, creditCardOptions, isLoading }) => 
                 className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="Product name"
               />
+            </div>
+            <div>
+              <select
+                name="item_type"
+                value={currentProduct.item_type}
+                onChange={handleProductChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md"
+              >
+                <option value="">Select item type</option>
+                {categories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </select>
             </div>
             <div>
               <input
