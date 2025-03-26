@@ -20,6 +20,7 @@ from routers.templates import router as templates_router
 from routers.user import router as users_router
 from routers.payment import router as payments_router
 from routers.wishlist import router as wishlist_router
+from routers.expense import router as expense_router
 
 # Import services
 from services.template import find_matching_template, process_with_template, update_invoice_with_extracted_data
@@ -54,6 +55,7 @@ app.include_router(templates_router)
 app.include_router(users_router)
 app.include_router(payments_router)
 app.include_router(wishlist_router)
+app.include_router(expense_router)
 
 # ─────────────────────────────────────────────────────────
 # File Upload Endpoint

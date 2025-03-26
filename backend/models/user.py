@@ -18,3 +18,6 @@ class User(Base, TimestampMixin, SoftDeleteMixin):
     wishlist_items = relationship("WishlistItem", back_populates="user")
     audit_logs = relationship("AuditLog", back_populates="user")
     templates = relationship("InvoiceTemplate", back_populates="creator")
+    
+    # Add this missing relationship
+    expense_categories = relationship("ExpenseCategory", back_populates="user")

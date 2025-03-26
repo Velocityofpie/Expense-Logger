@@ -1,0 +1,40 @@
+"""Add item_type field to invoice_items
+
+Revision ID: add_item_type_field
+Revises: previous_revision_id  # Replace with your actual previous revision ID
+Create Date: 2025-03-22 12:00:00.000000
+
+"""
+from alembic import op
+import sqlalchemy as sa
+
+
+# revision identifiers, used by Alembic.
+revision = 'add_item_type_field'
+down_revision = 'previous_revision_id'  # Replace with your actual previous revision ID
+branch_labels = None
+depends_on = None
+
+
+def upgrade():
+    # Add item_type column to invoice_items table
+    op.add_column('invoice_items', sa.Column('item_type', sa.String(100), nullable=True))
+    
+    # Update existing records to set item_type based on the invoice's first category
+    # This is a reasonable default for existing data
+    op.execute("""
+    UPDATE invoice_items ii
+    SET item_type = (
+        SELECT c.category_name
+        FROM invoice_categories ic
+        JOIN categories c ON ic.category_id = c.category_id
+        WHERE ic.invoice_id = ii.invoice_id
+        LIMIT 1
+    )
+    WHERE ii.item_type IS NULL
+    """)
+
+
+def downgrade():
+    # Drop item_type column from invoice_items table
+    op.drop_column('invoice_items', 'item_type')

@@ -13,10 +13,10 @@ class InvoiceItemBase(BaseModel):
     paid_by: Optional[str] = None
     used_date: Optional[str] = None
     expiration_date: Optional[str] = None
+    item_type: Optional[str] = None  # Add this new field
     
     class Config:
         orm_mode = True
-
 
 class InvoiceCreate(BaseModel):
     user_id: Optional[int] = None

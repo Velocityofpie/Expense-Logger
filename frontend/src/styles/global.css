@@ -1,140 +1,212 @@
-/* frontend/src/styles/global.css */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* 
+ * global.css
+ * Main style file that imports other styles and defines global rules
+ */
 
-/* Tailwind directives */
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Import Tailwind CSS directives */
+@import './tailwind.css';
 
-/* Base Styles - these come after Tailwind base to override if needed */
+/* Import custom CSS variables */
+@import './variables.css';
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
 body {
-  font-family: 'Inter', sans-serif;
-  @apply bg-gray-50 text-gray-900;
+  font-family: var(--font-primary);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--color-text);
+  background-color: var(--color-background);
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+  font-weight: 600;
+  line-height: 1.2;
+  margin-bottom: 0.5em;
+  color: var(--color-heading);
+}
+
+h1 {
+  font-size: 2rem;
+}
+
+h2 {
+  font-size: 1.75rem;
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-size: 1rem;
+}
+
+p {
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--color-primary);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+  text-decoration: underline;
+}
+
+/* Focus styles for accessibility */
+:focus {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Focus visible for keyboard users only */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Remove default button styles */
+button {
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* SVG enhancements */
+svg {
+  display: inline-block;
+  vertical-align: middle;
+  fill: currentColor;
+}
+
+/* Utility classes that complement Tailwind */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.line-clamp-1,
+.line-clamp-2,
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-1 {
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  -webkit-line-clamp: 2;
+}
+
+.line-clamp-3 {
+  -webkit-line-clamp: 3;
+}
+
+/* Scrollbar styling for webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-scrollbar-track);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-scrollbar-thumb);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-scrollbar-thumb-hover);
+}
+
+/* Dark mode overrides */
+.dark {
+  color-scheme: dark;
 }
 
 .dark body {
-  @apply bg-dark-bg text-dark-text-primary;
+  color: var(--dark-color-text);
+  background-color: var(--dark-color-background);
 }
 
-/* Fix for all SVG icons everywhere */
-svg {
-  display: inline-block !important;
-  vertical-align: middle;
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6 {
+  color: var(--dark-color-heading);
 }
 
-/* Override Bootstrap styles with Tailwind */
-.btn-primary {
-  @apply bg-primary-600 hover:bg-primary-700 text-white;
+.dark a {
+  color: var(--dark-color-primary);
 }
 
-.btn-secondary {
-  @apply bg-gray-600 hover:bg-gray-700 text-white;
+.dark a:hover {
+  color: var(--dark-color-primary-light);
 }
 
-.btn-danger {
-  @apply bg-red-600 hover:bg-red-700 text-white;
-}
-
-.btn-success {
-  @apply bg-green-600 hover:bg-green-700 text-white;
-}
-
-/* Dark mode overrides for Bootstrap components */
-.dark .card {
-  @apply bg-dark-card border-dark-border;
-}
-
-.dark .table {
-  @apply text-dark-text-primary;
-}
-
-.dark .table thead th {
-  @apply bg-dark-nav text-dark-text-muted;
-}
-
-.dark .table-striped tbody tr:nth-of-type(odd) {
-  @apply bg-dark-bg;
-}
-
-.dark .form-control, 
-.dark .form-select {
-  @apply bg-dark-card border-dark-border text-dark-text-primary;
-}
-
-/* Fix icon sizing issues */
-.navbar svg,
-nav svg {
-  width: 16px !important;
-  height: 16px !important;
-}
-
-.dashboard-icon {
-  width: 24px !important;
-  height: 24px !important;
-}
-
-/* Ensure the Tailwind dark mode works properly */
-.dark .bg-white {
-  @apply bg-dark-card;
-}
-
-.dark .text-gray-700, 
-.dark .text-gray-900 {
-  @apply text-dark-text-primary;
-}
-
-.dark .text-gray-500, 
-.dark .text-gray-600 {
-  @apply text-dark-text-secondary;
-}
-
-.dark .border-gray-200, 
-.dark .border-gray-300 {
-  @apply border-dark-border;
-}
-
-/* Fix for Bootstrap modal in dark mode */
-.dark .modal-content {
-  @apply bg-dark-card;
-}
-
-.dark .modal-header,
-.dark .modal-footer {
-  @apply border-dark-border;
-}
-
-.dark .close {
-  @apply text-dark-text-primary;
-}
-
-/* Add to your global.css or create a new file */
-.text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.table-active {
-  background-color: rgba(0, 0, 0, 0.075);
-}
-
-.fs-6 {
-  font-size: 1rem !important;
-}
-
-.gap-1 {
-  gap: 0.25rem !important;
-}
-
-.gap-3 {
-  gap: 1rem !important;
-}
-
-/* Add more space to the action icons */
-.btn-link svg {
-  transition: transform 0.2s ease;
-}
-
-.btn-link:hover svg {
-  transform: scale(1.2);
+/* Print styles */
+@media print {
+  body {
+    font-size: 12pt;
+    color: #000;
+    background-color: #fff;
+  }
+  
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+  
+  .page-break {
+    page-break-before: always;
+  }
 }

@@ -1,0 +1,210 @@
+/* frontend/src/layout/navigation.css */
+/* Specific styles for the navbar and navigation components */
+
+/* Base navbar styles */
+.navbar-wrapper {
+    @apply sticky top-0 z-10;
+  }
+  
+  /* Logo container */
+  .navbar-logo {
+    @apply flex items-center;
+  }
+  
+  .navbar-logo svg {
+    @apply text-indigo-500;
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .navbar-logo span {
+    @apply ml-2 text-white font-bold text-lg;
+  }
+  
+  /* Navigation links */
+  .navbar-link {
+    @apply px-3 py-2 rounded-md text-sm font-medium flex items-center;
+  }
+  
+  .navbar-link svg {
+    width: 16px !important;
+    height: 16px !important;
+    @apply mr-1.5 inline-block flex-shrink-0;
+  }
+  
+  .navbar-link.active {
+    @apply bg-gray-900 text-white dark:bg-gray-700;
+  }
+  
+  .navbar-link.inactive {
+    @apply text-gray-300 hover:bg-gray-700 hover:text-white;
+  }
+  
+  /* Mobile menu button */
+  .mobile-menu-button {
+    @apply bg-gray-800 dark:bg-gray-700 inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-700 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white;
+  }
+  
+  .mobile-menu-button svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  /* Theme toggle button */
+  .theme-toggle-button {
+    @apply p-1 rounded-full text-gray-300 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white;
+  }
+  
+  .theme-toggle-button svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  /* Profile dropdown */
+  .profile-dropdown {
+    @apply max-w-xs bg-gray-800 dark:bg-gray-700 rounded-full flex items-center text-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 focus:ring-white;
+  }
+  
+  .profile-avatar {
+    @apply h-8 w-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium;
+  }
+  
+  .profile-menu {
+    @apply origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 dark:ring-gray-700 focus:outline-none z-10;
+  }
+  
+  .profile-menu-item {
+    @apply block px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700;
+  }
+  
+  .profile-menu-item svg {
+    @apply h-4 w-4 inline mr-2;
+  }
+  
+  /* Login button */
+  .login-button {
+    @apply inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-700 dark:hover:bg-indigo-600;
+  }
+  
+  .login-button svg {
+    @apply h-4 w-4 mr-2;
+  }
+  
+  /* Mobile navigation menu */
+  .mobile-nav {
+    @apply px-2 pt-2 pb-3 space-y-1 sm:px-3 bg-gray-800 dark:bg-dark-nav;
+  }
+  
+  .mobile-nav-link {
+    @apply block px-3 py-2 rounded-md text-base font-medium;
+  }
+  
+  .mobile-nav-link svg {
+    @apply h-4 w-4 mr-2 inline-block;
+  }
+  
+  .mobile-nav-link.active {
+    @apply bg-gray-900 text-white dark:bg-gray-700;
+  }
+  
+  .mobile-nav-link.inactive {
+    @apply text-gray-300 hover:bg-gray-700 hover:text-white;
+  }
+  
+  /* Mobile user info section */
+  .mobile-user-info {
+    @apply flex items-center px-5;
+  }
+  
+  .mobile-user-menu {
+    @apply mt-3 px-2 space-y-1;
+  }
+  
+  .mobile-user-menu-item {
+    @apply block px-3 py-2 rounded-md text-base font-medium text-gray-400 hover:text-white hover:bg-gray-700;
+  }
+  
+  .mobile-user-menu-item svg {
+    @apply h-4 w-4 mr-2 inline-block;
+  }
+  
+  /* Fix icon alignment */
+  .icon-fix {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    vertical-align: middle !important;
+  }
+  
+  /* Fix for visual spacing in navigation */
+  .nav-spacer {
+    @apply h-16;
+  }
+  
+  /* Breadcrumb navigation */
+  .breadcrumb {
+    @apply flex items-center text-sm text-gray-500 dark:text-dark-text-secondary;
+  }
+  
+  .breadcrumb-item {
+    @apply flex items-center;
+  }
+  
+  .breadcrumb-separator {
+    @apply mx-2 text-gray-400;
+  }
+  
+  .breadcrumb-link {
+    @apply text-gray-600 hover:text-indigo-600 dark:text-dark-text-secondary dark:hover:text-indigo-400;
+  }
+  
+  /* Active breadcrumb */
+  .breadcrumb-active {
+    @apply text-gray-500 dark:text-dark-text-muted;
+  }
+  
+  /* Page title with breadcrumb */
+  .page-title-with-breadcrumb {
+    @apply mb-6;
+  }
+  
+  /* Subnavigation menu */
+  .subnav {
+    @apply border-b border-gray-200 dark:border-dark-border mb-6;
+  }
+  
+  .subnav-link {
+    @apply py-4 px-6 border-b-2 font-medium text-sm whitespace-nowrap;
+  }
+  
+  .subnav-link.active {
+    @apply border-indigo-500 text-indigo-600 dark:text-indigo-400;
+  }
+  
+  .subnav-link.inactive {
+    @apply border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-dark-text-secondary dark:hover:text-dark-text-primary dark:hover:border-gray-600;
+  }
+  
+  /* Action buttons in navigation */
+  .nav-action-btn {
+    @apply inline-flex items-center px-3 py-2 border text-sm leading-4 font-medium rounded-md focus:outline-none transition-colors duration-150;
+  }
+  
+  .nav-action-btn svg {
+    @apply h-4 w-4 mr-1;
+  }
+  
+  /* Responsive navigation adjustments */
+  @media (max-width: 768px) {
+    .navbar-link {
+      @apply py-3;
+    }
+    
+    .subnav {
+      @apply overflow-x-auto;
+    }
+    
+    .subnav-container {
+      @apply flex space-x-1 p-1 min-w-max;
+    }
+  }

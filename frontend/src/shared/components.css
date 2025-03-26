@@ -1,0 +1,239 @@
+/* 
+ * components.css
+ * Specific styles for shared UI components that complement Tailwind classes
+ */
+
+/* Button component */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .btn-icon svg {
+    width: 1em;
+    height: 1em;
+  }
+  
+  .btn:disabled,
+  .btn[disabled] {
+    opacity: 0.65;
+    pointer-events: none;
+  }
+  
+  .btn-pulse {
+    position: relative;
+  }
+  
+  .btn-pulse::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: inherit;
+    box-shadow: 0 0 0 0 currentColor;
+    animation: pulse 1.5s infinite cubic-bezier(0.66, 0, 0, 1);
+    opacity: 0.6;
+  }
+  
+  @keyframes pulse {
+    to {
+      box-shadow: 0 0 0 8px transparent;
+    }
+  }
+  
+  /* Card component */
+  .card-hover-lift {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .card-hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+  
+  .card-interactive {
+    cursor: pointer;
+    transition: transform 0.1s ease-in-out, box-shadow 0.1s ease-in-out;
+  }
+  
+  .card-interactive:active {
+    transform: translateY(1px);
+  }
+  
+  /* Modal component */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(1px);
+  }
+  
+  .modal-enter {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  
+  .modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms ease-out, transform 300ms ease-out;
+  }
+  
+  .modal-exit {
+    opacity: 1;
+    transform: scale(1);
+  }
+  
+  .modal-exit-active {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 200ms ease-in, transform 200ms ease-in;
+  }
+  
+  /* Table component */
+  .table-sticky-header th {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: var(--color-background-alt);
+  }
+  
+  .dark .table-sticky-header th {
+    background-color: var(--dark-color-background-alt);
+  }
+  
+  .table-striped tbody tr:nth-child(odd) {
+    background-color: var(--color-background-hover);
+  }
+  
+  .dark .table-striped tbody tr:nth-child(odd) {
+    background-color: var(--dark-color-background-hover);
+  }
+  
+  .table-responsive {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .table-compact th,
+  .table-compact td {
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .table-compact th {
+    font-size: 0.75rem;
+  }
+  
+  .table-bordered th,
+  .table-bordered td {
+    border: 1px solid var(--color-border);
+  }
+  
+  .dark .table-bordered th,
+  .dark .table-bordered td {
+    border-color: var(--dark-color-border);
+  }
+  
+  .table-row-selected {
+    background-color: rgba(79, 70, 229, 0.1) !important;
+  }
+  
+  .dark .table-row-selected {
+    background-color: rgba(79, 70, 229, 0.2) !important;
+  }
+  
+  /* Custom checkbox for tables */
+  .custom-checkbox {
+    position: relative;
+    width: 1rem;
+    height: 1rem;
+  }
+  
+  .custom-checkbox input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .custom-checkbox .checkmark {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid var(--color-border-dark);
+    border-radius: 0.25rem;
+    background-color: white;
+    transition: all 0.2s ease-in-out;
+  }
+  
+  .dark .custom-checkbox .checkmark {
+    border-color: var(--dark-color-border-light);
+    background-color: transparent;
+  }
+  
+  .custom-checkbox input:checked ~ .checkmark {
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  
+  .dark .custom-checkbox input:checked ~ .checkmark {
+    background-color: var(--dark-color-primary);
+    border-color: var(--dark-color-primary);
+  }
+  
+  .custom-checkbox .checkmark:after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  
+  .custom-checkbox input:checked ~ .checkmark:after {
+    display: block;
+  }
+  
+  /* Focus styles for all components */
+  .focus-ring {
+    outline: none;
+    transition: box-shadow 0.2s ease-in-out;
+  }
+  
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--color-primary);
+  }
+  
+  .dark .focus-ring:focus-visible {
+    box-shadow: 0 0 0 2px var(--dark-color-background), 0 0 0 4px var(--dark-color-primary);
+  }
+  
+  /* Disable animations when prefers-reduced-motion is enabled */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-delay: -1ms !important;
+      animation-duration: 1ms !important;
+      animation-iteration-count: 1 !important;
+      background-attachment: initial !important;
+      scroll-behavior: auto !important;
+      transition-duration: 0s !important;
+      transition-delay: 0s !important;
+    }
+  }

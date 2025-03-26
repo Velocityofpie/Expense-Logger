@@ -28,6 +28,7 @@ class Invoice(Base, TimestampMixin, SoftDeleteMixin):
     credit_card_transactions = sa.Column(sa.Numeric(10, 2))
     gift_card_amount = sa.Column(sa.Numeric(10, 2))
     refunded_amount = sa.Column(sa.Numeric(10, 2))
+    credit_card = sa.Column(sa.String(255))  # Credit card used
     
     # Relationships
     user = relationship("User", back_populates="invoices")
@@ -38,6 +39,7 @@ class Invoice(Base, TimestampMixin, SoftDeleteMixin):
     status_history = relationship("InvoiceStatusHistory", back_populates="invoice")
     files = relationship("InvoiceFile", back_populates="invoice")
     template_tests = relationship("TemplateTestResult", back_populates="invoice")
+    expense_categories = relationship("ExpenseCategory", secondary="invoice_expense_categories", back_populates="invoices")
 
 
 class InvoiceItem(Base):
@@ -54,6 +56,7 @@ class InvoiceItem(Base):
     paid_by = sa.Column(sa.String(50))
     used_date = sa.Column(sa.Date)
     expiration_date = sa.Column(sa.Date)
+    item_type = sa.Column(sa.String(100))  # Add this new field
     
     # Computed property
     @property
@@ -137,3 +140,24 @@ class AuditLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="audit_logs")
+
+# backend/models/invoice.py - Add new models or extend existing
+
+class ExpenseCategory(Base, TimestampMixin):
+    __tablename__ = "expense_categories"
+    
+    category_id = sa.Column(sa.Integer, primary_key=True)
+    user_id = sa.Column(sa.Integer, sa.ForeignKey("users.user_id"))
+    name = sa.Column(sa.String(100), nullable=False)
+    parent_category = sa.Column(sa.Integer, sa.ForeignKey("expense_categories.category_id"), nullable=True)
+    
+    # Relationships
+    user = relationship("User", back_populates="expense_categories")
+    invoices = relationship("Invoice", secondary="invoice_expense_categories", back_populates="expense_categories")
+
+# Add a table to link invoices to expense categories
+class InvoiceExpenseCategory(Base):
+    __tablename__ = "invoice_expense_categories"
+    
+    invoice_id = sa.Column(sa.Integer, sa.ForeignKey("invoices.invoice_id"), primary_key=True)
+    category_id = sa.Column(sa.Integer, sa.ForeignKey("expense_categories.category_id"), primary_key=True)

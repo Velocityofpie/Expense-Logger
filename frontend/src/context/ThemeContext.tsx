@@ -1,60 +1,21 @@
-// src/context/ThemeContext.tsx
-import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { ThemeMode } from '../types/common.types';
+// src/context/ThemeContext.jsx
+import React, { createContext, useState, useEffect } from 'react';
 
-/**
- * Interface for theme context
- */
-interface ThemeContextType {
-  darkMode: boolean;
-  toggleDarkMode: () => void;
-  setDarkMode: (isDark: boolean) => void;
-  theme: ThemeMode;
-}
+export const ThemeContext = createContext();
 
-// Create context with default values
-export const ThemeContext = createContext<ThemeContextType>({
-  darkMode: false,
-  toggleDarkMode: () => {},
-  setDarkMode: () => {},
-  theme: 'light',
-});
-
-/**
- * Theme provider props
- */
-interface ThemeProviderProps {
-  children: ReactNode;
-  defaultTheme?: ThemeMode;
-}
-
-/**
- * Theme provider component for light/dark mode
- */
-export const ThemeProvider: React.FC<ThemeProviderProps> = ({ 
-  children, 
-  defaultTheme = 'light' 
-}) => {
-  // Initialize dark mode from localStorage or system preference
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    // Check localStorage first
+export const ThemeProvider = ({ children }) => {
+  const [darkMode, setDarkMode] = useState(() => {
+    // Try to get theme preference from localStorage
     const savedTheme = localStorage.getItem('darkMode');
+    // Check if user has a system preference
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     
-    if (savedTheme !== null) {
-      return JSON.parse(savedTheme);
-    }
-    
-    // If no saved preference, check system preference
-    const prefersDark = window.matchMedia && 
-      window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
-    // If no system preference, use default theme
-    return prefersDark || defaultTheme === 'dark';
+    // Return saved preference or system preference
+    return savedTheme ? JSON.parse(savedTheme) : prefersDark;
   });
 
   // Update localStorage and apply theme when darkMode changes
   useEffect(() => {
-    // Save to localStorage
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     
     // Apply dark mode class to html element for Tailwind
@@ -64,7 +25,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
       document.documentElement.classList.remove('dark');
     }
     
-    // Handle Bootstrap components
+    // This is to handle Bootstrap components that don't respect Tailwind's dark mode
     if (darkMode) {
       document.body.classList.add('bootstrap-dark');
     } else {
@@ -72,53 +33,25 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({
     }
   }, [darkMode]);
 
-  // Listen for system theme changes
-  useEffect(() => {
-    // Only apply if no user preference is set
-    if (localStorage.getItem('darkMode') !== null) {
-      return;
-    }
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    const handleChange = (e: MediaQueryListEvent): void => {
-      setDarkMode(e.matches);
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    
-    return () => {
-      mediaQuery.removeEventListener('change', handleChange);
-    };
-  }, []);
-
-  /**
-   * Toggle between light and dark mode
-   */
-  const toggleDarkMode = (): void => {
+  // Toggle dark mode
+  const toggleDarkMode = () => {
     setDarkMode(!darkMode);
   };
 
-  /**
-   * Set dark mode directly
-   */
-  const setDarkModeState = (isDark: boolean): void => {
-    setDarkMode(isDark);
-  };
-
-  // Context value
-  const contextValue: ThemeContextType = {
-    darkMode,
-    toggleDarkMode,
-    setDarkMode: setDarkModeState,
-    theme: darkMode ? 'dark' : 'light',
-  };
-
   return (
-    <ThemeContext.Provider value={contextValue}>
+    <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export default ThemeContext;
+// Custom hook for easier context consumption
+export const useTheme = () => {
+  const context = React.useContext(ThemeContext);
+  
+  if (context === undefined) {
+    throw new Error('useTheme must be used within a ThemeProvider');
+  }
+  
+  return context;
+};

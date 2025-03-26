@@ -1,9 +1,0 @@
-// tsconfig.production.json
-{
-    "extends": "./tsconfig.json",
-    "compilerOptions": {
-      "sourceMap": false,
-      "removeComments": true,
-      "noEmitOnError": true
-    }
-  }
