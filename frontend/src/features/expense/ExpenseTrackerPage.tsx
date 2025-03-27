@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import ExpenseTracker from './ExpenseTracker';
 import { fetchCategories } from './expensesApi';
-import { transformInvoicesToExpenseTrackerFormat } from '../../utils/dataTransformers';
+import { transformInvoicesToExpenseTrackerFormat } from '../../utils';
 import { ExpenseGroup } from './expenseHelpers';
-import { fetchInvoices } from '../../services/api';
+import fetchInvoices from '../../services/api';
 
 const ExpenseTrackerPage: React.FC = () => {
   const [expenseData, setExpenseData] = useState<ExpenseGroup[] | null>(null);

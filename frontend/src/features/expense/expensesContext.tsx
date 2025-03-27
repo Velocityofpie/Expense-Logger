@@ -3,6 +3,15 @@ import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { deleteExpense } from './expensesApi';
 import { formatCurrency, filterDataByCategory, filterDataByDate } from '../../utils/expenseHelpers';
 
+// fetchExpenseData, addExpense, updateExpense, deleteInvoice, fetchCategories
+import { 
+  fetchExpenseData,
+  addExpense, 
+  updateExpense, 
+  deleteExpense as deleteInvoice, 
+  fetchCategories 
+} from './expensesApi';
+
 // Define interfaces for the expense data
 interface Product {
   name: string;
