@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <!-- Background Circle -->
+  <circle cx="100" cy="100" r="95" fill="#4f46e5" />
+  
+  <!-- Dollar Sign -->
+  <path d="M100 40 C 80 40, 65 55, 65 75 C 65 95, 80 110, 100 110 C 120 110, 135 125, 135 145 C 135 165, 120 180, 100 180 M 100 40 L 100 20 M 100 180 L 100 200" stroke="white" stroke-width="12" fill="none" stroke-linecap="round" />
+  
+  <!-- Horizontal Line -->
+  <line x1="80" y1="70" x2="120" y2="70" stroke="white" stroke-width="10" stroke-linecap="round" />
+  
+  <!-- Horizontal Line -->
+  <line x1="80" y1="150" x2="120" y2="150" stroke="white" stroke-width="10" stroke-linecap="round" />
+  
+  <!-- Expense Notes Icon -->
+  <rect x="40" y="90" width="45" height="60" rx="5" fill="white" opacity="0.9" />
+  <line x1="50" y1="105" x2="75" y2="105" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+  <line x1="50" y1="120" x2="75" y2="120" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+  <line x1="50" y1="135" x2="65" y2="135" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+  
+  <!-- Chart Icon -->
+  <rect x="115" y="90" width="45" height="60" rx="5" fill="white" opacity="0.9" />
+  <line x1="125" y1="140" x2="125" y2="120" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+  <line x1="135" y1="140" x2="135" y2="110" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+  <line x1="145" y1="140" x2="145" y2="100" stroke="#4f46e5" stroke-width="4" stroke-linecap="round" />
+</svg>
