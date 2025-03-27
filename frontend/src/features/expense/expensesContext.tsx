@@ -1,6 +1,6 @@
 // src/features/expenses/expensesContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
-import { fetchExpenseData, addExpense, updateExpense, deleteInvoice, fetchCategories } from '../../api';
+import { deleteExpense } from './expensesApi';
 import { formatCurrency, filterDataByCategory, filterDataByDate } from '../../utils/expenseHelpers';
 
 // Define interfaces for the expense data

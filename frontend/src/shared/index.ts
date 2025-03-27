@@ -1,8 +1,11 @@
+// src/shared/index.ts - Fix exports
 /**
  * Barrel exports for shared UI components
  */
 
 // Export components
+export { default as Tabs, Tab } from './Tabs';
+export type { TabsProps, TabProps } from './Tabs';
 export { default as Button } from './Button';
 export { default as Card, CardHeader, CardBody, CardFooter } from './Card';
 export { default as Modal, ModalHeader, ModalBody, ModalFooter } from './Modal';
@@ -15,6 +18,11 @@ export {
   TableCell, 
   TableFooter 
 } from './Table';
+export { default as Input } from './Input';
+export { default as Select } from './Select';
+export { default as Textarea } from './Textarea';
+export { default as Checkbox } from './Checkbox';
+export { default as Badge } from './Badge';
 
 // Export component types
 export type {
@@ -35,5 +43,10 @@ export type {
   TableRowProps,
   TableHeaderProps,
   TableCellProps,
-  TableFooterProps
+  TableFooterProps,
+  InputProps,
+  SelectProps,
+  TextareaProps,
+  CheckboxProps,
+  BadgeProps
 } from './types';

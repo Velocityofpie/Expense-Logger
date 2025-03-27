@@ -47,6 +47,7 @@ class ApiClient {
     );
   }
 
+// Modified part of services/api.ts
   /**
    * Make a GET request
    * @param url API endpoint URL
@@ -58,10 +59,12 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.get<T>(url, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API GET error:', error);
       throw error;
     }
   }
+
+  // Similarly update the other methods (post, put, patch, delete) to use console.error instead of this.handleError
 
   /**
    * Make a POST request

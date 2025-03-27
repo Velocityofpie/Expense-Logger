@@ -1,10 +1,18 @@
-// src/context/ThemeContext.jsx
+// src/context/ThemeContext.tsx - Fixed
 import React, { createContext, useState, useEffect } from 'react';
+import { ThemeContextType } from './types';
 
-export const ThemeContext = createContext();
+export const ThemeContext = createContext<ThemeContextType>({
+  darkMode: false,
+  toggleDarkMode: () => {}
+});
 
-export const ThemeProvider = ({ children }) => {
-  const [darkMode, setDarkMode] = useState(() => {
+interface ThemeProviderProps {
+  children: React.ReactNode;
+}
+
+export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
     // Try to get theme preference from localStorage
     const savedTheme = localStorage.getItem('darkMode');
     // Check if user has a system preference

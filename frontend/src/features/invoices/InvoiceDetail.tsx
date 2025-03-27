@@ -1,7 +1,7 @@
 // InvoiceDetail.tsx
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Table, Badge, Button, Tabs, Tab } from '../shared';
+import { Card, CardHeader, CardBody, Table, Badge, Button, Tabs, Tab } from '../../shared';
 import { LineItemEditor } from './';
 import { fetchInvoiceById, updateInvoice, deleteInvoice, addPayment } from './invoicesApi';
 import { Invoice, LineItem } from './types';
