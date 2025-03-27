@@ -1,5 +1,5 @@
 // src/context/ThemeContext.tsx - Fixed
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import { ThemeContextType } from './types';
 
 export const ThemeContext = createContext<ThemeContextType>({
@@ -22,8 +22,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     return savedTheme ? JSON.parse(savedTheme) : prefersDark;
   });
 
+  // Toggle dark mode
+  const toggleDarkMode = useCallback(() => {
+    setDarkMode(prevMode => !prevMode);
+  }, []);
+
   // Update localStorage and apply theme when darkMode changes
   useEffect(() => {
+    // Update localStorage
     localStorage.setItem('darkMode', JSON.stringify(darkMode));
     
     // Apply dark mode class to html element for Tailwind
@@ -41,10 +47,35 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }
   }, [darkMode]);
 
-  // Toggle dark mode
-  const toggleDarkMode = () => {
-    setDarkMode(!darkMode);
-  };
+  // Listen for system preference changes
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const handleChange = (e: MediaQueryListEvent) => {
+      // Only update if there's no saved preference
+      if (!localStorage.getItem('darkMode')) {
+        setDarkMode(e.matches);
+      }
+    };
+    
+    // Add event listener (with compatibility check)
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handleChange);
+    } else {
+      // Fallback for older browsers
+      mediaQuery.addListener(handleChange);
+    }
+    
+    // Clean up
+    return () => {
+      if (mediaQuery.removeEventListener) {
+        mediaQuery.removeEventListener('change', handleChange);
+      } else {
+        // Fallback for older browsers
+        mediaQuery.removeListener(handleChange);
+      }
+    };
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ darkMode, toggleDarkMode }}>
