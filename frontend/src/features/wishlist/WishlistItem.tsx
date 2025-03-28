@@ -1,6 +1,6 @@
 // src/features/wishlist/WishlistItem.tsx
 import React, { useState } from 'react';
-import { Card, Badge, Button, Modal, Form } from 'react-bootstrap';
+import { Card, Badge, Button, Modal, Form, Row, Col } from 'react-bootstrap';
 import { WishlistItem as WishlistItemType } from './types';
 import { updateWishlistItem, removeFromWishlist, enablePriceTracking } from './wishlistApi';
 

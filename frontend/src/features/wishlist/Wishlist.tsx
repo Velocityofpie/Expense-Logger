@@ -11,8 +11,8 @@ import {
   Alert,
   Spinner,
   Modal,
-  Tab,
-  Nav
+  Table,
+  Badge
 } from 'react-bootstrap';
 import { 
   WishlistItem as WishlistItemType, 
