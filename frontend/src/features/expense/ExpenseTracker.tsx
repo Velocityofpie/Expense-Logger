@@ -9,7 +9,7 @@ import {
   formatCurrency, 
   groupExpenseData, 
   filterDataByCategory, 
-  filterDataByDate, 
+  filterDataByDate,
   filterDataBySearchTerm,
   sortExpenseItems
 } from './expenseHelpers';
@@ -55,7 +55,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   // Categories for each tab
-  const [categoriesByTab, setCategoriesByTab] = useState({
+  const [categoriesByTab, setCategoriesByTab] = useState<Record<string, string[]>>({
     'Camera': ['All', 'Cameras', 'Lenses', 'Accessories', 'Storage', 'Tripods'],
     'Server': ['All', 'CPUs', 'Storage', 'RAM', 'Cases', 'Cooling'],
     'Home Network': ['All', 'Routers', 'Switches', 'Access Points', 'Cables', 'Security']
@@ -218,6 +218,16 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   
   const tabPercentage = totalAllData > 0 ? (filteredTotal / totalAllData) * 100 : 0;
 
+  // Get categories for the active tab with proper type safety
+  const getCategories = (tabName: string): string[] => {
+    // Check if the tab exists in categoriesByTab
+    if (tabName in categoriesByTab) {
+      return categoriesByTab[tabName as keyof typeof categoriesByTab];
+    }
+    // Fallback to default categories
+    return ['All', 'Uncategorized'];
+  };
+
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900 max-w-full overflow-auto">
       {/* Header with Add Button */}
@@ -248,7 +258,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
       {showAddForm && (
         <ExpenseForm 
           onSubmit={handleAddItem} 
-          categories={categoriesByTab[activeMainTab].filter(cat => cat !== 'All')}
+          categories={getCategories(activeMainTab).filter(cat => cat !== 'All')}
           creditCardOptions={creditCardOptions}
           isLoading={isLoading}
         />
@@ -275,7 +285,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
       
       {/* Filters */}
       <ExpenseFilters 
-        categories={categoriesByTab[activeMainTab]}
+        categories={getCategories(activeMainTab)}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         dateFilter={dateFilter}

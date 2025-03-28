@@ -1,7 +1,7 @@
 // src/features/expenses/expensesContext.tsx
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
 import { deleteExpense } from './expensesApi';
-import { formatCurrency, filterDataByCategory, filterDataByDate } from '../../utils/expenseHelpers';
+import { formatCurrency } from '../../utils/formatters';
 
 // fetchExpenseData, addExpense, updateExpense, deleteInvoice, fetchCategories
 import { 
@@ -220,8 +220,26 @@ export const ExpensesProvider = ({ children }: ExpensesProviderProps) => {
       setIsLoading(true);
       setError(null);
       
+      // Find the existing expense by id to get values for any properties not included in the update
+      const existingExpense = rawData.find(exp => exp.id === id);
+      
+      if (!existingExpense) {
+        throw new Error(`Expense with id ${id} not found`);
+      }
+      
+      // Merge the existing expense with the update data to ensure all required properties are included
+      const completeExpenseData = {
+        store: expenseData.store ?? existingExpense.store,
+        category: expenseData.category ?? existingExpense.category,
+        creditCard: expenseData.creditCard ?? existingExpense.creditCard,
+        date: expenseData.date ?? existingExpense.date,
+        orderNumber: expenseData.orderNumber ?? existingExpense.orderNumber,
+        total: expenseData.total ?? existingExpense.total,
+        products: expenseData.products ?? existingExpense.products,
+      };
+      
       // Call backend API to update expense
-      await updateExpense(id, expenseData);
+      await updateExpense(id, completeExpenseData);
       
       // Reload data
       await loadExpenseData();

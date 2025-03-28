@@ -14,17 +14,17 @@ export {
   } from './formatters';
   
   // Export validators
-  export {
-    isValidEmail,
-    isValidUrl,
-    isValidDate,
-    isValidNumber,
-    isValidCreditCard,
-    isStrongPassword,
-    isValidPhoneNumber,
-    isEmpty,
-    isInRange
-  } from './validators';
+export {
+  isValidEmail,
+  isValidUrl,
+  isValidDate,
+  isValidNumber,
+  isValidCreditCard,
+  isStrongPassword,
+  isValidPhoneNumber,
+  isEmpty,
+  isInRange
+} from './validators';
   
   // Export data transformers
   export {

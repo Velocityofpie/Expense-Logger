@@ -5,7 +5,7 @@ import ExpenseTracker from './ExpenseTracker';
 import { fetchCategories } from './expensesApi';
 import { transformInvoicesToExpenseTrackerFormat } from '../../utils';
 import { ExpenseGroup } from './expenseHelpers';
-import fetchInvoices from '../../services/api';
+import { apiClient } from '../../services/api';
 
 const ExpenseTrackerPage: React.FC = () => {
   const [expenseData, setExpenseData] = useState<ExpenseGroup[] | null>(null);
@@ -19,10 +19,8 @@ const ExpenseTrackerPage: React.FC = () => {
         setIsLoading(true);
         
         // Fetch invoices and categories in parallel
-        const [invoicesData, categoriesData] = await Promise.all([
-          fetchInvoices(),
-          fetchCategories()
-        ]);
+        const categoriesData = await fetchCategories();
+        const invoicesData = await apiClient.get('/invoices/');
         
         // Transform invoice data to the format expected by ExpenseTracker
         const transformedData = transformInvoicesToExpenseTrackerFormat(invoicesData);
