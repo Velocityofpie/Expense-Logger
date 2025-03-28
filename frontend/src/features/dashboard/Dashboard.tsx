@@ -55,7 +55,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState<number | "All">(new Date().getFullYear());
   const [selectedStatus, setSelectedStatus] = useState("All");
   const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -238,7 +238,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
     return invoices.filter((inv: any) => {
       // Year filter
       const invYear = inv.purchase_date ? new Date(inv.purchase_date).getFullYear() : null;
-      const yearMatch = selectedYear === "All" || invYear === parseInt(selectedYear as unknown as string);
+      const yearMatch = selectedYear === "All" || (invYear !== null && invYear === Number(selectedYear));
       
       // Status filter
       const statusMatch = selectedStatus === "All" || inv.status === selectedStatus;
@@ -286,7 +286,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   }
 
   const years = getYears();
-  const filteredInvoices = getFilteredInvoices();
+  const displayInvoices = getFilteredInvoices();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -588,7 +588,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
             </svg>
           </Link>
         </div>
-        <RecentInvoices invoices={filteredInvoices.slice(0, 5)} />
+        <RecentInvoices invoices={displayInvoices.slice(0, 5)} />
       </div>
     </div>
   );
