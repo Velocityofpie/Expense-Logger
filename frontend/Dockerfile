@@ -40,6 +40,93 @@ root.render(\n\
 );' > ./src/index.tsx; \
 fi
 
+# Ensure tools directory exists
+RUN mkdir -p ./src/features/tools
+
+# Create a proper types.ts file with valid exports
+RUN echo '// src/features/tools/types.ts\n\
+/**\n\
+ * OCR language definition\n\
+ */\n\
+export interface OcrLanguage {\n\
+  code: string;\n\
+  name: string;\n\
+}\n\
+\n\
+/**\n\
+ * OCR extraction result\n\
+ */\n\
+export interface OcrResult {\n\
+  text: string;\n\
+  confidence?: number;\n\
+  pages?: number;\n\
+}\n\
+\n\
+/**\n\
+ * OCR request options\n\
+ */\n\
+export interface OcrRequestOptions {\n\
+  language?: string;\n\
+  dpi?: number;\n\
+  preprocess?: boolean;\n\
+  page_start?: number;\n\
+  page_end?: number;\n\
+}\n\
+\n\
+/**\n\
+ * Template marker for document identification\n\
+ */\n\
+export interface TemplateMarker {\n\
+  text: string;\n\
+  required: boolean;\n\
+}\n\
+\n\
+/**\n\
+ * Template field definition for data extraction\n\
+ */\n\
+export interface TemplateField {\n\
+  field_name: string;\n\
+  display_name?: string;\n\
+  data_type: string;\n\
+  extraction: {\n\
+    regex: string;\n\
+    alternative_regex?: string;\n\
+  };\n\
+  validation?: {\n\
+    required?: boolean;\n\
+  };\n\
+}\n\
+\n\
+/**\n\
+ * Complete template definition\n\
+ */\n\
+export interface Template {\n\
+  template_id: number;\n\
+  name: string;\n\
+  vendor?: string;\n\
+  version?: string;\n\
+  description?: string;\n\
+  created_at: string;\n\
+  updated_at?: string;\n\
+  template_data: {\n\
+    identification: {\n\
+      markers: TemplateMarker[];\n\
+    };\n\
+    fields: TemplateField[];\n\
+  };\n\
+}\n\
+\n\
+/**\n\
+ * Result of testing a template against an invoice\n\
+ */\n\
+export interface TemplateTestResult {\n\
+  success: boolean;\n\
+  match_score: number;\n\
+  fields_matched: number;\n\
+  fields_total: number;\n\
+  extracted_data: Record<string, string>;\n\
+}' > ./src/features/tools/types.ts
+
 # Build the application
 RUN npm run build
 
