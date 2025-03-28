@@ -1,17 +1,18 @@
 {
-    "compilerOptions": {
-      "baseUrl": ".",
-      "paths": {
-        "@/*": ["src/*"],
-        "@components/*": ["src/components/*"],
-        "@features/*": ["src/features/*"],
-        "@layout/*": ["src/layout/*"],
-        "@shared/*": ["src/shared/*"],
-        "@services/*": ["src/services/*"],
-        "@context/*": ["src/context/*"],
-        "@styles/*": ["src/styles/*"],
-        "@utils/*": ["src/utils/*"],
-        "@types/*": ["src/types/*"]
-      }
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@components/*": ["src/components/*"],
+      "@features/*": ["src/features/*"],
+      "@layout/*": ["src/layout/*"],
+      "@shared/*": ["src/shared/*"],
+      "@services/*": ["src/services/*"],
+      "@context/*": ["src/context/*"],
+      "@styles/*": ["src/styles/*"],
+      "@utils/*": ["src/utils/*"],
+      "@types/*": ["src/types/*"],
+      "@shared": ["src/shared/index.ts"]
     }
   }
+}

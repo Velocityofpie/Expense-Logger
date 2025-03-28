@@ -47,7 +47,6 @@ class ApiClient {
     );
   }
 
-// Modified part of services/api.ts
   /**
    * Make a GET request
    * @param url API endpoint URL
@@ -64,8 +63,6 @@ class ApiClient {
     }
   }
 
-  // Similarly update the other methods (post, put, patch, delete) to use console.error instead of this.handleError
-
   /**
    * Make a POST request
    * @param url API endpoint URL
@@ -78,7 +75,7 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.post<T>(url, data, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API POST error:', error);
       throw error;
     }
   }
@@ -95,7 +92,7 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.put<T>(url, data, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API PUT error:', error);
       throw error;
     }
   }
@@ -112,7 +109,7 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.patch<T>(url, data, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API PATCH error:', error);
       throw error;
     }
   }
@@ -128,27 +125,8 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.delete<T>(url, config);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API DELETE error:', error);
       throw error;
-    }
-  }
-
-  /**
-   * Handle API request errors
-   * @param error Error from axios request
-   */
-  private handleError(error: any): void {
-    if (axios.isAxiosError(error)) {
-      const errorResponse = error.response?.data;
-      // Log error details for debugging
-      console.error('API Error:', {
-        status: error.response?.status,
-        url: error.config?.url,
-        method: error.config?.method,
-        error: errorResponse
-      });
-    } else {
-      console.error('Unexpected API error:', error);
     }
   }
 
@@ -172,7 +150,7 @@ class ApiClient {
       const response: AxiosResponse<T> = await this.client.post<T>(url, formData, uploadConfig);
       return response.data;
     } catch (error) {
-      this.handleError(error);
+      console.error('API upload error:', error);
       throw error;
     }
   }
@@ -187,7 +165,27 @@ class ApiClient {
   }
 }
 
-// Export a singleton instance of the API client
+// Create API client instance
 export const apiClient = new ApiClient();
 
+// Export the fetchInvoices function for dashboard
+export const fetchInvoices = async (skip = 0, limit = 100, userId = null) => {
+  let url = `/invoices/?skip=${skip}&limit=${limit}`;
+  if (userId) {
+    url += `&user_id=${userId}`;
+  }
+  return apiClient.get(url);
+};
+
+// Export the fetchCategories function
+export const fetchCategories = async () => {
+  return apiClient.get('/categories/');
+};
+
+// Export the fetchTags function
+export const fetchTags = async () => {
+  return apiClient.get('/tags/');
+};
+
+// Export default api client
 export default apiClient;

@@ -12,10 +12,14 @@ RUN npm install --legacy-peer-deps
 # Fix the specific dependency issue
 RUN npm install ajv@8.11.0 ajv-keywords@5.1.0 --legacy-peer-deps
 
-# Copy source code
+# Copy source code and config files
 COPY public/ ./public/
 COPY src/ ./src/
 COPY tsconfig.json tsconfig.paths.json postcss.config.js tailwind.config.js ./
+
+# Fix import paths in invoice files
+RUN find ./src/features/invoices -type f -name "*.tsx" -exec sed -i 's/from '\''\.\.\/shared'\''/from '\''\.\.\/\.\.\/shared'\''/g' {} \;
+RUN find ./src/features/invoices -type f -name "*.tsx" -exec sed -i 's/from '\''\.\.\/shared\/\([^'\'']*\)'\''/from '\''\.\.\/\.\.\/shared\/\1'\''/g' {} \;
 
 # Create index.tsx if it doesn't exist
 RUN if [ ! -f ./src/index.tsx ]; then \
