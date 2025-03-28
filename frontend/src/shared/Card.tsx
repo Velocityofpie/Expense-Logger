@@ -1,3 +1,5 @@
+// Update the Card.tsx file
+
 import React, { forwardRef } from 'react';
 import { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from './types';
 

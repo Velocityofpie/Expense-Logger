@@ -10,7 +10,8 @@ export type ButtonVariant =
   | 'info'
   | 'outline'
   | 'ghost'
-  | 'link';
+  | 'link'
+  | 'icon'; // Add 'icon' variant
 
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -26,6 +27,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   
   /**
+   * Button color (for icon and outline variants)
+   */
+  color?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'; // Add color prop
+  
+  /**
    * Button size
    */
   size?: ButtonSize;
@@ -39,6 +45,21 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * Icon position relative to text
    */
   iconPosition?: 'left' | 'right';
+  
+  /**
+   * Icon to show on the left side of the button text
+   */
+  iconLeft?: React.ReactNode;
+  
+  /**
+   * Icon to show on the right side of the button text
+   */
+  iconRight?: React.ReactNode;
+  
+  /**
+   * Text to display when button is in loading state
+   */
+  loadingText?: string;
   
   /**
    * Whether button should take up full width of container
@@ -64,9 +85,9 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // Card Component Types
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * Card contents
+   * Card contents (optional)
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   
   /**
    * Additional CSS classes
@@ -81,7 +102,7 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * Card header contents
+   * Card header contents (optional)
    */
   children?: React.ReactNode;
   
@@ -108,9 +129,9 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
 
 export interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * Card body contents
+   * Card body contents (optional)
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   
   /**
    * Additional CSS classes
@@ -120,9 +141,9 @@ export interface CardBodyProps extends HTMLAttributes<HTMLDivElement> {
 
 export interface CardFooterProps extends HTMLAttributes<HTMLDivElement> {
   /**
-   * Card footer contents
+   * Card footer contents (optional)
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   
   /**
    * Additional CSS classes
@@ -369,4 +390,13 @@ export interface TableFooterProps extends HTMLAttributes<HTMLTableSectionElement
    * Additional CSS classes
    */
   className?: string;
+}
+
+export interface TableComponent extends React.ForwardRefExoticComponent<TableProps & React.RefAttributes<HTMLTableElement>> {
+  Head: React.ForwardRefExoticComponent<TableHeadProps & React.RefAttributes<HTMLTableSectionElement>>;
+  Body: React.ForwardRefExoticComponent<TableBodyProps & React.RefAttributes<HTMLTableSectionElement>>;
+  Row: React.ForwardRefExoticComponent<TableRowProps & React.RefAttributes<HTMLTableRowElement>>;
+  Header: React.ForwardRefExoticComponent<TableHeaderProps & React.RefAttributes<HTMLTableCellElement>>;
+  Cell: React.ForwardRefExoticComponent<TableCellProps & React.RefAttributes<HTMLTableCellElement>>;
+  Footer: React.ForwardRefExoticComponent<TableFooterProps & React.RefAttributes<HTMLTableSectionElement>>;
 }

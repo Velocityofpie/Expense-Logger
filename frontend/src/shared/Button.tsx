@@ -1,3 +1,4 @@
+// src/shared/Button.tsx - updated version with icon prop support
 import React, { ButtonHTMLAttributes, forwardRef } from 'react';
 import { ButtonProps, ButtonSize, ButtonVariant } from './types';
 
@@ -12,9 +13,13 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       size = 'md',
       icon,
       iconPosition = 'left',
+      // Replace the icon prop with iconLeft and iconRight props
+      iconLeft,
+      iconRight,
       fullWidth = false,
       disabled = false,
       isLoading = false,
+      loadingText,
       onClick,
       className = '',
       type = 'button',
@@ -44,7 +49,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       info: 'bg-blue-600 hover:bg-blue-700 text-white shadow-sm dark:bg-blue-700 dark:hover:bg-blue-600 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-dark-bg',
       outline: 'bg-transparent border border-gray-300 text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-800',
       ghost: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300',
-      link: 'bg-transparent text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:underline p-0 h-auto shadow-none'
+      link: 'bg-transparent text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300 hover:underline p-0 h-auto shadow-none',
+      icon: 'bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 p-2 rounded-full' // Add classes for icon variant
     };
     
     // Disabled and loading states
@@ -64,6 +70,10 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ${widthClasses} 
       ${className}
     `;
+
+    // Determine which icon to use
+    const leftIconToUse = iconLeft || (iconPosition === 'left' ? icon : null);
+    const rightIconToUse = iconRight || (iconPosition === 'right' ? icon : null);
     
     return (
       <button
@@ -97,14 +107,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </svg>
         )}
         
-        {!isLoading && icon && iconPosition === 'left' && (
-          <span className="mr-2">{icon}</span>
+        {!isLoading && leftIconToUse && (
+          <span className="mr-2">{leftIconToUse}</span>
         )}
         
-        {children}
+        {isLoading && loadingText ? loadingText : children}
         
-        {!isLoading && icon && iconPosition === 'right' && (
-          <span className="ml-2">{icon}</span>
+        {!isLoading && rightIconToUse && (
+          <span className="ml-2">{rightIconToUse}</span>
         )}
       </button>
     );

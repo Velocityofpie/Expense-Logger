@@ -9,7 +9,7 @@ import {
   uploadInvoice, 
   fetchTags, 
   fetchCategories 
-} from '../../api';
+} from './invoicesApi';
 import { VALID_STATUSES } from '../../context/types';
 
 // Define interfaces for the invoice data
@@ -214,7 +214,21 @@ export const InvoicesProvider = ({ children }: InvoicesProviderProps) => {
       setIsLoading(true);
       setError(null);
       
-      await addInvoiceEntry(invoiceData);
+      // Create a properly typed version of the data with condition handling
+      const properlyTypedData = {
+        ...invoiceData,
+        items: invoiceData.items.map(item => ({
+          ...item,
+          // Convert condition to one of the allowed values or undefined
+          condition: item.condition 
+            ? (item.condition === 'New' || item.condition === 'Used' || item.condition === 'Refurbished' 
+                ? item.condition 
+                : 'Used') // Default to 'Used' if not one of the allowed values
+            : undefined
+        }))
+      };
+      
+      await addInvoiceEntry(properlyTypedData);
       
       // Reload all invoices to get the updated list
       await loadAllData();
