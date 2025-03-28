@@ -3,9 +3,21 @@
 import React, { useState, useEffect } from 'react';
 import ExpenseTracker from './ExpenseTracker';
 import { fetchCategories } from './expensesApi';
-import { transformInvoicesToExpenseTrackerFormat } from '../../utils';
 import { ExpenseGroup } from './expenseHelpers';
+import { transformInvoicesToExpenseTrackerFormat } from '../../utils';
 import { apiClient } from '../../services/api';
+
+// Utility function to convert Record<string, ExpenseItem[]> to ExpenseGroup[]
+const convertToExpenseGroups = (
+  groupedData: Record<string, any[]>
+): ExpenseGroup[] => {
+  return Object.entries(groupedData).map(([name, items]) => ({
+    name,
+    items,
+    count: items.length,
+    total: items.reduce((sum, item) => sum + item.total, 0)
+  }));
+};
 
 const ExpenseTrackerPage: React.FC = () => {
   const [expenseData, setExpenseData] = useState<ExpenseGroup[] | null>(null);
@@ -23,7 +35,10 @@ const ExpenseTrackerPage: React.FC = () => {
         const invoicesData = await apiClient.get('/invoices/');
         
         // Transform invoice data to the format expected by ExpenseTracker
-        const transformedData = transformInvoicesToExpenseTrackerFormat(invoicesData);
+        const rawTransformedData = transformInvoicesToExpenseTrackerFormat(invoicesData);
+
+        // Convert the Record<string, ExpenseItem[]> to ExpenseGroup[]
+        const transformedData = convertToExpenseGroups(rawTransformedData);
         
         setExpenseData(transformedData);
         setCategories(categoriesData);
