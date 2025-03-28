@@ -137,10 +137,14 @@ const TemplateManager: React.FC = () => {
     setTemplateData(updatedData);
   };
   
-  // Update marker
+  // Update marker - Fixed with type safety
   const updateMarker = (index: number, field: keyof TemplateMarker, value: string | boolean) => {
     const updatedData = { ...templateData };
-    updatedData.template_data.identification.markers[index][field] = value;
+    if (field === 'text' && typeof value === 'string') {
+      updatedData.template_data.identification.markers[index].text = value;
+    } else if (field === 'required' && typeof value === 'boolean') {
+      updatedData.template_data.identification.markers[index].required = value;
+    }
     setTemplateData(updatedData);
   };
   
@@ -978,7 +982,7 @@ const TemplateManager: React.FC = () => {
                   ))}
                   {Object.keys(testResults.extracted_data).length === 0 && (
                     <tr>
-                      <td colSpan="2" className="text-center">No data extracted</td>
+                      <td colSpan={2} className="text-center">No data extracted</td>
                     </tr>
                   )}
                 </tbody>

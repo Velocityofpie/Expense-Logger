@@ -221,3 +221,22 @@ export async function testTemplate(templateId: number, invoiceId: number): Promi
     throw error;
   }
 }
+
+/**
+ * Fetch invoices for testing templates
+ */
+export async function fetchInvoices(skip = 0, limit = 10): Promise<any[]> {
+  try {
+    const response = await fetch(`${API_URL}/invoices/?skip=${skip}&limit=${limit}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || 'Failed to fetch invoices');
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching invoices:", error);
+    return [];
+  }
+}

@@ -43,89 +43,292 @@ fi
 # Ensure tools directory exists
 RUN mkdir -p ./src/features/tools
 
-# Create a proper types.ts file with valid exports
-RUN echo '// src/features/tools/types.ts\n\
-/**\n\
- * OCR language definition\n\
- */\n\
-export interface OcrLanguage {\n\
-  code: string;\n\
-  name: string;\n\
-}\n\
-\n\
-/**\n\
- * OCR extraction result\n\
- */\n\
-export interface OcrResult {\n\
-  text: string;\n\
-  confidence?: number;\n\
-  pages?: number;\n\
-}\n\
-\n\
-/**\n\
- * OCR request options\n\
- */\n\
-export interface OcrRequestOptions {\n\
-  language?: string;\n\
-  dpi?: number;\n\
-  preprocess?: boolean;\n\
-  page_start?: number;\n\
-  page_end?: number;\n\
-}\n\
-\n\
-/**\n\
- * Template marker for document identification\n\
- */\n\
-export interface TemplateMarker {\n\
-  text: string;\n\
-  required: boolean;\n\
-}\n\
-\n\
-/**\n\
- * Template field definition for data extraction\n\
- */\n\
-export interface TemplateField {\n\
-  field_name: string;\n\
-  display_name?: string;\n\
-  data_type: string;\n\
-  extraction: {\n\
-    regex: string;\n\
-    alternative_regex?: string;\n\
-  };\n\
-  validation?: {\n\
-    required?: boolean;\n\
-  };\n\
-}\n\
-\n\
-/**\n\
- * Complete template definition\n\
- */\n\
-export interface Template {\n\
-  template_id: number;\n\
-  name: string;\n\
-  vendor?: string;\n\
-  version?: string;\n\
-  description?: string;\n\
-  created_at: string;\n\
-  updated_at?: string;\n\
-  template_data: {\n\
-    identification: {\n\
-      markers: TemplateMarker[];\n\
-    };\n\
-    fields: TemplateField[];\n\
-  };\n\
-}\n\
-\n\
-/**\n\
- * Result of testing a template against an invoice\n\
- */\n\
-export interface TemplateTestResult {\n\
-  success: boolean;\n\
-  match_score: number;\n\
-  fields_matched: number;\n\
-  fields_total: number;\n\
-  extracted_data: Record<string, string>;\n\
-}' > ./src/features/tools/types.ts
+# Write the types.ts file
+COPY <<-EOT /app/src/features/tools/types.ts
+// src/features/tools/types.ts
+export interface OcrLanguage {
+  code: string;
+  name: string;
+}
+
+export interface OcrResult {
+  text: string;
+  confidence?: number;
+  pages?: number;
+}
+
+export interface OcrRequestOptions {
+  language?: string;
+  dpi?: number;
+  preprocess?: boolean;
+  page_start?: number;
+  page_end?: number;
+}
+
+export interface TemplateMarker {
+  text: string;
+  required: boolean;
+}
+
+export interface TemplateField {
+  field_name: string;
+  display_name?: string;
+  data_type: string;
+  extraction: {
+    regex: string;
+    alternative_regex?: string;
+  };
+  validation?: {
+    required?: boolean;
+  };
+}
+
+export interface Template {
+  template_id: number;
+  name: string;
+  vendor?: string;
+  version?: string;
+  description?: string;
+  created_at: string;
+  updated_at?: string;
+  template_data: {
+    identification: {
+      markers: TemplateMarker[];
+    };
+    fields: TemplateField[];
+  };
+}
+
+export interface TemplateTestResult {
+  success: boolean;
+  match_score: number;
+  fields_matched: number;
+  fields_total: number;
+  extracted_data: Record<string, string>;
+}
+EOT
+
+# Write the toolsApi.ts file
+COPY <<-EOT /app/src/features/tools/toolsApi.ts
+// src/features/tools/toolsApi.ts
+import { OcrLanguage, OcrResult, OcrRequestOptions, Template, TemplateTestResult } from "./types";
+
+const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
+
+export async function extractOcrText(file: File, options: OcrRequestOptions = {}): Promise<OcrResult> {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    
+    if (options.language) formData.append("language", options.language);
+    if (options.dpi) formData.append("dpi", options.dpi.toString());
+    if (options.preprocess !== undefined) formData.append("preprocess", options.preprocess.toString());
+    if (options.page_start !== undefined) formData.append("page_start", options.page_start.toString());
+    if (options.page_end !== undefined) formData.append("page_end", options.page_end.toString());
+    
+    const response = await fetch(`\${API_URL}/ocr/extract/`, {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "OCR processing failed");
+    }
+    
+    return await response.json();
+  } catch (error) {
+    console.error("OCR extraction error:", error);
+    throw error;
+  }
+}
+
+export async function fetchOcrLanguages(): Promise<OcrLanguage[]> {
+  try {
+    const response = await fetch(`\${API_URL}/ocr/languages/`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to fetch OCR languages");
+    }
+    
+    const data = await response.json();
+    return data.languages;
+  } catch (error) {
+    console.error("Error fetching OCR languages:", error);
+    return [
+      { code: "eng", name: "English" },
+      { code: "fra", name: "French" },
+      { code: "deu", name: "German" },
+      { code: "spa", name: "Spanish" }
+    ];
+  }
+}
+
+export async function fetchTemplates(): Promise<Template[]> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to fetch templates");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching templates:", error);
+    throw error;
+  }
+}
+
+export async function fetchTemplateById(id: number): Promise<Template> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/\${id}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to fetch template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching template:", error);
+    throw error;
+  }
+}
+
+export async function createTemplate(templateData: Partial<Template>): Promise<Template> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templateData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to create template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error creating template:", error);
+    throw error;
+  }
+}
+
+export async function updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/\${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(templateData),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to update template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error updating template:", error);
+    throw error;
+  }
+}
+
+export async function deleteTemplate(id: number): Promise<void> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/\${id}`, {
+      method: "DELETE",
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to delete template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error deleting template:", error);
+    throw error;
+  }
+}
+
+export async function importTemplate(formData: FormData): Promise<Template> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/import`, {
+      method: "POST",
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to import template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error importing template:", error);
+    throw error;
+  }
+}
+
+export async function testTemplate(templateId: number, invoiceId: number): Promise<TemplateTestResult> {
+  try {
+    const response = await fetch(`\${API_URL}/templates/test`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        template_id: templateId,
+        invoice_id: invoiceId
+      }),
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to test template");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error testing template:", error);
+    throw error;
+  }
+}
+
+export async function fetchInvoices(skip = 0, limit = 10): Promise<any[]> {
+  try {
+    const response = await fetch(`\${API_URL}/invoices/?skip=\${skip}&limit=\${limit}`);
+    
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.detail || "Failed to fetch invoices");
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error("Error fetching invoices:", error);
+    return [];
+  }
+}
+EOT
+
+# Write the index.ts file
+COPY <<-EOT /app/src/features/tools/index.ts
+// src/features/tools/index.ts
+
+// Export tools components
+export { default as Tools } from "./Tools";
+export { default as OcrExtractor } from "./OcrExtractor";
+export { default as TemplateManager } from "./TemplateManager";
+
+// Export API utilities
+export * from "./toolsApi";
+
+// Export types
+export * from "./types";
+EOT
 
 # Build the application
 RUN npm run build
