@@ -1,17 +1,40 @@
 # Build stage
-FROM node:18-alpine AS build
+FROM node:16-alpine AS build
 
 # Set working directory
 WORKDIR /app
 
 # Copy package files
-COPY package.json package-lock.json* ./
+COPY package.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with forced resolutions
+RUN npm install --legacy-peer-deps
+# Fix the specific dependency issue
+RUN npm install ajv@8.11.0 ajv-keywords@5.1.0 --legacy-peer-deps
 
 # Copy source code
-COPY . .
+COPY public/ ./public/
+COPY src/ ./src/
+COPY tsconfig.json tsconfig.paths.json postcss.config.js tailwind.config.js ./
+
+# Create index.tsx if it doesn't exist
+RUN if [ ! -f ./src/index.tsx ]; then \
+    echo '// src/index.tsx\n\
+import React from "react";\n\
+import { createRoot } from "react-dom/client";\n\
+import "./styles/global.css";\n\
+import App from "./App";\n\
+\n\
+const container = document.getElementById("root");\n\
+if (!container) throw new Error("Failed to find the root element");\n\
+const root = createRoot(container);\n\
+\n\
+root.render(\n\
+  <React.StrictMode>\n\
+    <App />\n\
+  </React.StrictMode>\n\
+);' > ./src/index.tsx; \
+fi
 
 # Build the application
 RUN npm run build
@@ -22,14 +45,7 @@ FROM nginx:alpine AS production
 # Copy built assets from the build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Copy custom nginx config if necessary
-# COPY ./nginx/nginx.conf /etc/nginx/conf.d/default.conf
-
-# Add environment variable handling with script
-COPY ./docker-entrypoint.sh /docker-entrypoint.sh
-RUN chmod +x /docker-entrypoint.sh
-
-# Create docker-entrypoint.sh script to replace env variables at runtime
+# Create docker-entrypoint.sh file
 RUN echo '#!/bin/sh\n\
 # Replace env vars in JavaScript files\n\
 echo "Replacing environment variables..."\n\
@@ -42,6 +58,9 @@ done\n\
 echo "Starting Nginx..."\n\
 exec nginx -g "daemon off;"\n\
 ' > /docker-entrypoint.sh
+
+# Make entrypoint script executable
+RUN chmod +x /docker-entrypoint.sh
 
 # Expose port 80
 EXPOSE 80
