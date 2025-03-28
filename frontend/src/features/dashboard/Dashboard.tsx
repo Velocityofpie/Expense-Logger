@@ -19,7 +19,7 @@ const COLORS = [
 ];
 
 interface DashboardProps {
-  userId?: string;
+  userId?: string | null; // Changed type to string | null to match fetchInvoices parameter
 }
 
 interface DashboardStats {
@@ -52,11 +52,12 @@ interface ChartData {
 const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
   const { darkMode } = useContext(ThemeContext);
   const [invoices, setInvoices] = useState([]);
+  const [filteredInvoices, setFilteredInvoices] = useState([]);
   const [categories, setCategories] = useState([]);
   const [tags, setTags] = useState([]);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [selectedStatus, setSelectedStatus] = useState("All");
-  const [loading, setLoading] = useState(true);
+  const [loading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeChart, setActiveChart] = useState('monthly');
   const [stats, setStats] = useState<DashboardStats>({
@@ -80,7 +81,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
 
   const loadDashboardData = async () => {
     try {
-      setLoading(true);
+      setIsLoading(true);
       setError(null);
       
       // Fetch data from API
@@ -91,6 +92,7 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
       ]);
       
       setInvoices(invoicesData);
+      setFilteredInvoices(invoicesData);
       setCategories(categoriesData);
       setTags(tagsData);
       
@@ -100,11 +102,11 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
       // Generate chart data
       generateChartData(invoicesData);
       
-      setLoading(false);
+      setIsLoading(false);
     } catch (err) {
       console.error("Error loading dashboard data:", err);
       setError("Failed to load dashboard data. Please try again.");
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -572,7 +574,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userId }) => {
           </div>
         </div>
       </div>
-      
       {/* Recent Invoices */}
       <div className="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">

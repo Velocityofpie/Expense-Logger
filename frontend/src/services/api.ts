@@ -168,8 +168,8 @@ class ApiClient {
 // Create API client instance
 export const apiClient = new ApiClient();
 
-// Export the fetchInvoices function for dashboard
-export const fetchInvoices = async (skip = 0, limit = 100, userId = null) => {
+// Export the fetchInvoices function for dashboard - UPDATED TYPE
+export const fetchInvoices = async (skip = 0, limit = 100, userId: string | null = null) => {
   let url = `/invoices/?skip=${skip}&limit=${limit}`;
   if (userId) {
     url += `&user_id=${userId}`;
