@@ -1,6 +1,6 @@
 // LineItemEditor.tsx
 import React from 'react';
-import { Table, Input, Button } from '../shared';
+import { Table, Input, Button } from '../../shared';
 import { LineItem } from './types';
 
 interface LineItemEditorProps {
@@ -118,7 +118,7 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ items, onChange }) => {
               </Table.Row>
             ))}
           </Table.Body>
-          <Table.Foot>
+          <Table.Footer>
             <Table.Row>
               <Table.Cell colSpan={3} className="text-right font-medium">Subtotal:</Table.Cell>
               <Table.Cell className="text-right font-medium">
@@ -126,7 +126,7 @@ const LineItemEditor: React.FC<LineItemEditorProps> = ({ items, onChange }) => {
               </Table.Cell>
               <Table.Cell></Table.Cell>
             </Table.Row>
-          </Table.Foot>
+          </Table.Footer>
         </Table>
       )}
     </div>

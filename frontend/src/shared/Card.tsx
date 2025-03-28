@@ -30,7 +30,7 @@ Card.displayName = 'Card';
  * Card header component
  */
 export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
-  ({ children, title, subtitle, actions, className = '', ...props }, ref) => {
+  ({ children, headerTitle, subtitle, actions, className = '', ...props }, ref) => {
     return (
       <div 
         ref={ref}
@@ -40,7 +40,7 @@ export const CardHeader = forwardRef<HTMLDivElement, CardHeaderProps>(
         {children || (
           <div className="flex items-center justify-between">
             <div>
-              {title && <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">{title}</h3>}
+              {headerTitle && <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">{headerTitle}</h3>}
               {subtitle && <p className="text-sm text-gray-500 dark:text-dark-text-secondary mt-1">{subtitle}</p>}
             </div>
             {actions && <div className="flex space-x-2">{actions}</div>}

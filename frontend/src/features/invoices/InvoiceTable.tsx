@@ -11,7 +11,7 @@ import {
   Badge, 
   Button, 
   Checkbox 
-} from '../shared';
+} from '../../shared';
 import { Invoice } from './types';
 
 interface InvoiceTableProps {

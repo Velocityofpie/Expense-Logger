@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, forwardRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ModalProps, ModalHeaderProps, ModalBodyProps, ModalFooterProps } from './types';
 
@@ -156,75 +156,74 @@ export const Modal: React.FC<ModalProps> = ({
 /**
  * Modal header component
  */
-export const ModalHeader: React.FC<ModalHeaderProps> = ({ 
-  children, 
-  title,
-  onClose,
-  className = '',
-  ...props 
-}) => {
-  return (
-    <div 
-      className={`px-6 py-4 border-b border-gray-200 dark:border-dark-border ${className}`}
-      {...props}
-    >
-      {children || (
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">
-            {title}
-          </h3>
-          {onClose && (
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500 transition-colors duration-200"
-              aria-label="Close"
-            >
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-      )}
-    </div>
-  );
-};
+export const ModalHeader = forwardRef<HTMLDivElement, ModalHeaderProps>(
+  ({ children, modalTitle, onClose, className = '', ...props }, ref) => {
+    return (
+      <div 
+        ref={ref}
+        className={`px-6 py-4 border-b border-gray-200 dark:border-dark-border ${className}`}
+        {...props}
+      >
+        {children || (
+          <div className="flex items-center justify-between">
+            {modalTitle && <h3 className="text-lg font-medium text-gray-900 dark:text-dark-text-primary">{modalTitle}</h3>}
+            {onClose && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-500 focus:outline-none focus:text-gray-500 transition-colors duration-200"
+                aria-label="Close"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+);
+
+ModalHeader.displayName = 'ModalHeader';
 
 /**
  * Modal body component
  */
-export const ModalBody: React.FC<ModalBodyProps> = ({ 
-  children, 
-  className = '',
-  ...props 
-}) => {
-  return (
-    <div 
-      className={`px-6 py-4 overflow-y-auto ${className}`}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
+export const ModalBody = forwardRef<HTMLDivElement, ModalBodyProps>(
+  ({ children, className = '', ...props }, ref) => {
+    return (
+      <div 
+        ref={ref}
+        className={`px-6 py-4 overflow-y-auto ${className}`}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+ModalBody.displayName = 'ModalBody';
 
 /**
  * Modal footer component
  */
-export const ModalFooter: React.FC<ModalFooterProps> = ({ 
-  children, 
-  className = '',
-  ...props 
-}) => {
-  return (
-    <div 
-      className={`px-6 py-4 border-t border-gray-200 dark:border-dark-border ${className}`}
-      {...props}
-    >
-      {children}
-    </div>
-  );
-};
+export const ModalFooter = forwardRef<HTMLDivElement, ModalFooterProps>(
+  ({ children, className = '', ...props }, ref) => {
+    return (
+      <div 
+        ref={ref}
+        className={`px-6 py-4 border-t border-gray-200 dark:border-dark-border ${className}`}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+ModalFooter.displayName = 'ModalFooter';
 
 export default Modal;

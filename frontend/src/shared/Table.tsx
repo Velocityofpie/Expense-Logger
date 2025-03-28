@@ -1,4 +1,4 @@
-// src/shared/Table.tsx - update Table component to add static properties
+// src/shared/Table.tsx - Fixed version with proper TypeScript typings
 
 import React, { forwardRef } from 'react';
 import { 
@@ -8,13 +8,14 @@ import {
   TableRowProps, 
   TableHeaderProps, 
   TableCellProps, 
-  TableFooterProps 
+  TableFooterProps,
+  TableComponent
 } from './types';
 
 /**
  * Table component for displaying structured data
  */
-const Table = forwardRef<HTMLTableElement, TableProps>(
+const BaseTable = forwardRef<HTMLTableElement, TableProps>(
   ({ children, className = '', stickyHeader = false, bordered = false, striped = false, hover = false, ...props }, ref) => {
     return (
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-border">
@@ -32,7 +33,7 @@ const Table = forwardRef<HTMLTableElement, TableProps>(
   }
 );
 
-Table.displayName = 'Table';
+BaseTable.displayName = 'Table';
 
 /**
  * Table head component
@@ -221,12 +222,14 @@ export const TableFooter = forwardRef<HTMLTableSectionElement, TableFooterProps>
 
 TableFooter.displayName = 'TableFooter';
 
-// Add static properties to Table for compound component pattern
-Table.Head = TableHead;
-Table.Body = TableBody;
-Table.Row = TableRow;
-Table.Header = TableHeader;
-Table.Cell = TableCell;
-Table.Footer = TableFooter;
+// Create Table as object with all compound components
+const Table = Object.assign(BaseTable, {
+  Head: TableHead,
+  Body: TableBody,
+  Row: TableRow,
+  Header: TableHeader,
+  Cell: TableCell,
+  Footer: TableFooter
+}) as TableComponent;
 
-export default Table as unknown as TableComponent;
+export default Table;

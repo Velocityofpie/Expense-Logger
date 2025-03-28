@@ -1,7 +1,7 @@
 // InvoiceExtractor.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, Input, Select, Badge } from '../shared';
+import { Card, CardHeader, CardBody, Button, Input, Select, Badge } from '../../shared';
 import { InvoiceTable } from './';
 import { InvoiceForm } from './';
 import { fetchInvoices, deleteInvoice, fetchTags, fetchCategories } from './invoicesApi';

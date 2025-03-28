@@ -48,7 +48,7 @@ export type Partial<T> = {
   /**
    * Constructs a type with properties of T and U
    */
-  export type Merge<T, U> = Omit<T, keyof U> & U;
+  export type Merge<T extends object, U extends object> = Omit<T, Extract<keyof T, keyof U>> & U;
   
   /**
    * Makes all properties in T nullable

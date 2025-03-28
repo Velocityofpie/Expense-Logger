@@ -1,6 +1,6 @@
 // InvoiceForm.tsx
 import React, { useState } from 'react';
-import { Card, CardHeader, CardBody, Input, Select, Button, Textarea } from '../shared';
+import { Card, CardHeader, CardBody, Input, Select, Button, Textarea } from '../../shared';
 import { LineItemEditor } from './';
 import { addInvoiceEntry } from './invoicesApi';
 import { LineItem, InvoiceFormData } from './types';

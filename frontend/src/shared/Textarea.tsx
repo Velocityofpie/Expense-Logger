@@ -1,3 +1,5 @@
+#!/bin/bash
+
 // src/shared/Textarea.tsx
 import React, { forwardRef, TextareaHTMLAttributes } from 'react';
 

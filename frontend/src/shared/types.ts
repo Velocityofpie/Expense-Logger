@@ -109,7 +109,7 @@ export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * Card title
    */
-  title?: React.ReactNode;
+  headerTitle?: React.ReactNode;
   
   /**
    * Card subtitle
@@ -205,7 +205,7 @@ export interface ModalHeaderProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * Modal title
    */
-  title?: React.ReactNode;
+  modalTitle?: React.ReactNode;
   
   /**
    * Callback when the close button is clicked
@@ -367,7 +367,7 @@ export interface TableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
   /**
    * Table cell contents
    */
-  children: React.ReactNode;
+  children?: React.ReactNode;
   
   /**
    * Text alignment

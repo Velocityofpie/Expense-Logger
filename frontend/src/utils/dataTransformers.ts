@@ -77,8 +77,8 @@ export const groupExpensesByField = (
   expenses: ExpenseItem[],
   groupBy: 'category' | 'store' | 'date' | 'creditCard' = 'category'
 ): ExpenseGroup[] => {
-  // Map to keys for easy reference
-  const keyMap: Record<string, string> = {
+  // Create a typed key map to ensure we're only accessing valid properties
+  const keyMap: Record<string, keyof ExpenseItem> = {
     'category': 'category',
     'store': 'store',
     'date': 'date',
@@ -86,13 +86,15 @@ export const groupExpensesByField = (
   };
   
   // Get the field to group by
-  const field = keyMap[groupBy] || 'category';
+  const field = keyMap[groupBy];
   
   // Group expenses
   const groupedData: Record<string, ExpenseItem[]> = {};
   
   expenses.forEach(expense => {
-    const key = expense[field] as string || 'Unknown';
+    // Use type assertion to tell TypeScript this is a valid property access
+    const value = expense[field];
+    const key = typeof value === 'string' ? value : 'Unknown';
     
     if (!groupedData[key]) {
       groupedData[key] = [];

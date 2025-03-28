@@ -1,6 +1,6 @@
 // InvoiceUpload.tsx
 import React, { useState } from 'react';
-import { Card, CardHeader, CardBody, Button } from '../shared';
+import { Card, CardHeader, CardBody, Button } from '../../shared';
 import { uploadInvoice } from './invoicesApi';
 import { UploadResult } from './types';
 

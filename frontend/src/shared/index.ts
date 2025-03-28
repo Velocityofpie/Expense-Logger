@@ -1,4 +1,4 @@
-// src/shared/index.ts - Fix exports
+// src/shared/index.ts - Fixing the imports and exports
 /**
  * Barrel exports for shared UI components
  */
@@ -24,29 +24,13 @@ export { default as Textarea } from './Textarea';
 export { default as Checkbox } from './Checkbox';
 export { default as Badge } from './Badge';
 
-// Export component types
-export type {
-  ButtonProps,
-  ButtonVariant,
-  ButtonSize,
-  CardProps,
-  CardHeaderProps,
-  CardBodyProps,
-  CardFooterProps,
-  ModalProps,
-  ModalHeaderProps,
-  ModalBodyProps,
-  ModalFooterProps,
-  TableProps,
-  TableHeadProps,
-  TableBodyProps,
-  TableRowProps,
-  TableHeaderProps,
-  TableCellProps,
-  TableFooterProps,
-  InputProps,
-  SelectProps,
-  TextareaProps,
-  CheckboxProps,
-  BadgeProps
-} from './types';
+// Export component types directly from files to avoid circular dependencies
+export type { ButtonProps, ButtonVariant, ButtonSize } from './types';
+export type { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from './types';
+export type { ModalProps, ModalHeaderProps, ModalBodyProps, ModalFooterProps } from './types';
+export type { TableProps, TableHeadProps, TableBodyProps, TableRowProps, TableHeaderProps, TableCellProps, TableFooterProps } from './types';
+export type { InputProps } from './Input';
+export type { SelectProps } from './Select';
+export type { TextareaProps } from './Textarea';
+export type { CheckboxProps } from './Checkbox';
+export type { BadgeProps } from './Badge';
