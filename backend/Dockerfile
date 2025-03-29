@@ -27,8 +27,11 @@ RUN pip install --no-cache-dir --upgrade pip \
 # Copy all backend code
 COPY . .
 
+# Make entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
+
 # Expose port for FastAPI
 EXPOSE 8000
 
-# The actual command is specified in docker-compose.yml
+# The command is now specified in docker-compose.yml
 CMD ["bash"]
