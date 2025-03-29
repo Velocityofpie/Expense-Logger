@@ -1,6 +1,7 @@
 // src/services/api.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getToken, removeToken } from './storage';
+import { apiUrl } from '../utils/config';
 
 /**
  * Core API client configuration
@@ -11,7 +12,8 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    this.baseURL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+    // Use the apiUrl from config helper instead of direct environment variable
+    this.baseURL = apiUrl;
     
     this.client = axios.create({
       baseURL: this.baseURL,
@@ -98,23 +100,6 @@ class ApiClient {
   }
 
   /**
-   * Make a PATCH request
-   * @param url API endpoint URL
-   * @param data Request payload
-   * @param config Additional Axios config
-   * @returns Promise with response data
-   */
-  async patch<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response: AxiosResponse<T> = await this.client.patch<T>(url, data, config);
-      return response.data;
-    } catch (error) {
-      console.error('API PATCH error:', error);
-      throw error;
-    }
-  }
-
-  /**
    * Make a DELETE request
    * @param url API endpoint URL
    * @param config Additional Axios config
@@ -168,7 +153,7 @@ class ApiClient {
 // Create API client instance
 export const apiClient = new ApiClient();
 
-// Export the fetchInvoices function for dashboard - UPDATED TYPE
+// Export the fetchInvoices function for dashboard
 export const fetchInvoices = async (skip = 0, limit = 100, userId: string | null = null) => {
   let url = `/invoices/?skip=${skip}&limit=${limit}`;
   if (userId) {

@@ -24,7 +24,7 @@ server {
     
     # API proxy
     location /api/ {
-        proxy_pass http://backend:8000/;
+        proxy_pass ${REACT_APP_API_URL}/;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -37,7 +37,7 @@ server {
     
     # Static files proxy (for uploads)
     location /uploads/ {
-        proxy_pass http://backend:8000/uploads/;
+        proxy_pass ${REACT_APP_API_URL}/uploads/;
         proxy_set_header Host $host;
         proxy_cache_bypass $http_upgrade;
     }
