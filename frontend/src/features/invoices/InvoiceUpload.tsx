@@ -1,6 +1,6 @@
 // InvoiceUpload.tsx
 import React, { useState } from 'react';
-import { Card, CardHeader, CardBody, Button } from '../../shared';
+import { Card, CardHeader, CardBody, Button, Checkbox } from '../../shared';
 import { uploadInvoice } from './invoicesApi';
 import { UploadResult } from './types';
 
@@ -48,6 +48,7 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onUploadSuccess }) => {
         formData.append("use_templates", useTemplates.toString());
         
         console.log("Uploading file:", file.name);
+        console.log("Using OCR templates:", useTemplates);
         
         try {
           const result = await uploadInvoice(formData);
@@ -169,13 +170,10 @@ const InvoiceUpload: React.FC<InvoiceUploadProps> = ({ onUploadSuccess }) => {
           
           {/* Template toggle option */}
           <div className="flex items-center">
-            <input
+            <Checkbox
               id="use-templates"
-              name="use-templates"
-              type="checkbox"
               checked={useTemplates}
               onChange={(e) => setUseTemplates(e.target.checked)}
-              className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded"
             />
             <label htmlFor="use-templates" className="ml-2 block text-sm text-gray-900">
               Use OCR Templates for extraction

@@ -1,4 +1,5 @@
-# backend/services/template.py
+# backend/services/template.py - FIXED VERSION
+
 import re
 from typing import Dict, Optional, Any
 from sqlalchemy.orm import Session
@@ -245,7 +246,7 @@ def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     extracted_text = extract_text_from_file(file_path)
     
     # Import here to avoid circular imports
-    from backend.models.template import InvoiceTemplate
+    from models.template import InvoiceTemplate  # FIXED: Changed from backend.models.template
     
     # Get all active templates
     templates = db.query(InvoiceTemplate).filter(InvoiceTemplate.is_active == True).all()

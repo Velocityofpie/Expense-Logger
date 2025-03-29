@@ -25,20 +25,13 @@ RUN npm run build
 # Production stage
 FROM nginx:alpine
 
-# Copy nginx config
+# Copy nginx config directly
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Copy built files from the build stage
 COPY --from=build /app/build /usr/share/nginx/html
 
-# Script to substitute environment variables in the JS bundles at runtime
-RUN echo '#!/bin/sh \n\
-find /usr/share/nginx/html -type f -name "*.js" -exec sed -i "s|REACT_APP_API_URL_PLACEHOLDER|$REACT_APP_API_URL|g" {} \; \n\
-nginx -g "daemon off;"' > /docker-entrypoint.sh && \
-chmod +x /docker-entrypoint.sh
-
 # Expose port 80
 EXPOSE 80
 
-# Start Nginx
-ENTRYPOINT ["/docker-entrypoint.sh"]
+# Use the default CMD from the nginx image
