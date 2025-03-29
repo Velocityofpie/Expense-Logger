@@ -1,5 +1,6 @@
 // src/utils/config.ts
 
+
 // Define the shape of the runtime configuration
 interface RuntimeConfig {
     apiUrl: string;
@@ -20,13 +21,13 @@ interface RuntimeConfig {
     // Then try environment variables from build time
     const buildTimeApiUrl = process.env.REACT_APP_API_URL;
     
-    // Finally use defaults
+    // Finally use defaults - Use the relative URL approach for better container compatibility
     return {
-      apiUrl: runtimeConfig?.apiUrl || buildTimeApiUrl || 'http://localhost:8000',
+      apiUrl: runtimeConfig?.apiUrl || buildTimeApiUrl || '/api',
     };
   };
   
   // Export individual config properties for convenience
-  export const apiUrl = getConfig().apiUrl;
-  
+  export const apiUrl = '/api';
+
   export default getConfig;

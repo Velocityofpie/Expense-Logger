@@ -24,6 +24,7 @@ services:
       dockerfile: Dockerfile
     volumes:
       - uploads_data:/app/uploads
+      - ./backend:/app  # Mount source code for easier development
     depends_on:
       postgres_db:
         condition: service_healthy
@@ -33,15 +34,18 @@ services:
       - DB_USER=${DB_USER:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-secret}
       - JWT_SECRET=${JWT_SECRET:-default-secret-change-me}
+      - CORS_ORIGINS=*  # Allow all origins for development
+    ports:
+      - "8000:8000"  # Expose backend port to host
     restart: always
     command: >
       bash -c "
-        until PGPASSWORD=$DB_PASSWORD psql -h postgres_db -U $DB_USER -d $DB_NAME -c '\q'; do
+        until pg_isready -h postgres_db -U ${DB_USER:-postgres}; do
           echo 'Waiting for PostgreSQL...'
           sleep 2
         done &&
         python -c 'from main import Base, engine; Base.metadata.create_all(engine)' &&
-        uvicorn main:app --host 0.0.0.0 --port 8000
+        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
       "
     networks:
       - app-network
@@ -51,10 +55,12 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+        - REACT_APP_API_URL=/api
     environment:
-      - REACT_APP_API_URL=${REACT_APP_API_URL:-http://localhost:8000}
+      - REACT_APP_API_URL=/api  # Use relative path with Nginx as proxy
     restart: always
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro  # Mount custom Nginx config
     networks:
       - app-network
     ports:
