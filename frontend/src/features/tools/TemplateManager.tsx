@@ -23,20 +23,8 @@ import {
   testTemplate,
   fetchInvoices
 } from "./toolsApi";
-import { Template, TemplateMarker, TemplateField, TemplateTestResult } from "./types";
-
-interface TemplateFormData {
-  name: string;
-  vendor: string;
-  version: string;
-  description: string;
-  template_data: {
-    identification: {
-      markers: TemplateMarker[];
-    };
-    fields: TemplateField[];
-  };
-}
+import { Template, TemplateMarker, TemplateField, TemplateTestResult, FieldTestResult } from "./types";
+import InvoicePreviewModal from './InvoicePreviewModal';
 
 const TemplateManager: React.FC = () => {
   // State for template list
@@ -49,7 +37,7 @@ const TemplateManager: React.FC = () => {
   const [showTemplateForm, setShowTemplateForm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentTemplate, setCurrentTemplate] = useState<Template | null>(null);
-  const [templateData, setTemplateData] = useState<TemplateFormData>({
+  const [templateData, setTemplateData] = useState<any>({
     name: "",
     vendor: "",
     version: "1.0",
@@ -80,6 +68,10 @@ const TemplateManager: React.FC = () => {
   const [invoices, setInvoices] = useState<any[]>([]);
   const [isTesting, setIsTesting] = useState(false);
   const [testResults, setTestResults] = useState<TemplateTestResult | null>(null);
+  
+  // State for invoice preview
+  const [showInvoicePreview, setShowInvoicePreview] = useState(false);
+  const [previewInvoiceId, setPreviewInvoiceId] = useState<string | null>(null);
   
   // Load templates on mount
   useEffect(() => {
@@ -401,6 +393,12 @@ const TemplateManager: React.FC = () => {
     }
   };
 
+  // Handle opening invoice preview
+  const handleOpenInvoicePreview = (invoiceId: string) => {
+    setPreviewInvoiceId(invoiceId);
+    setShowInvoicePreview(true);
+  };
+
   return (
     <div className="template-manager">
       <div className="d-flex justify-content-between align-items-center mb-4">
@@ -671,7 +669,7 @@ const TemplateManager: React.FC = () => {
                           </Button>
                         </div>
                         
-                        {templateData.template_data.identification.markers.map((marker, index) => (
+                        {templateData.template_data.identification.markers.map((marker: TemplateMarker, index: number) => (
                           <div key={index} className="d-flex mb-2 align-items-center">
                             <Form.Control
                               type="text"
@@ -717,7 +715,7 @@ const TemplateManager: React.FC = () => {
                           <p className="mb-0">No fields defined. Click "Add Field" to create one.</p>
                         </div>
                       ) : (
-                        templateData.template_data.fields.map((field, index) => (
+                        templateData.template_data.fields.map((field: TemplateField, index: number) => (
                           <Card key={index} className="mb-3">
                             <Card.Header className="d-flex justify-content-between align-items-center">
                               <h6 className="mb-0">
@@ -965,6 +963,50 @@ const TemplateManager: React.FC = () => {
                 </Card.Body>
               </Card>
               
+              <h5 className="mb-3">Field Test Results</h5>
+              <Table striped bordered hover>
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Status</th>
+                    <th>Required</th>
+                    <th>Extracted Value</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentTemplate && currentTemplate.template_data && 
+                  currentTemplate.template_data.fields.map((field) => {
+                    // Determine if the field was successfully extracted
+                    const wasExtracted = Object.keys(testResults.extracted_data).includes(field.field_name);
+                    const isRequired = field.validation?.required || false;
+                    const extractedValue = testResults.extracted_data[field.field_name] || "-";
+                    
+                    return (
+                      <tr key={field.field_name}>
+                        <td>
+                          <strong>{field.display_name || field.field_name}</strong>
+                        </td>
+                        <td>
+                          {wasExtracted ? (
+                            <Badge bg="success">Passed</Badge>
+                          ) : (
+                            <Badge bg="danger">Failed</Badge>
+                          )}
+                        </td>
+                        <td>
+                          {isRequired ? (
+                            <Badge bg="warning" text="dark">Required</Badge>
+                          ) : (
+                            <Badge bg="secondary">Optional</Badge>
+                          )}
+                        </td>
+                        <td>{extractedValue?.toString() || "-"}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+              
               <h5 className="mb-3">Extracted Data</h5>
               <Table striped bordered hover>
                 <thead>
@@ -987,6 +1029,21 @@ const TemplateManager: React.FC = () => {
                   )}
                 </tbody>
               </Table>
+              
+              {/* Add Invoice Preview Button */}
+              <div className="mt-4 d-flex justify-content-end">
+                <Button 
+                  variant="outline-primary"
+                  onClick={() => handleOpenInvoicePreview(selectedInvoice)}
+                  disabled={!selectedInvoice}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-eye me-2" viewBox="0 0 16 16">
+                    <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                    <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                  </svg>
+                  View Invoice
+                </Button>
+              </div>
             </div>
           )}
         </Modal.Body>
@@ -1017,6 +1074,13 @@ const TemplateManager: React.FC = () => {
           </Button>
         </Modal.Footer>
       </Modal>
+      
+      {/* Invoice Preview Modal */}
+      <InvoicePreviewModal
+        invoiceId={previewInvoiceId}
+        show={showInvoicePreview}
+        onHide={() => setShowInvoicePreview(false)}
+      />
     </div>
   );
 };

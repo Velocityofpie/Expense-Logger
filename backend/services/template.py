@@ -45,6 +45,7 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
     extracted_data = {}
     fields_total = len(fields)
     fields_matched = 0
+    field_results = []  # Store detailed results for each field
     
     for field in fields:
         field_name = field.get("field_name", "")
@@ -62,9 +63,20 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         if not match and alt_regex:
             match = re.search(alt_regex, text)
         
+        # Prepare field result
+        field_result = {
+            "field_name": field_name,
+            "display_name": field.get("display_name", field_name),
+            "required": field.get("validation", {}).get("required", False),
+            "matched": False,
+            "value": None
+        }
+        
         # If we found a match, extract the data
         if match:
             fields_matched += 1
+            field_result["matched"] = True
+            
             # Get the first capture group, or the whole match if no groups
             value = match.group(1) if match.groups() else match.group(0)
             
@@ -75,6 +87,30 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
             
             # Store the extracted value
             extracted_data[field_name] = value
+            field_result["value"] = value
+        
+        field_results.append(field_result)
+    
+    # Special handling for item details - split into separate item and count fields
+    # If there's an "item_details" field in the template, process it
+    for field in fields:
+        if field.get("field_name") == "item_details":
+            # Check if we've successfully extracted item_details
+            if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
+                item_list = extracted_data["item_details"]
+                
+                # Create separate lists for item names and counts
+                item_names = []
+                item_counts = []
+                
+                for item in item_list:
+                    # Extract name and quantity
+                    item_names.append(item.get("product_name", ""))
+                    item_counts.append(item.get("quantity", 1))
+                
+                # Add as separate fields in extracted data
+                extracted_data["items"] = item_names
+                extracted_data["item_counts"] = item_counts
     
     # Calculate match score
     match_score = fields_matched / fields_total if fields_total > 0 else 0
@@ -84,9 +120,12 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         "match_score": match_score,
         "fields_matched": fields_matched,
         "fields_total": fields_total,
-        "extracted_data": extracted_data
+        "extracted_data": extracted_data,
+        "field_results": field_results  # Include detailed results
     }
 
+
+# Update the update_invoice_with_extracted_data function to handle separated item fields
 
 def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Session):
     """Update an invoice with data extracted using a template."""
@@ -100,6 +139,7 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
         "total_before_tax": "total_before_tax",
         "payment_method": "payment_method",
         "billing_address": "billing_address",
+        "merchant_name": "merchant_name",  # Make sure merchant_name is mapped
     }
     
     # Update invoice fields
@@ -157,9 +197,31 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                 quantity=int(item_data.get("quantity", 1)),
                 unit_price=float(item_data.get("price", 0)),
                 product_link=item_data.get("product_link", ""),
-                condition=item_data.get("condition", "New")
+                condition=item_data.get("condition", "New"),
+                item_type=item_data.get("item_type", "")  # Make sure to include item_type
             )
             db.add(item)
+    # Add support for separated items and item_counts
+    elif "items" in extracted_data and "item_counts" in extracted_data:
+        # Import here to avoid circular imports
+        from models.invoice import InvoiceItem
+        
+        # Get the lists
+        items = extracted_data["items"]
+        counts = extracted_data["item_counts"]
+        
+        # Make sure both lists have data and are the same length
+        if items and counts and len(items) == len(counts):
+            for i in range(len(items)):
+                # Create a new invoice item
+                item = InvoiceItem(
+                    invoice_id=invoice.invoice_id,
+                    product_name=items[i],
+                    quantity=int(counts[i]),
+                    unit_price=0,  # Default unit price since we don't have it
+                    item_type=extracted_data.get("category", "")  # Use category as item_type if available
+                )
+                db.add(item)
     
     # Extract and set tags/categories if available
     if "tags" in extracted_data and isinstance(extracted_data["tags"], list):

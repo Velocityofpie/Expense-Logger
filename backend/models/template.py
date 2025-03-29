@@ -36,6 +36,7 @@ class TemplateTestResult(Base):
     fields_total = sa.Column(sa.Integer)
     notes = sa.Column(sa.Text)
     extracted_data = sa.Column(JSONB)
+    field_results = sa.Column(JSONB)  # Add this field to store detailed results
     
     # Relationships
     template = relationship("InvoiceTemplate", back_populates="test_results")

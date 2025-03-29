@@ -49,6 +49,16 @@ class TemplateTestRequest(BaseModel):
         orm_mode = True
 
 
+class FieldResult(BaseModel):
+    field_name: str
+    display_name: str
+    required: bool
+    matched: bool
+    value: Optional[str] = None
+    
+    class Config:
+        orm_mode = True
+
 class TemplateTestResponse(BaseModel):
     result_id: int
     template_id: int
@@ -60,6 +70,7 @@ class TemplateTestResponse(BaseModel):
     fields_total: int
     notes: Optional[str] = None
     extracted_data: Dict[str, Any]
+    field_results: Optional[List[FieldResult]] = None
     
     class Config:
         orm_mode = True

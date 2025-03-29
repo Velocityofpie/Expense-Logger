@@ -256,14 +256,30 @@ async def test_template(
             fields_matched=result["fields_matched"],
             fields_total=result["fields_total"],
             notes=None,
-            extracted_data=result["extracted_data"]
+            extracted_data=result["extracted_data"],
+            field_results=result.get("field_results", [])  # Store the detailed field results
         )
         
         db.add(test_result)
         db.commit()
         db.refresh(test_result)
         
-        return test_result
+        # Add the field_results to the response
+        response_data = {
+            "result_id": test_result.result_id,
+            "template_id": test_result.template_id,
+            "invoice_id": test_result.invoice_id,
+            "test_date": test_result.test_date,
+            "success": test_result.success,
+            "match_score": test_result.match_score,
+            "fields_matched": test_result.fields_matched,
+            "fields_total": test_result.fields_total,
+            "notes": test_result.notes,
+            "extracted_data": test_result.extracted_data,
+            "field_results": result.get("field_results", [])  # Include field results in response
+        }
+        
+        return response_data
     except HTTPException:
         raise
     except Exception as e:
