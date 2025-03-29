@@ -31,6 +31,11 @@ const InvoiceExtractor: React.FC = () => {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   
+  // State for file upload
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadDebug, setUploadDebug] = useState<string | null>(null);
+  
   // Fetch data on component mount
   useEffect(() => {
     fetchAllData();
@@ -91,6 +96,59 @@ const InvoiceExtractor: React.FC = () => {
     });
     
     setFilteredInvoices(filtered);
+  };
+  
+  // Handle file selection
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) {
+      setUploadDebug("No files selected");
+      return;
+    }
+    
+    setIsUploading(true);
+    setUploadError(null);
+    setUploadDebug("Starting upload process...");
+    
+    try {
+      const file = e.target.files[0]; // Just process the first file for now
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("use_templates", "true");
+      
+      setUploadDebug(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+      
+      // Debug the API URL
+      const uploadUrl = `${API_URL}/upload/`;
+      setUploadDebug(prev => `${prev}\nUsing upload URL: ${uploadUrl}`);
+      
+      // Make a direct fetch with detailed error handling
+      try {
+        const response = await fetch(uploadUrl, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        setUploadDebug(prev => `${prev}\nResponse status: ${response.status}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          setUploadDebug(prev => `${prev}\nUpload successful: ${JSON.stringify(data)}`);
+          fetchAllData(); // Refresh data after successful upload
+        } else {
+          const errorText = await response.text();
+          setUploadError(`Upload failed: ${response.status} ${response.statusText}`);
+          setUploadDebug(prev => `${prev}\nError response: ${errorText}`);
+        }
+      } catch (fetchError) {
+        setUploadError(`Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+        setUploadDebug(prev => `${prev}\nFetch error: ${JSON.stringify(fetchError)}`);
+      }
+    } catch (error) {
+      setUploadError(`Error: ${error instanceof Error ? error.message : String(error)}`);
+      setUploadDebug(prev => `${prev}\nGeneral error: ${JSON.stringify(error)}`);
+    } finally {
+      setIsUploading(false);
+    }
   };
   
   // Toggle manual entry form
@@ -207,8 +265,8 @@ const InvoiceExtractor: React.FC = () => {
                   type="file"
                   className="hidden"
                   id="file-upload"
-                  multiple
                   accept=".pdf,.png,.jpg,.jpeg"
+                  onChange={handleFileSelect}
                 />
                 <label
                   htmlFor="file-upload"
@@ -217,6 +275,24 @@ const InvoiceExtractor: React.FC = () => {
                   Upload Invoice Files
                 </label>
               </div>
+              {isUploading && (
+                <div className="mt-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600 mx-auto"></div>
+                  <p className="mt-2 text-sm text-gray-600">Uploading file...</p>
+                </div>
+              )}
+              {uploadError && (
+                <div className="mt-4 p-2 bg-red-100 text-red-800 rounded text-sm">
+                  {uploadError}
+                </div>
+              )}
+              {uploadDebug && (
+                <div className="mt-4 p-2 bg-gray-100 text-gray-800 rounded text-sm text-left whitespace-pre-wrap">
+                  <strong>Debug Info:</strong>
+                  <br />
+                  {uploadDebug}
+                </div>
+              )}
             </div>
           )}
         </CardBody>

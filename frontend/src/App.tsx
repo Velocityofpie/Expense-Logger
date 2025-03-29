@@ -9,6 +9,7 @@ import { InvoiceExtractor } from './features/invoices';
 import InvoiceDetail from './features/invoices/InvoiceDetail';
 import { Login, Profile, RequestPasswordReset, ResetPassword } from './features/auth';
 import ExpenseTrackerPage from './features/expense/ExpenseTrackerPage';
+import { Tools } from './features/tools';
 
 const App: React.FC = () => {
   return (
@@ -23,6 +24,7 @@ const App: React.FC = () => {
               <Route path="/invoices" element={<InvoiceExtractor />} />
               <Route path="/invoice/:id" element={<InvoiceDetail />} />
               <Route path="/expenses" element={<ExpenseTrackerPage />} />
+              <Route path="/tools" element={<Tools />} />
               <Route path="/login" element={<Login />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/request-password-reset" element={<RequestPasswordReset />} />
