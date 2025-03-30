@@ -1,13 +1,7 @@
-/* frontend/src/features/tools/ocr-tool.css */
+/* src/features/tools/ocr/ocr-styles.css */
 
-/* Tool container */
-.tools-container {
-    max-width: 1200px;
-    margin: 0 auto;
-  }
-  
-  /* OCR Extractor Specific Styles */
-  .ocr-extractor {
+/* OCR Extractor Specific Styles */
+.ocr-extractor {
     padding-bottom: 40px;
   }
   
@@ -64,39 +58,10 @@
     background: #b0bec5;
   }
   
-  /* Template Manager Specific Styles */
-  .template-manager {
-    padding-bottom: 40px;
-  }
-  
-  .template-editor {
-    border: 1px solid #e2e8f0;
-    border-radius: 0.375rem;
-    padding: 1rem;
-  }
-  
-  .template-json-editor {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-    height: 400px;
-  }
-  
-  .template-test-results {
-    background-color: #f9fafb;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    margin-top: 1rem;
-  }
-  
   /* Responsive adjustments */
   @media (max-width: 768px) {
     .extracted-text-pre {
       height: 350px;
-    }
-    
-    .template-json-editor {
-      height: 300px;
     }
   }
   
@@ -119,10 +84,6 @@
     .extracted-text-pre::-webkit-scrollbar-thumb:hover {
       background: #888888;
     }
-    
-    .template-test-results {
-      background-color: #2d2d2d;
-    }
   }
   
   /* Tailwind Dark Mode Support */
@@ -142,8 +103,4 @@
   
   .dark .extracted-text-pre::-webkit-scrollbar-thumb:hover {
     background: #888888;
-  }
-  
-  .dark .template-test-results {
-    background-color: #2d2d2d;
   }

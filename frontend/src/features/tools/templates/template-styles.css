@@ -1,0 +1,109 @@
+/* src/features/tools/templates/template-styles.css */
+
+/* Template Manager Specific Styles */
+.template-manager {
+    padding-bottom: 40px;
+  }
+  
+  .template-editor {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 1rem;
+  }
+  
+  .template-json-editor {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    height: 400px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.25rem;
+  }
+  
+  .template-fields-container {
+    max-height: 600px;
+    overflow-y: auto;
+  }
+  
+  .template-test-results {
+    background-color: #f9fafb;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-top: 1rem;
+  }
+  
+  .field-card {
+    border: 1px solid #e2e8f0;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    background-color: #ffffff;
+  }
+  
+  .field-card:hover {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .field-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #f0f0f0;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .template-json-editor {
+      height: 300px;
+    }
+    
+    .template-fields-container {
+      max-height: 450px;
+    }
+  }
+  
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    .template-json-editor {
+      background-color: #1a1a1a;
+      color: #e0e0e0;
+      border-color: #444;
+    }
+    
+    .template-test-results {
+      background-color: #2d2d2d;
+    }
+    
+    .field-card {
+      background-color: #2d2d2d;
+      border-color: #444;
+    }
+    
+    .field-card-header {
+      border-bottom-color: #444;
+    }
+  }
+  
+  /* Tailwind Dark Mode Support */
+  .dark .template-json-editor {
+    background-color: #1a1a1a;
+    color: #e0e0e0;
+    border-color: #444;
+  }
+  
+  .dark .template-test-results {
+    background-color: #2d2d2d;
+  }
+  
+  .dark .field-card {
+    background-color: #2d2d2d;
+    border-color: #444;
+  }
+  
+  .dark .field-card-header {
+    border-bottom-color: #444;
+  }

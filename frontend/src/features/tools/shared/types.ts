@@ -1,24 +1,27 @@
-// src/features/tools/types.ts
-/**
- * OCR language definition
- */
+// src/features/tools/shared/types.ts
+
+export interface ApiResponse<T = any> {
+  data?: T;
+  error?: string;
+  message?: string;
+  success?: boolean;
+  status?: number;
+}
+
+// OCR language definition
 export interface OcrLanguage {
   code: string;
   name: string;
 }
 
-/**
- * OCR extraction result
- */
+// OCR extraction result
 export interface OcrResult {
   text: string;
   confidence?: number;
   pages?: number;
 }
 
-/**
- * OCR request options
- */
+// OCR request options
 export interface OcrRequestOptions {
   language?: string;
   dpi?: number;
@@ -27,17 +30,13 @@ export interface OcrRequestOptions {
   page_end?: number;
 }
 
-/**
- * Template marker for document identification
- */
+// Template marker for document identification
 export interface TemplateMarker {
   text: string;
   required: boolean;
 }
 
-/**
- * Template field definition for data extraction
- */
+// Template field definition for data extraction
 export interface TemplateField {
   field_name: string;
   display_name?: string;
@@ -56,9 +55,7 @@ export interface TemplateField {
   };
 }
 
-/**
- * Complete template definition
- */
+// Complete template definition
 export interface Template {
   template_id: number;
   name: string;
@@ -75,9 +72,21 @@ export interface Template {
   };
 }
 
-/**
- * Individual field test result
- */
+// Template form data (for creating/editing)
+export interface TemplateFormData {
+  name: string;
+  vendor: string;
+  version: string;
+  description: string;
+  template_data: {
+    identification: {
+      markers: TemplateMarker[];
+    };
+    fields: TemplateField[];
+  };
+}
+
+// Individual field test result
 export interface FieldTestResult {
   field_name: string;
   display_name: string;
@@ -86,16 +95,14 @@ export interface FieldTestResult {
   value: string | null;
 }
 
-/**
- * Result of testing a template against an invoice
- */
+// Result of testing a template against an invoice
 export interface TemplateTestResult {
   success: boolean;
   match_score: number;
   fields_matched: number;
   fields_total: number;
   extracted_data: Record<string, any>;
-  field_results?: FieldTestResult[]; // Detailed results for each field
+  field_results?: FieldTestResult[];
   result_id?: number;
   template_id?: number;
   invoice_id?: number;
@@ -103,9 +110,7 @@ export interface TemplateTestResult {
   notes?: string;
 }
 
-/**
- * Invoice Item - simplified for preview
- */
+// Invoice item
 export interface InvoiceItem {
   product_name: string;
   quantity: number;
@@ -114,9 +119,7 @@ export interface InvoiceItem {
   total_price?: number;
 }
 
-/**
- * Invoice data structure for preview
- */
+// Invoice data
 export interface Invoice {
   invoice_id: number;
   merchant_name: string;

@@ -1,0 +1,64 @@
+/* src/features/tools/shared/tools-styles.css */
+
+/* Tool container */
+.tools-container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Better scrollbar for all tool containers */
+.scrollable-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.scrollable-content::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb {
+  background: #cfd8dc;
+  border-radius: 4px;
+  border: 2px solid #f8f9fa;
+}
+
+.scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: #b0bec5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .tools-container {
+    padding: 0 15px;
+  }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .scrollable-content::-webkit-scrollbar-track {
+    background: #2d2d2d;
+  }
+  
+  .scrollable-content::-webkit-scrollbar-thumb {
+    background: #666666;
+    border: 2px solid #2d2d2d;
+  }
+  
+  .scrollable-content::-webkit-scrollbar-thumb:hover {
+    background: #888888;
+  }
+}
+
+/* Tailwind Dark Mode Support */
+.dark .scrollable-content::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.dark .scrollable-content::-webkit-scrollbar-thumb {
+  background: #666666;
+  border: 2px solid #2d2d2d;
+}
+
+.dark .scrollable-content::-webkit-scrollbar-thumb:hover {
+  background: #888888;
+}

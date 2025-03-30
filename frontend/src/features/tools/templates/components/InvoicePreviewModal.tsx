@@ -1,33 +1,12 @@
-// frontend/src/features/tools/InvoicePreviewModal.tsx
+// src/features/tools/templates/components/InvoicePreviewModal.tsx
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Spinner, Table, Badge, Row, Col, Card } from 'react-bootstrap';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { Modal, Button, Spinner, Table, Badge, Row, Col } from 'react-bootstrap';
+import { Invoice } from '../../shared/types';
 
 interface InvoicePreviewModalProps {
   invoiceId: string | number | null;
   show: boolean;
   onHide: () => void;
-}
-
-interface InvoiceItem {
-  product_name: string;
-  quantity: number;
-  unit_price: number;
-  item_type?: string;
-}
-
-interface Invoice {
-  invoice_id: number;
-  merchant_name: string;
-  order_number?: string;
-  purchase_date?: string;
-  payment_method?: string;
-  grand_total: number;
-  status: string;
-  items: InvoiceItem[];
-  tags: string[];
-  categories: string[];
-  file_name?: string;
 }
 
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
@@ -65,6 +44,24 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ invoiceId, sh
     } finally {
       setLoading(false);
     }
+  };
+  
+  // Format currency for display
+  const formatCurrency = (value: number): string => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
+  
+  // Format date for display
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    }).format(date);
   };
   
   const renderStatusBadge = (status: string) => {
@@ -149,7 +146,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ invoiceId, sh
                 <div className="mb-3">
                   <strong>Categories:</strong>
                   <div className="mt-2">
-                    {invoice.categories.length > 0 ? (
+                    {invoice.categories && invoice.categories.length > 0 ? (
                       invoice.categories.map((category, index) => (
                         <Badge 
                           key={index} 
@@ -167,7 +164,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ invoiceId, sh
                 <div>
                   <strong>Tags:</strong>
                   <div className="mt-2">
-                    {invoice.tags.length > 0 ? (
+                    {invoice.tags && invoice.tags.length > 0 ? (
                       invoice.tags.map((tag, index) => (
                         <Badge 
                           key={index} 
@@ -197,7 +194,7 @@ const InvoicePreviewModal: React.FC<InvoicePreviewModalProps> = ({ invoiceId, sh
                 </tr>
               </thead>
               <tbody>
-                {invoice.items.length > 0 ? (
+                {invoice.items && invoice.items.length > 0 ? (
                   invoice.items.map((item, index) => (
                     <tr key={index}>
                       <td>{item.product_name}</td>

@@ -1,9 +1,9 @@
-// frontend/src/features/tools/Tools.tsx
+// src/features/tools/Tools.tsx
 import React, { useState } from "react";
 import { Tab, Nav, Card } from "react-bootstrap";
-import OcrExtractor from "./OcrExtractor";
-import TemplateManager from "./TemplateManager";
-import "./ocr-tool.css";
+import OcrExtractor from "./ocr/OcrExtractor";
+import TemplateManager from "./templates/TemplateManager";
+import "./shared/tools-styles.css";
 
 interface ToolsProps {
   defaultTab?: string;
