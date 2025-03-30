@@ -32,6 +32,7 @@ export const useInvoiceActions = (
         );
       }
       
+      // Convert null values to undefined for type compatibility
       const updatedInvoice = {
         file_name: newFileName,
         merchant_name: invoice.merchant_name,
@@ -41,19 +42,27 @@ export const useInvoiceActions = (
         grand_total: parseFloat(String(invoice.grand_total)),
         status: invoice.status,
         notes: invoice.notes,
-        shipping_handling: invoice.shipping_handling ? parseFloat(String(invoice.shipping_handling)) : null,
-        estimated_tax: invoice.estimated_tax ? parseFloat(String(invoice.estimated_tax)) : null,
-        total_before_tax: invoice.total_before_tax ? parseFloat(String(invoice.total_before_tax)) : null,
+        shipping_handling: invoice.shipping_handling ? parseFloat(String(invoice.shipping_handling)) : undefined,
+        estimated_tax: invoice.estimated_tax ? parseFloat(String(invoice.estimated_tax)) : undefined,
+        total_before_tax: invoice.total_before_tax ? parseFloat(String(invoice.total_before_tax)) : undefined,
         billing_address: invoice.billing_address,
-        credit_card_transactions: invoice.credit_card_transactions ? parseFloat(String(invoice.credit_card_transactions)) : null,
-        gift_card_amount: invoice.gift_card_amount ? parseFloat(String(invoice.gift_card_amount)) : null,
-        refunded_amount: invoice.refunded_amount ? parseFloat(String(invoice.refunded_amount)) : null,
+        credit_card_transactions: invoice.credit_card_transactions ? parseFloat(String(invoice.credit_card_transactions)) : undefined,
+        gift_card_amount: invoice.gift_card_amount ? parseFloat(String(invoice.gift_card_amount)) : undefined,
+        refunded_amount: invoice.refunded_amount ? parseFloat(String(invoice.refunded_amount)) : undefined,
         items: items,
         tags: tags,
         categories: categories
       };
 
-      await updateInvoice(invoice.invoice_id, updatedInvoice);
+      const updatedData = await updateInvoice(invoice.invoice_id, updatedInvoice);
+      
+      // Set success message
+      if (window.dispatchEvent) {
+        // Dispatch a custom event to signal data refresh
+        window.dispatchEvent(new CustomEvent('invoice-updated', { 
+          detail: { invoiceId: invoice.invoice_id } 
+        }));
+      }
       
       setIsSubmitting(false);
       return true;

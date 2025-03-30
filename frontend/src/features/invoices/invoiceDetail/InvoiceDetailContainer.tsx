@@ -67,7 +67,7 @@ const InvoiceDetailContainer: React.FC = () => {
       <div className="flex justify-center items-center min-h-screen">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading invoice data...</p>
+          <p className="text-gray-600 dark:text-gray-400">Loading invoice data...</p>
         </div>
       </div>
     );
@@ -76,14 +76,14 @@ const InvoiceDetailContainer: React.FC = () => {
   if (error) {
     return (
       <div className="container mx-auto py-8 px-4">
-        <div className="bg-white border border-red-300 rounded-lg shadow-md">
+        <div className="bg-white dark:bg-gray-800 border border-red-300 dark:border-red-800 rounded-lg shadow-md">
           <div className="text-center p-8">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-red-500 dark:text-red-400 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <p className="mt-2 text-red-600">{error}</p>
+            <p className="mt-2 text-red-600 dark:text-red-400">{error}</p>
             <button 
-              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition duration-200"
+              className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 transition duration-200"
               onClick={() => window.location.reload()}
             >
               Try Again
@@ -95,7 +95,7 @@ const InvoiceDetailContainer: React.FC = () => {
   }
 
   if (!invoice) {
-    return <div>Invoice not found</div>;
+    return <div className="text-center p-8 dark:text-white">Invoice not found</div>;
   }
 
   // Toggle split view
@@ -104,7 +104,7 @@ const InvoiceDetailContainer: React.FC = () => {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6">
+    <div className="container mx-auto px-4 py-6 dark:bg-gray-900">
       {/* Header with breadcrumbs and navigation */}
       <InvoiceHeader 
         invoice={invoice} 
@@ -115,8 +115,8 @@ const InvoiceDetailContainer: React.FC = () => {
       <InvoiceActions
         onSave={saveInvoice}
         onDelete={() => setShowDeleteModal(true)}
-        onPrev={goToPrevInvoice}
-        onNext={goToNextInvoice}
+        onPrev={() => goToPrevInvoice(allInvoices, currentIndex)}
+        onNext={() => goToNextInvoice(allInvoices, currentIndex)}
         canGoPrev={currentIndex > 0}
         canGoNext={currentIndex < allInvoices.length - 1}
         isSaving={isSaving}
@@ -124,21 +124,21 @@ const InvoiceDetailContainer: React.FC = () => {
       
       {/* Success message banner */}
       {savedMessage && (
-        <div className="bg-green-50 border-l-4 border-green-500 p-4 mb-6 rounded-md">
+        <div className="bg-green-50 dark:bg-green-900/30 border-l-4 border-green-500 dark:border-green-600 p-4 mb-6 rounded-md">
           <div className="flex">
             <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-green-500 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <div className="ml-3">
-              <p className="text-sm text-green-700">{savedMessage}</p>
+              <p className="text-sm text-green-700 dark:text-green-300">{savedMessage}</p>
             </div>
             <button 
               className="ml-auto pl-3" 
               onClick={() => setSavedMessage("")}
             >
-              <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg className="h-5 w-5 text-green-500 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -151,8 +151,8 @@ const InvoiceDetailContainer: React.FC = () => {
         <button
           className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
             splitView 
-              ? 'bg-blue-500 text-white' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+              ? 'bg-blue-500 text-white dark:bg-blue-600' 
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
           }`}
           onClick={toggleSplitView}
         >

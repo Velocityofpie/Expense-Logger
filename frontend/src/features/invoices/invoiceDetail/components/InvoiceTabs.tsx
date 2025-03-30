@@ -14,8 +14,8 @@ const InvoiceTabs: React.FC<InvoiceTabsProps> = ({ activeTab, onChange }) => {
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm ${
             activeTab === "details"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600"
           }`}
           onClick={() => onChange("details")}
         >
@@ -27,8 +27,8 @@ const InvoiceTabs: React.FC<InvoiceTabsProps> = ({ activeTab, onChange }) => {
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm ${
             activeTab === "items"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600"
           }`}
           onClick={() => onChange("items")}
         >
@@ -40,8 +40,8 @@ const InvoiceTabs: React.FC<InvoiceTabsProps> = ({ activeTab, onChange }) => {
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm ${
             activeTab === "payments"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600"
           }`}
           onClick={() => onChange("payments")}
         >
@@ -53,8 +53,8 @@ const InvoiceTabs: React.FC<InvoiceTabsProps> = ({ activeTab, onChange }) => {
         <button
           className={`py-4 px-6 border-b-2 font-medium text-sm ${
             activeTab === "document"
-              ? "border-blue-500 text-blue-600"
-              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+              ? "border-blue-500 text-blue-600 dark:text-blue-400"
+              : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600"
           }`}
           onClick={() => onChange("document")}
         >

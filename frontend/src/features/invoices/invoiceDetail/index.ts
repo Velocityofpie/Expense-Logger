@@ -1,26 +1,44 @@
-// src/features/invoices/invoiceDetail/index.ts
+// src/features/invoices/invoiceDetail/types/index.ts
 
-// Export the main container component
-export { default as InvoiceDetailContainer } from './InvoiceDetailContainer';
+// Tab types
+export type TabType = 'details' | 'items' | 'payments' | 'document';
 
-// Export components
-export { default as InvoiceHeader } from './components/InvoiceHeader';
-export { default as InvoiceTabs } from './components/InvoiceTabs';
-export { default as InvoiceBasicInfo } from './components/InvoiceBasicInfo';
-export { default as InvoiceCategories } from './components/InvoiceCategories';
-export { default as InvoiceLineItems } from './components/InvoiceLineItems';
-export { default as InvoicePayment } from './components/InvoicePayment';
-export { default as InvoiceDocumentViewer } from './components/InvoiceDocumentViewer';
-export { default as InvoiceActions } from './components/InvoiceActions';
-export { default as InvoiceDeleteModal } from './components/InvoiceDeleteModal';
+// Payment form data
+export interface PaymentFormData {
+  cardNumberId: string;
+  transactionId: string;
+  amount: string;
+}
 
-// Export hooks
-export { useInvoiceData } from './hooks/useInvoiceData';
-export { useInvoiceActions } from './hooks/useInvoiceActions';
+// New tag or category input form data
+export interface TagCategoryInput {
+  newTag: string;
+  newCategory: string;
+}
 
-// Export utilities
-export { normalizeDateFormat, formatDate, isValidDate } from './utils/dateUtils';
-export { generateFileName } from './utils/fileNameGenerator';
+// Line item input methods
+export interface LineItemInputMethods {
+  handleItemChange: (index: number, field: string, value: any) => void;
+  addItem: () => void;
+  removeItem: (index: number) => void;
+}
 
-// Export types
-export * from './types';
+// Tag and category input methods
+export interface TagCategoryInputMethods {
+  handleTagChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleCategoryChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+  handleAddTag: () => void;
+  handleAddCategory: () => void;
+  removeTag: (tag: string) => void;
+  removeCategory: (category: string) => void;
+}
+
+// Navigation state for invoice traversal
+export interface InvoiceNavigation {
+  currentIndex: number;
+  invoicesCount: number;
+  canGoPrev: boolean;
+  canGoNext: boolean;
+  goToPrevInvoice: () => void;
+  goToNextInvoice: () => void;
+}

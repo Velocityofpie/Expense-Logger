@@ -61,6 +61,32 @@ export const useInvoiceData = (id: string | undefined) => {
     }
   }, [id]);
 
+  // Listen for invoice updates
+  useEffect(() => {
+    const handleInvoiceUpdated = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      // Check if this is our invoice
+      if (customEvent.detail?.invoiceId === parseInt(id || '0')) {
+        // Reload the invoice data
+        loadInvoiceDetails(id);
+        // Show saved message
+        setSavedMessage("Invoice saved successfully!");
+        // Clear message after 3 seconds
+        setTimeout(() => {
+          setSavedMessage("");
+        }, 3000);
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('invoice-updated', handleInvoiceUpdated);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('invoice-updated', handleInvoiceUpdated);
+    };
+  }, [id]);
+
   // Load invoice details
   const loadInvoiceDetails = async (invoiceId: string | undefined) => {
     if (!invoiceId) return;
