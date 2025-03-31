@@ -1,4 +1,4 @@
-// src/features/tools/templates/TemplateManager.tsx
+// src/features/tools/templates/TemplateManager.tsx - Modal Handling Update
 import React, { useState, useEffect } from "react";
 import { Button, Card, Alert, Modal } from "react-bootstrap";
 
@@ -8,6 +8,7 @@ import TemplateForm from "./components/TemplateForm";
 import InvoicePreviewModal from "./components/InvoicePreviewModal";
 import ImportTemplateModal from "./modals/ImportTemplateModal";
 import TestTemplateModal from "./modals/TestTemplateModal";
+import AddFieldButton from "./components/AddFieldButton";
 
 // API and utils
 import { 
@@ -122,11 +123,13 @@ const TemplateManager: React.FC = () => {
     setTemplateData(updatedData);
   };
   
-  // Update marker - FIXED VERSION
+  // Update marker
   const handleUpdateMarker = (index: number, field: keyof TemplateMarker, value: string | boolean) => {
     const updatedData = { ...templateData };
-    // Use type assertion to tell TypeScript this is valid
-    (updatedData.template_data.identification.markers[index] as any)[field] = value;
+    updatedData.template_data.identification.markers[index] = {
+      ...updatedData.template_data.identification.markers[index],
+      [field]: value
+    };
     setTemplateData(updatedData);
   };
   
@@ -350,11 +353,19 @@ const TemplateManager: React.FC = () => {
     setPreviewInvoiceId(invoiceId);
     setShowInvoicePreview(true);
   };
+  
+  // Open the Template Create Modal
+  const handleOpenCreateTemplate = () => {
+    setCurrentTemplate(null);
+    setTemplateData(createEmptyTemplateData());
+    setShowTemplateForm(true);
+    setEditorMode("visual");
+  };
 
   return (
     <div className="template-manager">
       <div className="d-flex justify-content-between align-items-center mb-4">
-        <h3>OCR Template Management</h3>
+        <h4 className="mb-0">OCR Template Management</h4>
         <div>
           <Button 
             variant="outline-primary" 
@@ -365,12 +376,7 @@ const TemplateManager: React.FC = () => {
           </Button>
           <Button 
             variant="primary"
-            onClick={() => {
-              setCurrentTemplate(null);
-              setTemplateData(createEmptyTemplateData());
-              setShowTemplateForm(true);
-              setEditorMode("visual");
-            }}
+            onClick={handleOpenCreateTemplate}
           >
             Create Template
           </Button>
@@ -423,6 +429,7 @@ const TemplateManager: React.FC = () => {
         onHide={() => setShowTemplateForm(false)}
         size="lg"
         backdrop="static"
+        centered
       >
         <Modal.Header closeButton>
           <Modal.Title>
@@ -487,6 +494,19 @@ const TemplateManager: React.FC = () => {
         show={showInvoicePreview}
         onHide={() => setShowInvoicePreview(false)}
       />
+      
+      {/* Add Field Button (visible when in template edit mode) */}
+      {templates.length === 0 && !isLoading && (
+        <div className="text-center mt-4">
+          <p className="text-muted mb-3">No templates available. Create your first template to get started.</p>
+          <Button 
+            variant="primary" 
+            onClick={handleOpenCreateTemplate}
+          >
+            Create Template
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

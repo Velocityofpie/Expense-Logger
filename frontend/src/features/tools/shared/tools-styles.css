@@ -1,4 +1,4 @@
-/* src/features/tools/shared/tools-styles.css */
+/* src/features/tools/shared/tools-styles.css - Fixed tab navigation */
 
 /* Tool container */
 .tools-container {
@@ -6,116 +6,169 @@
   margin: 0 auto;
 }
 
-/* Tab styles */
+/* Tab Navigation Fixes */
+.nav-tabs {
+  border-bottom-width: 1px !important;
+  border-bottom-style: solid !important;
+  border-bottom-color: #dee2e6 !important;
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  padding-left: 0 !important;
+  margin-bottom: 0 !important;
+  list-style: none !important;
+}
+
+.nav-tabs .nav-item {
+  margin-bottom: 0 !important; /* Critical fix to prevent the line through tabs */
+}
+
 .nav-tabs .nav-link {
-  border: none;
-  background: transparent;
-  color: #6c757d;
-  font-weight: 500;
-  padding: 0.75rem 1rem;
-  cursor: pointer;
-  transition: color 0.2s, border-color 0.2s;
-  margin-bottom: -1px;
+  margin-right: 2px !important;
+  background: none !important;
+  border: 1px solid transparent !important;
+  border-top-left-radius: 0.25rem !important;
+  border-top-right-radius: 0.25rem !important;
+  color: #6c757d !important;
+  font-weight: 500 !important;
+  padding: 0.75rem 1rem !important;
+  cursor: pointer !important;
+  transition: color 0.2s, border-color 0.2s, background-color 0.2s !important;
+  text-decoration: none !important;
 }
 
 .nav-tabs .nav-link:hover {
-  color: #495057;
-  border-bottom: 2px solid #dee2e6;
+  border-color: #e9ecef #e9ecef #dee2e6 !important;
+  background-color: #f8f9fa !important;
+  color: #495057 !important;
+  isolation: isolate !important;
 }
 
 .nav-tabs .nav-link.active {
-  color: #4f46e5; /* Primary indigo color */
-  border-bottom: 2px solid #4f46e5;
-  background-color: transparent;
+  color: #4F46E5 !important;
+  background-color: #fff !important;
+  border-color: #dee2e6 #dee2e6 #fff !important;
+  font-weight: 600 !important;
 }
 
-/* Dark mode support for tabs */
-.dark .nav-tabs .nav-link {
-  color: #a1a1aa;
-}
-
-.dark .nav-tabs .nav-link:hover {
-  color: #d4d4d8;
-  border-bottom: 2px solid #52525b;
-}
-
-.dark .nav-tabs .nav-link.active {
-  color: #818cf8; /* Indigo-400 for dark mode */
-  border-bottom: 2px solid #818cf8;
-}
-
-/* Tab content */
+/* Fix tab content bottom border overlap */
 .tab-content {
-  padding: 1.5rem;
+  border: 1px solid #dee2e6 !important;
+  border-top: none !important;
+  padding: 1.5rem !important;
+  background-color: #fff !important;
+  border-bottom-left-radius: 0.25rem !important;
+  border-bottom-right-radius: 0.25rem !important;
 }
 
+/* Modal Styles to ensure proper display */
+.modal {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 1055 !important;
+  display: none !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  outline: 0 !important;
+}
+
+.modal.show {
+  display: block !important;
+}
+
+.modal-dialog {
+  position: relative !important;
+  width: auto !important;
+  margin: 0.5rem !important;
+  pointer-events: none !important;
+}
+
+.modal-dialog-centered {
+  display: flex !important;
+  align-items: center !important;
+  min-height: calc(100% - 1rem) !important;
+}
+
+.modal-content {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  pointer-events: auto !important;
+  background-color: #fff !important;
+  background-clip: padding-box !important;
+  border: 1px solid rgba(0, 0, 0, 0.2) !important;
+  border-radius: 0.3rem !important;
+  outline: 0 !important;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  left: 0 !important;
+  z-index: 1050 !important;
+  background-color: #000 !important;
+  opacity: 0.5 !important;
+}
+
+.modal-backdrop.show {
+  opacity: 0.5 !important;
+}
+
+/* Tab pane transitions */
 .tab-pane {
-  opacity: 0;
-  transition: opacity 0.15s linear;
+  display: none !important;
+  opacity: 0 !important;
+  transition: opacity 0.15s linear !important;
+}
+
+.tab-pane.active {
+  display: block !important;
 }
 
 .tab-pane.show {
-  opacity: 1;
+  opacity: 1 !important;
 }
 
-/* Better scrollbar for all tool containers */
-.scrollable-content::-webkit-scrollbar {
-  width: 10px;
+/* Ensure tab content fills the space */
+.tab-content > .tab-pane {
+  display: none !important;
 }
 
-.scrollable-content::-webkit-scrollbar-track {
-  background: #f8f9fa;
-  border-radius: 4px;
+.tab-content > .active {
+  display: block !important;
 }
 
-.scrollable-content::-webkit-scrollbar-thumb {
-  background: #cfd8dc;
-  border-radius: 4px;
-  border: 2px solid #f8f9fa;
-}
-
-.scrollable-content::-webkit-scrollbar-thumb:hover {
-  background: #b0bec5;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .tools-container {
-    padding: 0 15px;
-  }
-
-  .nav-tabs .nav-link {
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  .scrollable-content::-webkit-scrollbar-track {
-    background: #2d2d2d;
+/* Media query for better mobile experience */
+@media (min-width: 576px) {
+  .modal-dialog {
+    max-width: 500px !important;
+    margin: 1.75rem auto !important;
   }
   
-  .scrollable-content::-webkit-scrollbar-thumb {
-    background: #666666;
-    border: 2px solid #2d2d2d;
+  .modal-dialog-centered {
+    min-height: calc(100% - 3.5rem) !important;
   }
   
-  .scrollable-content::-webkit-scrollbar-thumb:hover {
-    background: #888888;
+  .modal-sm {
+    max-width: 300px !important;
   }
 }
 
-/* Tailwind Dark Mode Support */
-.dark .scrollable-content::-webkit-scrollbar-track {
-  background: #2d2d2d;
+@media (min-width: 992px) {
+  .modal-lg,
+  .modal-xl {
+    max-width: 800px !important;
+  }
 }
 
-.dark .scrollable-content::-webkit-scrollbar-thumb {
-  background: #666666;
-  border: 2px solid #2d2d2d;
-}
-
-.dark .scrollable-content::-webkit-scrollbar-thumb:hover {
-  background: #888888;
+@media (min-width: 1200px) {
+  .modal-xl {
+    max-width: 1140px !important;
+  }
 }

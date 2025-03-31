@@ -1,6 +1,6 @@
 // src/features/tools/templates/components/TemplateEditor.tsx
 import React from 'react';
-import { Button, Form } from 'react-bootstrap';
+import { Button, Form, Alert } from 'react-bootstrap';
 import TemplateMarkerEditor from './TemplateMarkerEditor';
 import TemplateFieldEditor from './TemplateFieldEditor';
 import { TemplateMarker, TemplateField } from '../../shared/types';
@@ -41,24 +41,27 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
 }) => {
   return (
     <div className="mb-3">
-      <div className="d-flex align-items-center mb-2">
+      <div className="d-flex align-items-center mb-3 border-bottom pb-2">
         <h5 className="mb-0">Template Definition</h5>
         <div className="ms-auto">
-          <Button
-            variant={editorMode === "visual" ? "primary" : "outline-primary"}
-            size="sm"
-            className="me-2"
-            onClick={() => onSwitchEditorMode("visual")}
-          >
-            Visual Editor
-          </Button>
-          <Button
-            variant={editorMode === "code" ? "primary" : "outline-primary"}
-            size="sm"
-            onClick={() => onSwitchEditorMode("code")}
-          >
-            JSON Editor
-          </Button>
+          <div className="btn-group" role="group">
+            <Button
+              variant={editorMode === "visual" ? "primary" : "outline-primary"}
+              size="sm"
+              onClick={() => onSwitchEditorMode("visual")}
+              className="px-3"
+            >
+              Visual Editor
+            </Button>
+            <Button
+              variant={editorMode === "code" ? "primary" : "outline-primary"}
+              size="sm"
+              onClick={() => onSwitchEditorMode("code")}
+              className="px-3"
+            >
+              JSON Editor
+            </Button>
+          </div>
         </div>
       </div>
       
@@ -71,12 +74,19 @@ const TemplateEditor: React.FC<TemplateEditorProps> = ({
               value={templateJson}
               onChange={(e) => onJsonChange(e.target.value)}
               placeholder="Paste JSON template data here..."
-              className="template-json-editor"
+              className="template-json-editor font-monospace"
+              isInvalid={!!jsonError}
             />
+            {jsonError && (
+              <Form.Control.Feedback type="invalid">
+                {jsonError}
+              </Form.Control.Feedback>
+            )}
           </Form.Group>
-          {jsonError && (
-            <div className="text-danger mt-2">{jsonError}</div>
-          )}
+          <Alert variant="info" className="mt-2">
+            <i className="bi bi-info-circle-fill me-2"></i>
+            The JSON editor allows advanced editing of the template structure. Make sure your JSON is valid before switching back to the visual editor.
+          </Alert>
         </div>
       ) : (
         <div>

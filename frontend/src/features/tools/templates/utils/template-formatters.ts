@@ -42,12 +42,18 @@ export const createEmptyField = (): TemplateField => {
  * Convert a template to form data
  */
 export const templateToFormData = (template: Template): TemplateFormData => {
+  // Ensure structure is complete
   return {
-    name: template.name,
+    name: template.name || "",
     vendor: template.vendor || "",
     version: template.version || "1.0",
     description: template.description || "",
-    template_data: template.template_data
+    template_data: {
+      identification: {
+        markers: template.template_data?.identification?.markers || [{ text: "", required: true }]
+      },
+      fields: template.template_data?.fields || []
+    }
   };
 };
 
@@ -55,6 +61,8 @@ export const templateToFormData = (template: Template): TemplateFormData => {
  * Get form data for a nested field (e.g., 'extraction.regex')
  */
 export const getNestedFieldValue = (obj: any, path: string): any => {
+  if (!obj) return undefined;
+  
   const parts = path.split('.');
   let value = obj;
   
@@ -72,6 +80,8 @@ export const getNestedFieldValue = (obj: any, path: string): any => {
  * Set a value for a nested field (e.g., 'extraction.regex')
  */
 export const setNestedFieldValue = (obj: any, path: string, value: any): any => {
+  if (!obj) return {};
+  
   const newObj = { ...obj };
   const parts = path.split('.');
   
@@ -98,17 +108,18 @@ export const setNestedFieldValue = (obj: any, path: string, value: any): any => 
 export const validateTemplateData = (data: TemplateFormData): string[] => {
   const errors: string[] = [];
   
-  if (!data.name) {
+  // Validate template name
+  if (!data.name.trim()) {
     errors.push('Template name is required');
   }
   
-  // Check if at least one marker is defined
+  // Check markers
   if (!data.template_data.identification.markers.length) {
     errors.push('At least one identification marker is required');
   } else {
-    // Check if any required markers are empty
+    // Check required markers
     const emptyRequiredMarkers = data.template_data.identification.markers
-      .filter(marker => marker.required && !marker.text);
+      .filter(marker => marker.required && !marker.text.trim());
     
     if (emptyRequiredMarkers.length > 0) {
       errors.push('All required markers must have text');
@@ -121,14 +132,16 @@ export const validateTemplateData = (data: TemplateFormData): string[] => {
   } else {
     // Check for missing field names
     const fieldsWithoutNames = data.template_data.fields
-      .filter(field => !field.field_name);
+      .filter(field => !field.field_name?.trim());
     
     if (fieldsWithoutNames.length > 0) {
       errors.push('All fields must have a field name');
     }
     
     // Check for duplicate field names
-    const fieldNames = data.template_data.fields.map(field => field.field_name);
+    const fieldNames = data.template_data.fields
+      .map(field => field.field_name)
+      .filter(Boolean) as string[];
     const uniqueFieldNames = new Set(fieldNames);
     
     if (fieldNames.length !== uniqueFieldNames.size) {
@@ -137,7 +150,7 @@ export const validateTemplateData = (data: TemplateFormData): string[] => {
     
     // Check for missing regex patterns
     const fieldsWithoutRegex = data.template_data.fields
-      .filter(field => !field.extraction.regex);
+      .filter(field => !field.extraction?.regex?.trim());
     
     if (fieldsWithoutRegex.length > 0) {
       errors.push('All fields must have an extraction regex pattern');
@@ -148,25 +161,37 @@ export const validateTemplateData = (data: TemplateFormData): string[] => {
 };
 
 /**
- * Format display name for a template
+ * Get a formatted display name for the template
  */
-export const formatTemplateDisplayName = (template: Template): string => {
-  let displayName = template.name;
+export const getDisplayName = (template: Template): string => {
+  if (!template) return 'Unnamed Template';
+  
+  let displayName = template.name || 'Unnamed Template';
   
   if (template.vendor) {
-    displayName = `${displayName} (${template.vendor})`;
+    displayName += ` (${template.vendor})`;
   }
   
   if (template.version) {
-    displayName = `${displayName} v${template.version}`;
+    displayName += ` v${template.version}`;
   }
   
   return displayName;
 };
 
 /**
- * Format date string
+ * Format date for display
  */
 export const formatDate = (dateString: string): string => {
-  return new Date(dateString).toLocaleDateString();
+  if (!dateString) return '';
+  
+  try {
+    return new Date(dateString).toLocaleDateString(undefined, { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  } catch (e) {
+    return dateString;
+  }
 };

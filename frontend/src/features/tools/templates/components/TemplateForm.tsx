@@ -38,11 +38,11 @@ const TemplateForm: React.FC<TemplateFormProps> = ({
   onUpdateField
 }) => {
   return (
-    <Form>
+    <Form className="template-form">
       <Row className="mb-3">
         <Col md={6}>
           <Form.Group className="mb-3">
-            <Form.Label>Template Name</Form.Label>
+            <Form.Label>Template Name <span className="text-danger">*</span></Form.Label>
             <Form.Control
               type="text"
               name="name"
@@ -50,7 +50,13 @@ const TemplateForm: React.FC<TemplateFormProps> = ({
               onChange={onInputChange}
               required
               placeholder="e.g., Amazon Invoice"
+              isInvalid={!templateData.name.trim()}
             />
+            {!templateData.name.trim() && (
+              <Form.Control.Feedback type="invalid">
+                Template name is required
+              </Form.Control.Feedback>
+            )}
           </Form.Group>
         </Col>
         <Col md={3}>

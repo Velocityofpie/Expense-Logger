@@ -7,19 +7,22 @@ import { API_URL, apiGet, apiPost, apiPut, apiDelete, apiUploadFile } from '../.
  */
 export async function fetchTemplates(): Promise<Template[]> {
   try {
-    return await apiGet<Template[]>('/templates/');
+    const response = await apiGet<{ templates: Template[] }>('/templates/');
+    return response.templates || [];
   } catch (error) {
     console.error("Error fetching templates:", error);
-    throw error;
+    // Return empty array on error to prevent UI crashes
+    return [];
   }
 }
 
 /**
  * Fetch a single template by ID
  */
-export async function fetchTemplateById(id: number): Promise<Template> {
+export async function fetchTemplateById(id: number): Promise<Template | null> {
   try {
-    return await apiGet<Template>(`/templates/${id}`);
+    const response = await apiGet<{ template: Template }>(`/templates/${id}`);
+    return response.template || null;
   } catch (error) {
     console.error("Error fetching template:", error);
     throw error;
@@ -31,7 +34,8 @@ export async function fetchTemplateById(id: number): Promise<Template> {
  */
 export async function createTemplate(templateData: Partial<Template>): Promise<Template> {
   try {
-    return await apiPost<Template>('/templates/', templateData);
+    const response = await apiPost<{ template: Template }>('/templates/', templateData);
+    return response.template;
   } catch (error) {
     console.error("Error creating template:", error);
     throw error;
@@ -43,7 +47,8 @@ export async function createTemplate(templateData: Partial<Template>): Promise<T
  */
 export async function updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
   try {
-    return await apiPut<Template>(`/templates/${id}`, templateData);
+    const response = await apiPut<{ template: Template }>(`/templates/${id}`, templateData);
+    return response.template;
   } catch (error) {
     console.error("Error updating template:", error);
     throw error;
@@ -55,7 +60,7 @@ export async function updateTemplate(id: number, templateData: Partial<Template>
  */
 export async function deleteTemplate(id: number): Promise<void> {
   try {
-    return await apiDelete<void>(`/templates/${id}`);
+    await apiDelete<{ success: boolean }>(`/templates/${id}`);
   } catch (error) {
     console.error("Error deleting template:", error);
     throw error;
@@ -63,14 +68,15 @@ export async function deleteTemplate(id: number): Promise<void> {
 }
 
 /**
- * Import a template
+ * Import a template from a file
  */
 export async function importTemplate(file: File): Promise<Template> {
   try {
     const formData = new FormData();
     formData.append("file", file);
     
-    return await apiUploadFile<Template>('/templates/import', formData);
+    const response = await apiUploadFile<{ template: Template }>('/templates/import', formData);
+    return response.template;
   } catch (error) {
     console.error("Error importing template:", error);
     throw error;
@@ -82,10 +88,12 @@ export async function importTemplate(file: File): Promise<Template> {
  */
 export async function testTemplate(templateId: number, invoiceId: number | string): Promise<TemplateTestResult> {
   try {
-    return await apiPost<TemplateTestResult>('/templates/test', {
+    const response = await apiPost<{ result: TemplateTestResult }>('/templates/test', {
       template_id: templateId,
       invoice_id: Number(invoiceId)
     });
+    
+    return response.result;
   } catch (error) {
     console.error("Error testing template:", error);
     throw error;
@@ -100,11 +108,66 @@ export function getTemplateExportUrl(templateId: number): string {
 }
 
 /**
+ * Mock data for development/testing when API is not available
+ */
+export const MOCK_TEMPLATES: Template[] = [
+  {
+    template_id: 1,
+    name: "Amazon Invoice",
+    vendor: "Amazon",
+    version: "1.0",
+    description: "Template for Amazon invoices and receipts",
+    created_at: new Date().toISOString(),
+    template_data: {
+      identification: {
+        markers: [
+          { text: "amazon.com", required: true },
+          { text: "order", required: false }
+        ]
+      },
+      fields: [
+        {
+          field_name: "order_number",
+          display_name: "Order Number",
+          data_type: "string",
+          extraction: {
+            regex: "Order #([\\d\\-]+)"
+          },
+          validation: {
+            required: true
+          }
+        },
+        {
+          field_name: "order_date",
+          display_name: "Order Date",
+          data_type: "date",
+          extraction: {
+            regex: "Order Placed:\\s+([A-Za-z]+ \\d+, \\d{4})"
+          }
+        },
+        {
+          field_name: "total",
+          display_name: "Order Total",
+          data_type: "currency",
+          extraction: {
+            regex: "Order Total:\\s+\\$(\\d+\\.\\d{2})"
+          },
+          validation: {
+            required: true
+          }
+        }
+      ]
+    }
+  }
+];
+
+/**
  * Fetch invoices for testing templates
  */
 export async function fetchInvoices(skip = 0, limit = 10): Promise<any[]> {
   try {
-    return await apiGet<any[]>(`/invoices/?skip=${skip}&limit=${limit}`);
+    const response = await apiGet<{ invoices: any[] }>(`/invoices/?skip=${skip}&limit=${limit}`);
+    return response.invoices || [];
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return [];
