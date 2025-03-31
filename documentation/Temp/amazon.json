@@ -1,0 +1,168 @@
+{
+  "template_id": "amazon_invoice_v1",
+  "name": "Amazon Invoice",
+  "version": "1.0",
+  "vendor": "Amazon",
+  "identification": {
+    "markers": [
+      {"text": "amazoncom", "required": true},
+      {"text": "Final Details for Order", "required": true},
+      {"text": "Print this page for your records", "required": false}
+    ]
+  },
+  "fields": [
+    {
+      "field_name": "order_number",
+      "display_name": "Order Number",
+      "data_type": "string",
+      "extraction": {
+        "regex": "Order #(\\d{3}-\\d{7}-\\d{7})",
+        "alternative_regex": "Amazon\\.com order number: (\\d{3}-\\d{7}-\\d{7})"
+      },
+      "validation": {
+        "pattern": "\\d{3}-\\d{7}-\\d{7}",
+        "required": true
+      }
+    },
+    {
+      "field_name": "order_date",
+      "display_name": "Order Date",
+      "data_type": "date",
+      "extraction": {
+        "regex": "Order Placed:\\s+([A-Za-z]+ \\d{1,2}, \\d{4})"
+      },
+      "validation": {
+        "required": true
+      }
+    },
+    {
+      "field_name": "grand_total",
+      "display_name": "Total Amount",
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Grand Total:\\s+\\$(\\d+\\.\\d{2})",
+        "alternative_regex": "Order Total:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "validation": {
+        "required": true
+      }
+    },
+    {
+      "field_name": "shipping_date",
+      "display_name": "Shipping Date",
+      "data_type": "date",
+      "extraction": {
+        "regex": "Shipped on ([A-Za-z]+ \\d{1,2}, \\d{4})"
+      },
+      "validation": {
+        "required": false
+      }
+    },
+    {
+      "field_name": "payment_method",
+      "display_name": "Payment Method",
+      "data_type": "string",
+      "extraction": {
+        "regex": "Payment Method:[\\s\\S]*?([A-Za-z]+ ending in \\d{4})"
+      },
+      "validation": {
+        "required": false
+      }
+    },
+    {
+      "field_name": "shipping_address",
+      "display_name": "Shipping Address",
+      "data_type": "address",
+      "extraction": {
+        "regex": "Shipping Address:[\\s\\S]*?([\\s\\S]*?)(?:Shipping Speed:|Payment information)",
+        "post_processing": "trim"
+      },
+      "validation": {
+        "required": false
+      }
+    },
+    {
+      "field_name": "item_details",
+      "display_name": "Item Details",
+      "data_type": "array",
+      "extraction": {
+        "regex": "(\\d+) of: ([\\s\\S]*?)(?:Sold by:|$)",
+        "capture_groups": ["quantity", "product_name"]
+      },
+      "children": [
+        {
+          "field_name": "quantity",
+          "display_name": "Quantity",
+          "data_type": "integer"
+        },
+        {
+          "field_name": "product_name",
+          "display_name": "Product Name",
+          "data_type": "string"
+        },
+        {
+          "field_name": "price",
+          "display_name": "Price",
+          "data_type": "currency",
+          "extraction": {
+            "regex": "Price\\s+\\$(\\d+\\.\\d{2})"
+          }
+        }
+      ],
+      "validation": {
+        "required": true
+      }
+    },
+    {
+      "field_name": "subtotal",
+      "display_name": "Subtotal",
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Item\\(s\\) Subtotal:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "validation": {
+        "required": false
+      }
+    },
+    {
+      "field_name": "shipping_handling",
+      "display_name": "Shipping & Handling",
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Shipping & Handling:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "validation": {
+        "required": false
+      }
+    },
+    {
+      "field_name": "tax",
+      "display_name": "Tax",
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Estimated tax to be collected:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "validation": {
+        "required": false
+      }
+    }
+  ],
+  "regions": {
+    "header": {
+      "top_marker": "amazoncom",
+      "bottom_marker": "Items Ordered"
+    },
+    "items": {
+      "top_marker": "Items Ordered",
+      "bottom_marker": "Shipping Address:"
+    },
+    "shipping": {
+      "top_marker": "Shipping Address:",
+      "bottom_marker": "Payment information"
+    },
+    "payment": {
+      "top_marker": "Payment information",
+      "bottom_marker": "To view the status of your order"
+    }
+  }
+}

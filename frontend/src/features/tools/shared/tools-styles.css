@@ -6,6 +6,58 @@
   margin: 0 auto;
 }
 
+/* Tab styles */
+.nav-tabs .nav-link {
+  border: none;
+  background: transparent;
+  color: #6c757d;
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  margin-bottom: -1px;
+}
+
+.nav-tabs .nav-link:hover {
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+}
+
+.nav-tabs .nav-link.active {
+  color: #4f46e5; /* Primary indigo color */
+  border-bottom: 2px solid #4f46e5;
+  background-color: transparent;
+}
+
+/* Dark mode support for tabs */
+.dark .nav-tabs .nav-link {
+  color: #a1a1aa;
+}
+
+.dark .nav-tabs .nav-link:hover {
+  color: #d4d4d8;
+  border-bottom: 2px solid #52525b;
+}
+
+.dark .nav-tabs .nav-link.active {
+  color: #818cf8; /* Indigo-400 for dark mode */
+  border-bottom: 2px solid #818cf8;
+}
+
+/* Tab content */
+.tab-content {
+  padding: 1.5rem;
+}
+
+.tab-pane {
+  opacity: 0;
+  transition: opacity 0.15s linear;
+}
+
+.tab-pane.show {
+  opacity: 1;
+}
+
 /* Better scrollbar for all tool containers */
 .scrollable-content::-webkit-scrollbar {
   width: 10px;
@@ -30,6 +82,11 @@
 @media (max-width: 768px) {
   .tools-container {
     padding: 0 15px;
+  }
+
+  .nav-tabs .nav-link {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
   }
 }
 

@@ -122,10 +122,11 @@ const TemplateManager: React.FC = () => {
     setTemplateData(updatedData);
   };
   
-  // Update marker
+  // Update marker - FIXED VERSION
   const handleUpdateMarker = (index: number, field: keyof TemplateMarker, value: string | boolean) => {
     const updatedData = { ...templateData };
-    updatedData.template_data.identification.markers[index][field] = value;
+    // Use type assertion to tell TypeScript this is valid
+    (updatedData.template_data.identification.markers[index] as any)[field] = value;
     setTemplateData(updatedData);
   };
   

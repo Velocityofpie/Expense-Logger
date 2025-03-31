@@ -31,9 +31,11 @@ export interface OcrRequestOptions {
 }
 
 // Template marker for document identification
+// Updated to include an index signature for better TypeScript compatibility
 export interface TemplateMarker {
   text: string;
   required: boolean;
+  [key: string]: string | boolean; // Add index signature to allow dynamic access
 }
 
 // Template field definition for data extraction
