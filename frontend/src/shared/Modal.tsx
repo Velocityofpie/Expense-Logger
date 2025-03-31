@@ -137,7 +137,7 @@ export const Modal: React.FC<ModalProps> = ({
     <div 
       ref={overlayRef}
       onClick={handleOutsideClick}
-      className={`fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 transition-opacity duration-300 ease-out bg-black bg-opacity-50 dark:bg-opacity-70 ${overlayAnimationClass}`}
+      className={`fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 transition-opacity duration-300 ease-out bg-black bg-opacity-50 ${overlayAnimationClass}`}
       aria-modal="true"
       role="dialog"
       {...props}

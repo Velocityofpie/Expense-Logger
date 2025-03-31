@@ -430,13 +430,14 @@ const TemplateManager: React.FC = () => {
         size="lg"
         backdrop="static"
         centered
+        contentClassName="bg-white dark:bg-dark-card" 
       >
-        <Modal.Header closeButton>
+        <Modal.Header closeButton className="bg-gray-50 dark:bg-dark-card border-gray-200 dark:border-dark-border">
           <Modal.Title>
             {currentTemplate ? `Edit Template: ${currentTemplate.name}` : "Create New Template"}
           </Modal.Title>
         </Modal.Header>
-        <Modal.Body>
+        <Modal.Body className="bg-white dark:bg-dark-card">
           <TemplateForm
             currentTemplate={currentTemplate}
             templateData={templateData}
@@ -454,7 +455,7 @@ const TemplateManager: React.FC = () => {
             onUpdateField={handleUpdateField}
           />
         </Modal.Body>
-        <Modal.Footer>
+        <Modal.Footer className="bg-gray-50 dark:bg-dark-card border-gray-200 dark:border-dark-border">
           <Button variant="secondary" onClick={() => setShowTemplateForm(false)}>
             Cancel
           </Button>

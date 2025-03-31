@@ -5,7 +5,7 @@
   "vendor": "Amazon",
   "identification": {
     "markers": [
-      {"text": "amazoncom", "required": true},
+      {"text": "amazon", "required": true},
       {"text": "Final Details for Order", "required": true},
       {"text": "Print this page for your records", "required": false}
     ]
