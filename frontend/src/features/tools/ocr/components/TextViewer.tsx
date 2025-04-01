@@ -28,8 +28,6 @@ const TextViewer: React.FC<TextViewerProps> = ({
   const formatOcrText = (text: string): string => {
     if (!text) return "";
     
-    // Basic formatting to improve readability:
-    
     // 1. Remove excessive empty lines (more than 2 consecutive)
     let formatted = text.replace(/\n{3,}/g, "\n\n");
     
@@ -160,7 +158,8 @@ const TextViewer: React.FC<TextViewerProps> = ({
                 ? "'Consolas', 'Monaco', 'Courier New', monospace"
                 : "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
               whiteSpace: "pre-wrap",
-              wordWrap: "break-word"
+              wordWrap: "break-word",
+              color: "#212529" // Adding explicit text color here
             }}
           >
             {getDisplayText()}

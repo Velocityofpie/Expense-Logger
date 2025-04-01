@@ -2,105 +2,106 @@
 
 /* OCR Extractor Specific Styles */
 .ocr-extractor {
-    padding-bottom: 40px;
-  }
-  
-  .custom-file-input label {
-    cursor: pointer;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  
-  .extracted-text-container {
-    border: 1px solid #e2e8f0;
-    border-radius: 0 0 0.375rem 0.375rem;
-  }
-  
+  padding-bottom: 40px;
+}
+
+.custom-file-input label {
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.extracted-text-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 0 0 0.375rem 0.375rem;
+}
+
+.extracted-text-pre {
+  height: 500px;
+  overflow-y: auto;
+  background-color: #ffffff;
+  border: none;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  color: #212529; /* Default text color for light mode */
+}
+
+.readable-text {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.raw-text {
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Better scrollbar for extracted text */
+.extracted-text-pre::-webkit-scrollbar {
+  width: 10px;
+}
+
+.extracted-text-pre::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 4px;
+}
+
+.extracted-text-pre::-webkit-scrollbar-thumb {
+  background: #cfd8dc;
+  border-radius: 4px;
+  border: 2px solid #f8f9fa;
+}
+
+.extracted-text-pre::-webkit-scrollbar-thumb:hover {
+  background: #b0bec5;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
   .extracted-text-pre {
-    height: 500px;
-    overflow-y: auto;
-    background-color: #ffffff;
-    border: none;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    height: 350px;
   }
-  
-  .readable-text {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    font-size: 16px;
-    line-height: 1.7;
-  }
-  
-  .raw-text {
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    font-size: 14px;
-    line-height: 1.5;
-  }
-  
-  /* Better scrollbar for extracted text */
-  .extracted-text-pre::-webkit-scrollbar {
-    width: 10px;
-  }
-  
-  .extracted-text-pre::-webkit-scrollbar-track {
-    background: #f8f9fa;
-    border-radius: 4px;
-  }
-  
-  .extracted-text-pre::-webkit-scrollbar-thumb {
-    background: #cfd8dc;
-    border-radius: 4px;
-    border: 2px solid #f8f9fa;
-  }
-  
-  .extracted-text-pre::-webkit-scrollbar-thumb:hover {
-    background: #b0bec5;
-  }
-  
-  /* Responsive adjustments */
-  @media (max-width: 768px) {
-    .extracted-text-pre {
-      height: 350px;
-    }
-  }
-  
-  /* Dark mode support */
-  @media (prefers-color-scheme: dark) {
-    .extracted-text-pre {
-      background-color: #1a1a1a;
-      color: #e0e0e0;
-    }
-    
-    .extracted-text-pre::-webkit-scrollbar-track {
-      background: #2d2d2d;
-    }
-    
-    .extracted-text-pre::-webkit-scrollbar-thumb {
-      background: #666666;
-      border: 2px solid #2d2d2d;
-    }
-    
-    .extracted-text-pre::-webkit-scrollbar-thumb:hover {
-      background: #888888;
-    }
-  }
-  
-  /* Tailwind Dark Mode Support */
-  .dark .extracted-text-pre {
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .extracted-text-pre {
     background-color: #1a1a1a;
     color: #e0e0e0;
   }
   
-  .dark .extracted-text-pre::-webkit-scrollbar-track {
+  .extracted-text-pre::-webkit-scrollbar-track {
     background: #2d2d2d;
   }
   
-  .dark .extracted-text-pre::-webkit-scrollbar-thumb {
+  .extracted-text-pre::-webkit-scrollbar-thumb {
     background: #666666;
     border: 2px solid #2d2d2d;
   }
   
-  .dark .extracted-text-pre::-webkit-scrollbar-thumb:hover {
+  .extracted-text-pre::-webkit-scrollbar-thumb:hover {
     background: #888888;
   }
+}
+
+/* Tailwind Dark Mode Support */
+.dark .extracted-text-pre {
+  background-color: #1a1a1a;
+  color: #e0e0e0; /* Ensuring text is visible in dark mode */
+}
+
+.dark .extracted-text-pre::-webkit-scrollbar-track {
+  background: #2d2d2d;
+}
+
+.dark .extracted-text-pre::-webkit-scrollbar-thumb {
+  background: #666666;
+  border: 2px solid #2d2d2d;
+}
+
+.dark .extracted-text-pre::-webkit-scrollbar-thumb:hover {
+  background: #888888;
+}
