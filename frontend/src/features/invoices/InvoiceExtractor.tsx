@@ -1,7 +1,10 @@
-// InvoiceExtractor.tsx with debug toggle and file size limit check
+// src/features/invoices/InvoiceExtractor.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, Input, Select, Badge, Checkbox } from '../../shared';
+import { 
+  Card, CardHeader, CardBody, Button, Input, Select, 
+  Badge, ClickableBadge, Checkbox, Modal, ModalHeader, ModalBody, ModalFooter 
+} from '../../shared';
 import { InvoiceTable } from './';
 import { InvoiceForm } from './';
 import { fetchInvoices, deleteInvoice, fetchTags, fetchCategories } from './invoicesApi';
@@ -9,8 +12,8 @@ import { Invoice, InvoiceFilters } from './types';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
 
-// Maximum file size in bytes (1MB)
-const MAX_FILE_SIZE = 1 * 1024 * 1024;
+// Increase maximum file size to 10MB (10 * 1024 * 1024 bytes)
+const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
 const InvoiceExtractor: React.FC = () => {
   const navigate = useNavigate();
@@ -42,11 +45,19 @@ const InvoiceExtractor: React.FC = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [uploadDebug, setUploadDebug] = useState<string | null>(null);
   
-  // State for OCR template toggle
+  // State for OCR template toggle and debug
   const [useOcrTemplates, setUseOcrTemplates] = useState(true);
-  
-  // State for debug toggle
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+
+  // State for batch metadata management
+  const [showMetadataModal, setShowMetadataModal] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [newCategory, setNewCategory] = useState<string>('');
+  const [newTag, setNewTag] = useState<string>('');
+  const [fileMetadata, setFileMetadata] = useState<{[filename: string]: { category: string, tags: string[] }}>({});
+  const [applyToAll, setApplyToAll] = useState(false);
+  const [editingFile, setEditingFile] = useState<string | null>(null);
   
   // Fetch data on component mount
   useEffect(() => {
@@ -57,6 +68,31 @@ const InvoiceExtractor: React.FC = () => {
   useEffect(() => {
     applyFilters();
   }, [invoices, filters]);
+  
+  // Update file metadata when selectedFiles changes
+  useEffect(() => {
+    // Initialize metadata for new files
+    const updatedMetadata = { ...fileMetadata };
+    
+    selectedFiles.forEach(file => {
+      if (!updatedMetadata[file.name]) {
+        updatedMetadata[file.name] = { 
+          category: '', 
+          tags: [] 
+        };
+      }
+    });
+    
+    // Clean up metadata for removed files
+    const selectedFileNames = selectedFiles.map(f => f.name);
+    Object.keys(updatedMetadata).forEach(filename => {
+      if (!selectedFileNames.includes(filename)) {
+        delete updatedMetadata[filename];
+      }
+    });
+    
+    setFileMetadata(updatedMetadata);
+  }, [selectedFiles]);
   
   // Fetch all necessary data
   const fetchAllData = async () => {
@@ -110,7 +146,7 @@ const InvoiceExtractor: React.FC = () => {
     setFilteredInvoices(filtered);
   };
   
-  // Handle file selection
+  // Handle file selection with multiple file support
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) {
       setUploadDebug("No files selected");
@@ -166,6 +202,80 @@ const InvoiceExtractor: React.FC = () => {
     setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   };
   
+  // Open metadata modal for a specific file
+  const openMetadataModal = (filename: string) => {
+    setEditingFile(filename);
+    setSelectedCategory(fileMetadata[filename]?.category || '');
+    setSelectedTags(fileMetadata[filename]?.tags || []);
+    setShowMetadataModal(true);
+  };
+  
+  // Open metadata modal for batch editing
+  const openBatchMetadataModal = () => {
+    setEditingFile(null);
+    setSelectedCategory('');
+    setSelectedTags([]);
+    setApplyToAll(true);
+    setShowMetadataModal(true);
+  };
+  
+  // Save metadata changes
+  const saveMetadata = () => {
+    if (editingFile) {
+      // Update single file
+      setFileMetadata(prev => ({
+        ...prev,
+        [editingFile]: {
+          category: selectedCategory,
+          tags: selectedTags
+        }
+      }));
+    } else if (applyToAll) {
+      // Update all files
+      const updatedMetadata = { ...fileMetadata };
+      
+      selectedFiles.forEach(file => {
+        updatedMetadata[file.name] = {
+          category: selectedCategory,
+          tags: selectedTags
+        };
+      });
+      
+      setFileMetadata(updatedMetadata);
+    }
+    
+    setShowMetadataModal(false);
+    setEditingFile(null);
+    setApplyToAll(false);
+  };
+  
+  // Add a new category
+  const addNewCategory = () => {
+    if (newCategory && !availableCategories.includes(newCategory)) {
+      setAvailableCategories(prev => [...prev, newCategory]);
+      setSelectedCategory(newCategory);
+      setNewCategory('');
+    }
+  };
+  
+  // Add a new tag
+  const addNewTag = () => {
+    if (newTag && !availableTags.includes(newTag)) {
+      setAvailableTags(prev => [...prev, newTag]);
+      setSelectedTags(prev => [...prev, newTag]);
+      setNewTag('');
+    }
+  };
+  
+  // Handle tag selection
+  const handleTagSelection = (tag: string) => {
+    setSelectedTags(prev => 
+      prev.includes(tag) 
+        ? prev.filter(t => t !== tag) 
+        : [...prev, tag]
+    );
+  };
+  
   // Upload all selected files
   const handleUploadAll = async () => {
     if (selectedFiles.length === 0) {
@@ -190,6 +300,21 @@ const InvoiceExtractor: React.FC = () => {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("use_templates", useOcrTemplates.toString());
+        
+        // Add metadata to the upload
+        const metadata = fileMetadata[file.name];
+        if (metadata) {
+          if (metadata.category) {
+            formData.append("category", metadata.category);
+          }
+          
+          if (metadata.tags && metadata.tags.length > 0) {
+            // Append each tag individually
+            metadata.tags.forEach(tag => {
+              formData.append("tags", tag);
+            });
+          }
+        }
         
         // Update progress
         setUploadProgress(prev => ({
@@ -261,6 +386,7 @@ const InvoiceExtractor: React.FC = () => {
     setUploadResults({ success: [], failed: [] });
     setUploadError(null);
     setUploadDebug(null);
+    setFileMetadata({});
   };
   
   // Toggle manual entry form
@@ -341,6 +467,18 @@ const InvoiceExtractor: React.FC = () => {
     fetchAllData();
   };
 
+  // Get metadata summary for display
+  const getMetadataSummary = (filename: string) => {
+    const metadata = fileMetadata[filename];
+    if (!metadata) return "No metadata";
+    
+    const parts = [];
+    if (metadata.category) parts.push(`Category: ${metadata.category}`);
+    if (metadata.tags.length > 0) parts.push(`Tags: ${metadata.tags.length}`);
+    
+    return parts.length > 0 ? parts.join(", ") : "No metadata";
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -398,6 +536,16 @@ const InvoiceExtractor: React.FC = () => {
                   <div className="flex justify-between items-center mb-2">
                     <h3 className="text-sm font-medium text-gray-700">Selected Files ({selectedFiles.length})</h3>
                     <div className="space-x-2">
+                      {/* Batch metadata button */}
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        onClick={openBatchMetadataModal}
+                        disabled={isUploading || selectedFiles.length === 0}
+                      >
+                        Add Categories & Tags
+                      </Button>
+                      
                       <Button 
                         variant="outline" 
                         size="sm" 
@@ -438,42 +586,76 @@ const InvoiceExtractor: React.FC = () => {
                             <div className="flex-grow truncate">
                               <span className="truncate">{file.name}</span>
                               <span className="ml-2 text-xs text-gray-500">{formatFileSize(file.size)}</span>
+                              
+                              {/* Show metadata summary */}
+                              {fileMetadata[file.name] && (
+                                <div className="mt-1 text-xs text-gray-600">
+                                  {fileMetadata[file.name].category && (
+                                    <Badge color="primary" className="mr-1">
+                                      {fileMetadata[file.name].category}
+                                    </Badge>
+                                  )}
+                                  {fileMetadata[file.name].tags.map(tag => (
+                                    <Badge key={tag} color="secondary" className="mr-1">
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           </div>
                           
-                          {/* Status indicators */}
-                          {uploadResults.success.includes(file.name) && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                              Uploaded
-                            </span>
-                          )}
-                          
-                          {uploadResults.failed.includes(file.name) && (
-                            <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                              Failed
-                            </span>
-                          )}
-                          
-                          {!isUploading && !uploadResults.success.includes(file.name) && !uploadResults.failed.includes(file.name) && (
-                            <button 
-                              type="button"
-                              onClick={() => removeFile(index)} 
-                              className="text-red-600 hover:text-red-900 p-1"
-                            >
-                              <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                          )}
-                          
-                          {isUploading && uploadProgress[file.name] !== undefined && (
-                            <div className="ml-2 w-16 bg-gray-200 rounded-full h-2.5">
-                              <div 
-                                className="bg-primary-600 h-2.5 rounded-full" 
-                                style={{ width: `${uploadProgress[file.name]}%` }}
-                              ></div>
-                            </div>
-                          )}
+                          <div className="flex items-center">
+                            {/* Status indicators */}
+                            {uploadResults.success.includes(file.name) && (
+                              <span className="mr-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                Uploaded
+                              </span>
+                            )}
+                            
+                            {uploadResults.failed.includes(file.name) && (
+                              <span className="mr-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                Failed
+                              </span>
+                            )}
+                            
+                            {!isUploading && !uploadResults.success.includes(file.name) && !uploadResults.failed.includes(file.name) && (
+                              <>
+                                {/* Add metadata button */}
+                                <button 
+                                  type="button"
+                                  onClick={() => openMetadataModal(file.name)} 
+                                  className="text-blue-600 hover:text-blue-900 p-1 mr-1"
+                                  title="Add metadata"
+                                >
+                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                                  </svg>
+                                </button>
+                              
+                                {/* Remove file button */}
+                                <button 
+                                  type="button"
+                                  onClick={() => removeFile(index)} 
+                                  className="text-red-600 hover:text-red-900 p-1"
+                                  title="Remove file"
+                                >
+                                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+                            
+                            {isUploading && uploadProgress[file.name] !== undefined && (
+                              <div className="ml-2 w-16 bg-gray-200 rounded-full h-2.5">
+                                <div 
+                                  className="bg-primary-600 h-2.5 rounded-full" 
+                                  style={{ width: `${uploadProgress[file.name]}%` }}
+                                ></div>
+                              </div>
+                            )}
+                          </div>
                         </li>
                       ))}
                     </ul>
@@ -605,6 +787,116 @@ const InvoiceExtractor: React.FC = () => {
           />
         </CardBody>
       </Card>
+      
+      {/* Metadata Modal */}
+      <Modal 
+        isOpen={showMetadataModal} 
+        onClose={() => setShowMetadataModal(false)}
+        size="lg"
+      >
+        <ModalHeader modalTitle={editingFile ? `Edit Metadata: ${editingFile}` : "Batch Edit Metadata"} onClose={() => setShowMetadataModal(false)} />
+        <ModalBody>
+          <div className="space-y-6">
+            {!editingFile && (
+              <div className="mb-4">
+                <Checkbox
+                  id="apply-to-all"
+                  checked={applyToAll}
+                  onChange={(e) => setApplyToAll(e.target.checked)}
+                />
+                <label htmlFor="apply-to-all" className="ml-2 block text-sm text-gray-700">
+                  Apply to all {selectedFiles.length} selected files
+                </label>
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Category
+              </label>
+              <Select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="mb-2"
+              >
+                <option value="">Select Category</option>
+                {availableCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </Select>
+              
+              <div className="flex items-center space-x-2 mt-1">
+                <Input
+                  type="text"
+                  placeholder="New category"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="flex-grow"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addNewCategory}
+                  disabled={!newCategory.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Tags
+              </label>
+              <div className="border border-gray-300 rounded-md p-2 min-h-[100px] max-h-[200px] overflow-y-auto mb-2">
+                <div className="flex flex-wrap gap-2">
+                  {availableTags.map(tag => (
+                    <ClickableBadge
+                      key={tag}
+                      color={selectedTags.includes(tag) ? "primary" : "secondary"}
+                      onClick={() => handleTagSelection(tag)}
+                    >
+                      {tag}
+                      {selectedTags.includes(tag) && (
+                        <span className="ml-1">✓</span>
+                      )}
+                    </ClickableBadge>
+                  ))}
+                  {availableTags.length === 0 && (
+                    <span className="text-sm text-gray-500">No tags available</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="flex items-center space-x-2">
+                <Input
+                  type="text"
+                  placeholder="New tag"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  className="flex-grow"
+                />
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={addNewTag}
+                  disabled={!newTag.trim()}
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button variant="outline" onClick={() => setShowMetadataModal(false)} className="mr-2">
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={saveMetadata}>
+            Save Metadata
+          </Button>
+        </ModalFooter>
+      </Modal>
     </div>
   );
 };

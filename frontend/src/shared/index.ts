@@ -1,4 +1,4 @@
-// src/shared/index.ts - Fixing the imports and exports
+// src/shared/index.ts - Updated to export ClickableBadge
 /**
  * Barrel exports for shared UI components
  */
@@ -22,7 +22,7 @@ export { default as Input } from './Input';
 export { default as Select } from './Select';
 export { default as Textarea } from './Textarea';
 export { default as Checkbox } from './Checkbox';
-export { default as Badge } from './Badge';
+export { default as Badge, ClickableBadge } from './Badge';
 
 // Export component types directly from files to avoid circular dependencies
 export type { ButtonProps, ButtonVariant, ButtonSize } from './types';
@@ -33,4 +33,4 @@ export type { InputProps } from './Input';
 export type { SelectProps } from './Select';
 export type { TextareaProps } from './Textarea';
 export type { CheckboxProps } from './Checkbox';
-export type { BadgeProps } from './Badge';
+export type { BadgeProps, ClickableBadgeProps } from './Badge';

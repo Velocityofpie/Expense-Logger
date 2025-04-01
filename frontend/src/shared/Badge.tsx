@@ -7,6 +7,7 @@ export interface BadgeProps {
   children: React.ReactNode;
   color?: BadgeColor;
   className?: string;
+  // We don't add onClick here because we'll wrap badges in buttons when they need to be clickable
 }
 
 const Badge: React.FC<BadgeProps> = ({
@@ -29,6 +30,33 @@ const Badge: React.FC<BadgeProps> = ({
     >
       {children}
     </span>
+  );
+};
+
+// Create a clickable version of Badge as a separate component
+export interface ClickableBadgeProps extends BadgeProps {
+  onClick: () => void;
+}
+
+export const ClickableBadge: React.FC<ClickableBadgeProps> = ({
+  children,
+  color = 'primary',
+  className = '',
+  onClick,
+}) => {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="focus:outline-none"
+    >
+      <Badge
+        color={color}
+        className={`cursor-pointer hover:opacity-80 ${className}`}
+      >
+        {children}
+      </Badge>
+    </button>
   );
 };
 

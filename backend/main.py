@@ -1,7 +1,7 @@
 # backend/main.py
 import os
 from pathlib import Path
-from typing import Optional
+from typing import Optional, List
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Depends
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,10 +28,14 @@ from services.ocr import extract_text_from_file, OcrOptions, process_pdf_with_oc
 
 # Import utilities
 from utils.audit import log_audit
-from utils.helpers import add_status_history
+from utils.helpers import add_status_history, get_or_create_tag, get_or_create_category
 
-# Create the FastAPI application
-app = FastAPI(title="Invoice Management System")
+# Create the FastAPI application with increased request size limit
+app = FastAPI(
+    title="Invoice Management System",
+    # Maximum size of a request in bytes (10MB)
+    max_request_size=10 * 1024 * 1024
+)
 
 # Ensure the upload folder path
 UPLOAD_FOLDER = Path("uploads")
@@ -61,16 +65,16 @@ app.include_router(expense_router)
 # File Upload Endpoint
 # ─────────────────────────────────────────────────────────
 
-# backend/main.py - the part that needs updating
-
 @app.post("/upload/")
 async def upload_invoice(
     file: UploadFile = File(...),
     use_templates: bool = Form(True),
+    category: Optional[str] = Form(None),  # Added category parameter
+    tags: List[str] = Form([]),  # Added tags parameter (can receive multiple values)
     db: Session = Depends(get_db),
     user_id: int = 1
 ):
-    """Upload a file and create a new invoice record."""
+    """Upload a file and create a new invoice record with category and tags."""
     try:
         # Check if user exists
         user = db.query(User).filter(User.user_id == user_id).first()
@@ -151,6 +155,17 @@ async def upload_invoice(
                 # Update invoice with extracted data
                 update_invoice_with_extracted_data(new_invoice, extracted_data["extracted_data"], db)
         
+        # Add category if provided (creating it if it doesn't exist)
+        if category:
+            category_obj = get_or_create_category(db, category)
+            new_invoice.categories.append(category_obj)
+        
+        # Add tags if provided (creating them if they don't exist)
+        for tag_name in tags:
+            if tag_name:  # Skip empty tags
+                tag_obj = get_or_create_tag(db, tag_name)
+                new_invoice.tags.append(tag_obj)
+        
         # Add status history
         add_status_history(db, new_invoice.invoice_id, "Open")
         
@@ -161,7 +176,12 @@ async def upload_invoice(
             action="INSERT",
             table_name="invoices",
             record_id=new_invoice.invoice_id,
-            new_data={"file_name": unique_filename, "status": "Open"}
+            new_data={
+                "file_name": unique_filename, 
+                "status": "Open",
+                "category": category,
+                "tags": tags
+            }
         )
         
         db.commit()
@@ -170,7 +190,9 @@ async def upload_invoice(
             "invoice_id": new_invoice.invoice_id, 
             "filename": unique_filename,
             "original_filename": original_filename,
-            "template_used": template_used
+            "template_used": template_used,
+            "category": category,
+            "tags": tags
         }
     except Exception as e:
         db.rollback()
@@ -267,4 +289,12 @@ async def startup_event():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(
+        app, 
+        host="0.0.0.0", 
+        port=8000,
+        # Set timeout and limits for uploads
+        timeout_keep_alive=300,
+        limit_concurrency=10,
+        limit_max_requests=100
+    )

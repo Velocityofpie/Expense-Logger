@@ -1,70 +1,62 @@
-version: '3'
+version: '3.8'
 
 services:
-  postgres_db:
-    image: postgres:14-alpine
-    environment:
-      - POSTGRES_USER=${DB_USER:-postgres}
-      - POSTGRES_PASSWORD=${DB_PASSWORD:-secret}
-      - POSTGRES_DB=${DB_NAME:-expense_logger}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    restart: always
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
+  # Backend service
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
+    container_name: expense_logger_api
     volumes:
-      - uploads_data:/app/uploads
-      - ./backend:/app  # For development hot reload
-    depends_on:
-      postgres_db:
-        condition: service_healthy
-    environment:
-      - DB_HOST=postgres_db
-      - DB_NAME=${DB_NAME:-expense_logger}
-      - DB_USER=${DB_USER:-postgres}
-      - DB_PASSWORD=${DB_PASSWORD:-secret}
-      - JWT_SECRET=${JWT_SECRET:-default-secret-change-me}
+      - ./backend:/app
+      - uploaded_files:/app/uploads
     ports:
       - "8000:8000"
-    restart: always
+    environment:
+      - DB_HOST=postgres_db
+      - DB_NAME=expense_logger
+      - DB_USER=postgres
+      - DB_PASSWORD=secret
+      # Add environment variable for max upload size
+      - MAX_UPLOAD_SIZE=10485760  # 10MB in bytes
+    depends_on:
+      - postgres_db
+    restart: unless-stopped
+    # Override command to include larger request size limits
     command: >
-      bash -c "
-        until pg_isready -h postgres_db -U ${DB_USER:-postgres}; do
-          echo 'Waiting for PostgreSQL...'
-          sleep 2
-        done &&
-        python -c 'from main import Base, engine; Base.metadata.create_all(engine)' &&
-        uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-      "
-    networks:
-      - app-network
+      uvicorn main:app 
+      --host 0.0.0.0 
+      --port 8000 
+      --reload 
+      --timeout-keep-alive 300
 
+  # Frontend service
   frontend:
-    build:
-      context: ./frontend
-      args:
-        - REACT_APP_API_URL=/api
+    build: ./frontend
+    container_name: expense_logger_frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
     ports:
-      - "80:80"
+      - "3000:80"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
     depends_on:
       - backend
-    networks:
-      - app-network
+    restart: unless-stopped
 
-networks:
-  app-network:
-    driver: bridge
+  # Database service
+  postgres_db:
+    image: postgres:15
+    container_name: expense_logger_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=secret
+      - POSTGRES_DB=expense_logger
+    restart: unless-stopped
 
 volumes:
   postgres_data:
-  uploads_data:
+  uploaded_files:
