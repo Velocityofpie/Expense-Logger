@@ -7,8 +7,8 @@ import { API_URL, apiGet, apiPost, apiPut, apiDelete, apiUploadFile } from '../.
  */
 export async function fetchTemplates(): Promise<Template[]> {
   try {
-    const response = await apiGet<{ templates: Template[] }>('/templates/');
-    return response.templates || [];
+    const response = await apiGet<Template[]>('/templates/');
+    return response || [];
   } catch (error) {
     console.error("Error fetching templates:", error);
     // Return empty array on error to prevent UI crashes
@@ -21,8 +21,8 @@ export async function fetchTemplates(): Promise<Template[]> {
  */
 export async function fetchTemplateById(id: number): Promise<Template | null> {
   try {
-    const response = await apiGet<{ template: Template }>(`/templates/${id}`);
-    return response.template || null;
+    const response = await apiGet<Template>(`/templates/${id}`);
+    return response || null;
   } catch (error) {
     console.error("Error fetching template:", error);
     throw error;
@@ -34,8 +34,8 @@ export async function fetchTemplateById(id: number): Promise<Template | null> {
  */
 export async function createTemplate(templateData: Partial<Template>): Promise<Template> {
   try {
-    const response = await apiPost<{ template: Template }>('/templates/', templateData);
-    return response.template;
+    const response = await apiPost<Template>('/templates/', templateData);
+    return response;
   } catch (error) {
     console.error("Error creating template:", error);
     throw error;
@@ -47,8 +47,8 @@ export async function createTemplate(templateData: Partial<Template>): Promise<T
  */
 export async function updateTemplate(id: number, templateData: Partial<Template>): Promise<Template> {
   try {
-    const response = await apiPut<{ template: Template }>(`/templates/${id}`, templateData);
-    return response.template;
+    const response = await apiPut<Template>(`/templates/${id}`, templateData);
+    return response;
   } catch (error) {
     console.error("Error updating template:", error);
     throw error;
@@ -75,8 +75,8 @@ export async function importTemplate(file: File): Promise<Template> {
     const formData = new FormData();
     formData.append("file", file);
     
-    const response = await apiUploadFile<{ template: Template }>('/templates/import', formData);
-    return response.template;
+    const response = await apiUploadFile<Template>('/templates/import', formData);
+    return response;
   } catch (error) {
     console.error("Error importing template:", error);
     throw error;
@@ -88,12 +88,12 @@ export async function importTemplate(file: File): Promise<Template> {
  */
 export async function testTemplate(templateId: number, invoiceId: number | string): Promise<TemplateTestResult> {
   try {
-    const response = await apiPost<{ result: TemplateTestResult }>('/templates/test', {
+    const response = await apiPost<TemplateTestResult>('/templates/test', {
       template_id: templateId,
       invoice_id: Number(invoiceId)
     });
     
-    return response.result;
+    return response;
   } catch (error) {
     console.error("Error testing template:", error);
     throw error;
@@ -166,8 +166,8 @@ export const MOCK_TEMPLATES: Template[] = [
  */
 export async function fetchInvoices(skip = 0, limit = 10): Promise<any[]> {
   try {
-    const response = await apiGet<{ invoices: any[] }>(`/invoices/?skip=${skip}&limit=${limit}`);
-    return response.invoices || [];
+    const response = await apiGet<any[]>(`/invoices/?skip=${skip}&limit=${limit}`);
+    return response || [];
   } catch (error) {
     console.error("Error fetching invoices:", error);
     return [];

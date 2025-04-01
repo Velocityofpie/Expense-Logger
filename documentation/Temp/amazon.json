@@ -1,168 +1,243 @@
 {
-  "template_id": "amazon_invoice_v1",
-  "name": "Amazon Invoice",
-  "version": "1.0",
-  "vendor": "Amazon",
   "identification": {
     "markers": [
-      {"text": "amazon", "required": true},
-      {"text": "Final Details for Order", "required": true},
-      {"text": "Print this page for your records", "required": false}
+      {
+        "text": "amazon",
+        "required": true
+      },
+      {
+        "text": "Order #",
+        "required": true
+      },
+      {
+        "text": "Amazon.com order number",
+        "required": false
+      },
+      {
+        "text": "Order Total",
+        "required": false
+      }
     ]
   },
   "fields": [
     {
-      "field_name": "order_number",
-      "display_name": "Order Number",
+      "data_type": "string",
+      "extraction": {
+        "regex": "Amazon(?:\\.com)?|amazoncom",
+        "alternative_regex": "amazon"
+      },
+      "field_name": "merchant_name",
+      "validation": {
+        "required": true
+      },
+      "display_name": "Merchant Name",
+      "default_value": "Amazon"
+    },
+    {
       "data_type": "string",
       "extraction": {
         "regex": "Order #(\\d{3}-\\d{7}-\\d{7})",
         "alternative_regex": "Amazon\\.com order number: (\\d{3}-\\d{7}-\\d{7})"
       },
+      "field_name": "order_number",
       "validation": {
         "pattern": "\\d{3}-\\d{7}-\\d{7}",
         "required": true
-      }
+      },
+      "display_name": "Order Number"
     },
     {
-      "field_name": "order_date",
-      "display_name": "Order Date",
       "data_type": "date",
       "extraction": {
-        "regex": "Order Placed:\\s+([A-Za-z]+ \\d{1,2}, \\d{4})"
+        "regex": "Order Placed: ([A-Za-z]+ \\d{1,2}, \\d{4})"
       },
+      "field_name": "purchase_date",
       "validation": {
         "required": true
-      }
+      },
+      "display_name": "Order Date"
     },
     {
-      "field_name": "grand_total",
-      "display_name": "Total Amount",
       "data_type": "currency",
       "extraction": {
         "regex": "Grand Total:\\s+\\$(\\d+\\.\\d{2})",
         "alternative_regex": "Order Total:\\s+\\$(\\d+\\.\\d{2})"
       },
+      "field_name": "grand_total",
       "validation": {
         "required": true
-      }
+      },
+      "display_name": "Total Amount"
     },
     {
-      "field_name": "shipping_date",
-      "display_name": "Shipping Date",
       "data_type": "date",
       "extraction": {
         "regex": "Shipped on ([A-Za-z]+ \\d{1,2}, \\d{4})"
       },
+      "field_name": "shipping_date",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Shipping Date"
     },
     {
-      "field_name": "payment_method",
-      "display_name": "Payment Method",
       "data_type": "string",
       "extraction": {
-        "regex": "Payment Method:[\\s\\S]*?([A-Za-z]+ ending in \\d{4})"
+        "regex": "Payment Method:[\\s\\S]*?([A-Za-z]+ ending in \\d{4})",
+        "alternative_regex": "Credit Card transactions ([A-Za-z]+ ending in \\d{4})"
       },
+      "field_name": "payment_method",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Payment Method"
     },
     {
-      "field_name": "shipping_address",
-      "display_name": "Shipping Address",
-      "data_type": "address",
+      "data_type": "string",
       "extraction": {
-        "regex": "Shipping Address:[\\s\\S]*?([\\s\\S]*?)(?:Shipping Speed:|Payment information)",
+        "regex": "Shipping Address:[\\s\\S]*?([A-Za-z]+ [A-Za-z]+)\\s*\\n"
+      },
+      "field_name": "customer_name",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Customer Name"
+    },
+    {
+      "data_type": "string",
+      "extraction": {
+        "regex": "Shipping Address:[\\s\\S]*?(?:[A-Za-z]+ [A-Za-z]+)\\s*\\n\\s*([^\\n]+)\\s*\\n",
         "post_processing": "trim"
       },
+      "field_name": "shipping_address_street",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Shipping Street Address"
     },
     {
-      "field_name": "item_details",
-      "display_name": "Item Details",
+      "data_type": "string",
+      "extraction": {
+        "regex": "Shipping Address:[\\s\\S]*?(?:[A-Za-z]+ [A-Za-z]+)\\s*\\n\\s*(?:[^\\n]+)\\s*\\n\\s*([^\\n]+)\\s*\\n",
+        "post_processing": "trim"
+      },
+      "field_name": "shipping_address_city_state_zip",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Shipping City/State/Zip"
+    },
+    {
+      "data_type": "string",
+      "extraction": {
+        "regex": "Shipping Address:[\\s\\S]*?(?:[A-Za-z]+ [A-Za-z]+)\\s*\\n\\s*(?:[^\\n]+)\\s*\\n\\s*(?:[^\\n]+)\\s*\\n\\s*([A-Za-z ]+)\\s*\\n",
+        "post_processing": "trim"
+      },
+      "field_name": "shipping_address_country",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Shipping Country"
+    },
+    {
       "data_type": "array",
       "extraction": {
-        "regex": "(\\d+) of: ([\\s\\S]*?)(?:Sold by:|$)",
-        "capture_groups": ["quantity", "product_name"]
+        "regex": "\\d+ of: ([^\\n]+?)(?=\\$|Sold by:|Condition:|\\n\\n|$)"
       },
-      "children": [
-        {
-          "field_name": "quantity",
-          "display_name": "Quantity",
-          "data_type": "integer"
-        },
-        {
-          "field_name": "product_name",
-          "display_name": "Product Name",
-          "data_type": "string"
-        },
-        {
-          "field_name": "price",
-          "display_name": "Price",
-          "data_type": "currency",
-          "extraction": {
-            "regex": "Price\\s+\\$(\\d+\\.\\d{2})"
-          }
-        }
-      ],
+      "field_name": "items",
       "validation": {
-        "required": true
-      }
+        "required": false
+      },
+      "display_name": "Item Names"
     },
     {
-      "field_name": "subtotal",
-      "display_name": "Subtotal",
+      "data_type": "array",
+      "extraction": {
+        "regex": "(\\d+) of:"
+      },
+      "field_name": "item_counts",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Item Quantities"
+    },
+    {
+      "data_type": "array",
+      "extraction": {
+        "regex": "Price\\s+\\$(\\d+\\.\\d{2})",
+        "alternative_regex": "\\$\\s*(\\d+\\.\\d{2})\\s*[\\r\\n]"
+      },
+      "field_name": "item_prices",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Item Prices"
+    },
+    {
+      "data_type": "array",
+      "extraction": {
+        "regex": "Condition: ([\\w]+)"
+      },
+      "field_name": "item_types",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Item Types"
+    },
+    {
       "data_type": "currency",
       "extraction": {
         "regex": "Item\\(s\\) Subtotal:\\s+\\$(\\d+\\.\\d{2})"
       },
+      "field_name": "subtotal",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Subtotal"
     },
     {
-      "field_name": "shipping_handling",
-      "display_name": "Shipping & Handling",
       "data_type": "currency",
       "extraction": {
         "regex": "Shipping & Handling:\\s+\\$(\\d+\\.\\d{2})"
       },
+      "field_name": "shipping_handling",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Shipping & Handling"
     },
     {
-      "field_name": "tax",
-      "display_name": "Tax",
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Total before tax:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "field_name": "total_before_tax",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Total Before Tax"
+    },
+    {
       "data_type": "currency",
       "extraction": {
         "regex": "Estimated tax to be collected:\\s+\\$(\\d+\\.\\d{2})"
       },
+      "field_name": "estimated_tax",
       "validation": {
         "required": false
-      }
+      },
+      "display_name": "Tax Amount"
+    },
+    {
+      "data_type": "currency",
+      "extraction": {
+        "regex": "Credit Card transactions [A-Za-z]+ ending in \\d{4}: [A-Za-z]+ \\d{1,2}, \\d{4}:\\s+\\$(\\d+\\.\\d{2})"
+      },
+      "field_name": "credit_card_transactions",
+      "validation": {
+        "required": false
+      },
+      "display_name": "Credit Card Transaction"
     }
-  ],
-  "regions": {
-    "header": {
-      "top_marker": "amazoncom",
-      "bottom_marker": "Items Ordered"
-    },
-    "items": {
-      "top_marker": "Items Ordered",
-      "bottom_marker": "Shipping Address:"
-    },
-    "shipping": {
-      "top_marker": "Shipping Address:",
-      "bottom_marker": "Payment information"
-    },
-    "payment": {
-      "top_marker": "Payment information",
-      "bottom_marker": "To view the status of your order"
-    }
-  }
+  ]
 }
