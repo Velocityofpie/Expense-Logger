@@ -1,5 +1,5 @@
 # backend/schemas/template.py
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
 from pydantic import BaseModel
 
@@ -54,10 +54,11 @@ class FieldResult(BaseModel):
     display_name: str
     required: bool
     matched: bool
-    value: Optional[str] = None
+    value: Optional[str] = None  # Ensure this is explicitly defined as a string type
     
     class Config:
         orm_mode = True
+
 
 class TemplateTestResponse(BaseModel):
     result_id: int

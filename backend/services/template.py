@@ -1,7 +1,7 @@
-# backend/services/template.py - FIXED VERSION
+# backend/services/template.py
 
 import re
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
@@ -53,16 +53,12 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         if not field_name:
             continue
             
+        # Get data type
+        data_type = field.get("data_type", "string")
+        
         # Get extraction regex patterns
         regex = field.get("extraction", {}).get("regex", "")
         alt_regex = field.get("extraction", {}).get("alternative_regex", "")
-        
-        # Try to match using the primary regex
-        match = re.search(regex, text) if regex else None
-        
-        # If primary regex fails, try alternative
-        if not match and alt_regex:
-            match = re.search(alt_regex, text)
         
         # Prepare field result
         field_result = {
@@ -73,45 +69,129 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
             "value": None
         }
         
-        # If we found a match, extract the data
-        if match:
-            fields_matched += 1
-            field_result["matched"] = True
+        # Handle different data types
+        if data_type == "array":
+            # For array types, find all matches in the text
+            matches = []
             
-            # Get the first capture group, or the whole match if no groups
-            value = match.group(1) if match.groups() else match.group(0)
+            # Try to match using the primary regex
+            if regex:
+                # Get all matches
+                all_matches = list(re.finditer(regex, text))
+                
+                # Check if we need to process capture groups differently
+                capture_groups = field.get("extraction", {}).get("capture_groups", {})
+                
+                if all_matches:
+                    # We found at least one match for an array field
+                    fields_matched += 1
+                    field_result["matched"] = True
+                    
+                    # Process each match
+                    for match in all_matches:
+                        if capture_groups:
+                            # Process structured capture groups
+                            item_data = {}
+                            for key, group_index in capture_groups.items():
+                                try:
+                                    item_data[key] = match.group(group_index)
+                                except (IndexError, AttributeError):
+                                    pass
+                            matches.append(item_data)
+                        else:
+                            # Simple array item (just the match)
+                            value = match.group(1) if match.groups() else match.group(0)
+                            matches.append(value)
+                
+                # If primary regex fails, try alternative
+                if not matches and alt_regex:
+                    all_matches = list(re.finditer(alt_regex, text))
+                    for match in all_matches:
+                        value = match.group(1) if match.groups() else match.group(0)
+                        matches.append(value)
             
-            # Apply any post-processing
-            post_processing = field.get("extraction", {}).get("post_processing", "")
-            if post_processing == "trim":
-                value = value.strip()
+            # Store the extracted array
+            if matches:
+                extracted_data[field_name] = matches
+                field_result["value"] = f"{len(matches)} item(s)"  # This is already a string
             
-            # Store the extracted value
-            extracted_data[field_name] = value
-            field_result["value"] = value
+        else:
+            # For non-array types, find the first match
+            # Try to match using the primary regex
+            match = re.search(regex, text) if regex else None
+            
+            # If primary regex fails, try alternative
+            if not match and alt_regex:
+                match = re.search(alt_regex, text)
+            
+            # If we found a match, extract the data
+            if match:
+                fields_matched += 1
+                field_result["matched"] = True
+                
+                # Get the first capture group, or the whole match if no groups
+                value = match.group(1) if match.groups() else match.group(0)
+                
+                # Apply any post-processing
+                post_processing = field.get("extraction", {}).get("post_processing", "")
+                if post_processing == "trim":
+                    value = value.strip()
+                
+                # Handle data type conversion
+                if data_type == "date":
+                    value = value  # Keep as string, we'll convert it later
+                elif data_type == "currency":
+                    # Try to extract numeric value
+                    numeric_match = re.search(r'(\d+\.\d+)', value)
+                    value = float(numeric_match.group(1)) if numeric_match else value
+                
+                # Store the extracted value
+                extracted_data[field_name] = value
+                # Make sure field_result["value"] is always a string
+                field_result["value"] = str(value) if value is not None else None
         
         field_results.append(field_result)
     
-    # Special handling for item details - split into separate item and count fields
-    # If there's an "item_details" field in the template, process it
-    for field in fields:
-        if field.get("field_name") == "item_details":
-            # Check if we've successfully extracted item_details
-            if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
-                item_list = extracted_data["item_details"]
+    # Special processing for item_details into proper item objects
+    if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
+        items = []
+        
+        for item_data in extracted_data["item_details"]:
+            # Check if item_data is already a dict (structured capture groups)
+            if isinstance(item_data, dict):
+                # Process quantity
+                quantity = 1
+                if "quantity" in item_data:
+                    try:
+                        quantity = int(item_data["quantity"])
+                    except (ValueError, TypeError):
+                        quantity = 1
                 
-                # Create separate lists for item names and counts
-                item_names = []
-                item_counts = []
+                # Process item name
+                name = item_data.get("name", "Unknown item")
                 
-                for item in item_list:
-                    # Extract name and quantity
-                    item_names.append(item.get("product_name", ""))
-                    item_counts.append(item.get("quantity", 1))
+                # Build proper item object
+                item = {
+                    "product_name": name,
+                    "quantity": quantity,
+                    "unit_price": 0,  # We don't have price info yet
+                    "condition": item_data.get("condition", "New"),
+                    "item_type": ""  # Add default item_type
+                }
                 
-                # Add as separate fields in extracted data
-                extracted_data["items"] = item_names
-                extracted_data["item_counts"] = item_counts
+                items.append(item)
+            else:
+                # Simple string item, add as product name
+                items.append({
+                    "product_name": item_data,
+                    "quantity": 1,
+                    "unit_price": 0,
+                    "condition": "New",
+                    "item_type": ""
+                })
+        
+        # Replace the raw matches with properly structured items
+        extracted_data["item_details"] = items
     
     # Calculate match score
     match_score = fields_matched / fields_total if fields_total > 0 else 0
@@ -126,8 +206,6 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
     }
 
 
-# Update the update_invoice_with_extracted_data function to handle separated item fields
-
 def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Session):
     """Update an invoice with data extracted using a template."""
     # Map extracted fields to invoice fields
@@ -140,7 +218,7 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
         "total_before_tax": "total_before_tax",
         "payment_method": "payment_method",
         "billing_address": "billing_address",
-        "merchant_name": "merchant_name",  # Make sure merchant_name is mapped
+        "merchant_name": "merchant_name",
     }
     
     # Update invoice fields
@@ -174,21 +252,27 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
             
             # Handle numeric fields
             elif invoice_field in ["grand_total", "shipping_handling", "estimated_tax", "total_before_tax"]:
-                # Extract the numeric part from values like "$123.45"
-                numeric_match = re.search(r'(\d+\.\d+)', value)
-                if numeric_match:
-                    value = float(numeric_match.group(1))
+                # If it's already a float, use it
+                if isinstance(value, float):
+                    pass
+                # Otherwise, try to extract the numeric part from values like "$123.45"
+                elif isinstance(value, str):
+                    numeric_match = re.search(r'(\d+\.\d+)', value)
+                    if numeric_match:
+                        value = float(numeric_match.group(1))
+                    else:
+                        continue
                 else:
                     continue
             
             # Set the value
             setattr(invoice, invoice_field, value)
     
-    # Handle item details if available
+    # Import here to avoid circular imports
+    from models.invoice import InvoiceItem
+    
+    # Handle item details if available (preferred method)
     if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
-        # Import here to avoid circular imports
-        from models.invoice import InvoiceItem
-        
         # Create new invoice items
         for item_data in extracted_data["item_details"]:
             # Create a new invoice item
@@ -196,33 +280,77 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                 invoice_id=invoice.invoice_id,
                 product_name=item_data.get("product_name", ""),
                 quantity=int(item_data.get("quantity", 1)),
-                unit_price=float(item_data.get("price", 0)),
+                unit_price=float(item_data.get("unit_price", 0)),
                 product_link=item_data.get("product_link", ""),
                 condition=item_data.get("condition", "New"),
-                item_type=item_data.get("item_type", "")  # Make sure to include item_type
+                item_type=item_data.get("item_type", "")
             )
             db.add(item)
-    # Add support for separated items and item_counts
+            
+    # Fallback: Handle separate item/count lists
     elif "items" in extracted_data and "item_counts" in extracted_data:
-        # Import here to avoid circular imports
-        from models.invoice import InvoiceItem
-        
         # Get the lists
         items = extracted_data["items"]
         counts = extracted_data["item_counts"]
         
-        # Make sure both lists have data and are the same length
-        if items and counts and len(items) == len(counts):
+        # Make sure both lists have data
+        if items and counts:
+            # Convert counts to integers if they're strings
+            parsed_counts = []
+            for count in counts:
+                try:
+                    if isinstance(count, str):
+                        parsed_counts.append(int(count))
+                    else:
+                        parsed_counts.append(count)
+                except (ValueError, TypeError):
+                    parsed_counts.append(1)
+            
+            # Process items and counts
             for i in range(len(items)):
+                # Get the count for this item (use 1 if index is out of range)
+                quantity = parsed_counts[i] if i < len(parsed_counts) else 1
+                
                 # Create a new invoice item
                 item = InvoiceItem(
                     invoice_id=invoice.invoice_id,
                     product_name=items[i],
-                    quantity=int(counts[i]),
+                    quantity=quantity,
                     unit_price=0,  # Default unit price since we don't have it
                     item_type=extracted_data.get("category", "")  # Use category as item_type if available
                 )
                 db.add(item)
+    
+    # Get item prices if available
+    if "item_prices" in extracted_data and isinstance(extracted_data["item_prices"], list):
+        # Get newly created items for this invoice
+        invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.invoice_id).all()
+        prices = extracted_data["item_prices"]
+        
+        # Update prices for items
+        for i, price in enumerate(prices):
+            if i < len(invoice_items):
+                try:
+                    if isinstance(price, str):
+                        # Convert string price to float
+                        numeric_match = re.search(r'(\d+\.\d+)', price)
+                        if numeric_match:
+                            invoice_items[i].unit_price = float(numeric_match.group(1))
+                    else:
+                        invoice_items[i].unit_price = float(price)
+                except (ValueError, TypeError):
+                    pass
+    
+    # Get item types if available
+    if "item_types" in extracted_data and isinstance(extracted_data["item_types"], list):
+        # Get newly created items for this invoice
+        invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.invoice_id).all()
+        types = extracted_data["item_types"]
+        
+        # Update types for items
+        for i, item_type in enumerate(types):
+            if i < len(invoice_items):
+                invoice_items[i].item_type = item_type
     
     # Extract and set tags/categories if available
     if "tags" in extracted_data and isinstance(extracted_data["tags"], list):
@@ -246,7 +374,7 @@ def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     extracted_text = extract_text_from_file(file_path)
     
     # Import here to avoid circular imports
-    from models.template import InvoiceTemplate  # FIXED: Changed from backend.models.template
+    from models.template import InvoiceTemplate
     
     # Get all active templates
     templates = db.query(InvoiceTemplate).filter(InvoiceTemplate.is_active == True).all()

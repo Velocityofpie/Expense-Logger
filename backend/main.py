@@ -66,7 +66,7 @@ app.include_router(expense_router)
 @app.post("/upload/")
 async def upload_invoice(
     file: UploadFile = File(...),
-    use_templates: bool = Form(True),  # Default to True
+    use_templates: bool = Form(True),
     db: Session = Depends(get_db),
     user_id: int = 1
 ):
@@ -108,6 +108,20 @@ async def upload_invoice(
         # Save file to disk
         with open(file_path, "wb") as f:
             f.write(content)
+        
+        # IMPORTANT: Check for and clean up any soft-deleted invoices with the same filename
+        # This prevents order_number conflicts when re-uploading previously deleted files
+        soft_deleted_invoices = db.query(Invoice).filter(
+            Invoice.file_name == unique_filename,
+            Invoice.is_deleted == True
+        ).all()
+        
+        for deleted_invoice in soft_deleted_invoices:
+            # Permanently delete the invoice to avoid unique constraint conflicts
+            print(f"Permanently removing previously deleted invoice: ID {deleted_invoice.invoice_id}")
+            db.delete(deleted_invoice)
+            
+        db.flush()  # Commit these deletions before continuing
         
         # Create new invoice with minimal info
         new_invoice = Invoice(
