@@ -170,6 +170,17 @@ export const getInvoicePayments = async (invoiceId: number | string): Promise<an
   }
 };
 
+// Delete a category
+export const deleteCategory = async (categoryName: string): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete(`/categories/${encodeURIComponent(categoryName)}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting category:", error);
+    throw error;
+  }
+};
+
 export default {
   fetchInvoices,
   fetchInvoiceById,

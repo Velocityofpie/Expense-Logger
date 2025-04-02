@@ -472,3 +472,36 @@ async def get_all_categories(db: Session = Depends(get_db)):
         return [category[0] for category in categories]
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+@router.delete("/categories/{category_name}")
+async def delete_category(category_name: str, db: Session = Depends(get_db), user_id: int = 1):
+    """Delete a category from the database."""
+    try:
+        # Find the category
+        category = db.query(Category).filter(Category.category_name == category_name).first()
+        if not category:
+            raise HTTPException(status_code=404, detail="Category not found")
+        
+        # Delete all references to this category in the junction table
+        db.query(InvoiceCategory).filter(InvoiceCategory.category_id == category.category_id).delete()
+        
+        # Then delete the category itself
+        db.delete(category)
+        
+        # Log the action
+        log_audit(
+            db=db,
+            user_id=user_id,
+            action="DELETE",
+            table_name="categories",
+            record_id=category.category_id,
+            old_data={"category_name": category_name}
+        )
+        
+        db.commit()
+        return {"message": f"Category '{category_name}' deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
