@@ -236,3 +236,31 @@
   .dashboard-empty-state-description {
     @apply text-gray-500 dark:text-dark-text-secondary max-w-md mb-6;
   }
+  svg {
+    fill: none;
+  }
+  
+  svg * {
+    fill: none;
+  }
+  
+  /* Allow specific elements to have fill */
+  svg circle:not([fill="none"]) {
+    fill: currentColor;
+  }
+  
+  /* Fix icon sizing and alignment */
+  .inline-flex.items-center.justify-center svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* Ensure icon container appears correctly */
+  .dashboard-card .inline-flex {
+    overflow: visible !important;
+  }
+  
+  /* Override any global SVG styles that might be causing issues */
+  .text-white svg {
+    color: white !important;
+  }
