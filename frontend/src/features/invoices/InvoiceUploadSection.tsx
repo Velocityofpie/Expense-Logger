@@ -1,7 +1,8 @@
-// src/features/invoices/InvoiceUploadSection.tsx
+// src/features/invoices/InvoiceUploadSection.tsx with fixes
 import React, { useState, useEffect } from 'react';
 import { 
-  Card, CardHeader, CardBody, Button, Badge, ClickableBadge, Checkbox 
+  Card, CardHeader, CardBody, Button, Badge, ClickableBadge, Checkbox,
+  Modal, ModalHeader, ModalBody, ModalFooter, Input, Select
 } from '../../shared';
 import { InvoiceForm } from './';
 
@@ -44,6 +45,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   // State for OCR template toggle and debug
   const [useOcrTemplates, setUseOcrTemplates] = useState(true);
   const [showDebugInfo, setShowDebugInfo] = useState(false);
+  const [usedTemplateInfo, setUsedTemplateInfo] = useState<string | null>(null);
 
   // State for batch metadata management
   const [showMetadataModal, setShowMetadataModal] = useState(false);
@@ -266,6 +268,22 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
           
           if (response.ok) {
             const data = await response.json();
+            
+            // Store template information if available
+            if (data.template_used) {
+              setUsedTemplateInfo(prev => {
+                const newInfo = prev ? `${prev}\n${file.name}: Used template "${data.template_used}"` : 
+                  `${file.name}: Used template "${data.template_used}"`;
+                return newInfo;
+              });
+            } else {
+              setUsedTemplateInfo(prev => {
+                const newInfo = prev ? `${prev}\n${file.name}: No template matched` : 
+                  `${file.name}: No template matched`;
+                return newInfo;
+              });
+            }
+            
             setUploadDebug(prev => `${prev}\n- Upload successful`);
             successfulUploads.push(file.name);
             // Update progress to 100%
@@ -321,6 +339,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setUploadError(null);
     setUploadDebug(null);
     setFileMetadata({});
+    setUsedTemplateInfo(null);
   };
 
   const handleFormSuccess = () => {
@@ -337,7 +356,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
             <Button 
               variant="outline"
               onClick={toggleUploadSection}
-              className="flex items-center"
+              className="flex items-center px-3 py-1.5"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                   {showUploadSection 
@@ -569,10 +588,18 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
               )}
               
               {/* Debug info - only shown when toggle is enabled */}
-              {showDebugInfo && uploadDebug && (
+              {showDebugInfo && (uploadDebug || usedTemplateInfo) && (
                 <div className="mt-4 p-3 bg-gray-100 text-gray-800 rounded text-sm text-left whitespace-pre-wrap overflow-auto max-h-64">
                   <div className="font-medium mb-1">Debug Info:</div>
                   {uploadDebug}
+                  
+                  {/* Display OCR template information */}
+                  {usedTemplateInfo && (
+                    <>
+                      <div className="font-medium mt-3 mb-1">OCR Template Info:</div>
+                      {usedTemplateInfo}
+                    </>
+                  )}
                 </div>
               )}
               
@@ -596,6 +623,143 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
           ) : null}
         </CardBody>
       )}
+
+      {/* Metadata Modal */}
+      <Modal
+        isOpen={showMetadataModal}
+        onClose={() => setShowMetadataModal(false)}
+        size="md"
+      >
+        <ModalHeader modalTitle={`Add Categories & Tags to ${editingFile || 'All Files'}`} onClose={() => setShowMetadataModal(false)} />
+        <ModalBody>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Category
+              </label>
+              <Select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="mb-2"
+              >
+                <option value="">Select a category</option>
+                {availableCategories.map(category => (
+                  <option key={category} value={category}>{category}</option>
+                ))}
+              </Select>
+              
+              {/* New category input */}
+              <div className="flex mt-2">
+                <Input
+                  type="text"
+                  placeholder="Add new category"
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  className="rounded-r-none"
+                />
+                <Button
+                  type="button"
+                  onClick={addNewCategory}
+                  disabled={!newCategory}
+                  className="rounded-l-none"
+                >
+                  Add
+                </Button>
+              </div>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Tags
+              </label>
+              <div className="mb-2 flex flex-wrap gap-2">
+                {availableTags.map(tag => (
+                  <ClickableBadge
+                    key={tag}
+                    onClick={() => handleTagSelection(tag)}
+                    color={selectedTags.includes(tag) ? "primary" : "secondary"}
+                  >
+                    {tag}
+                  </ClickableBadge>
+                ))}
+              </div>
+              
+              {/* New tag input */}
+              <div className="flex mt-2">
+                <Input
+                  type="text"
+                  placeholder="Add new tag"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  className="rounded-r-none"
+                />
+                <Button
+                  type="button"
+                  onClick={addNewTag}
+                  disabled={!newTag}
+                  className="rounded-l-none"
+                >
+                  Add
+                </Button>
+              </div>
+              
+              {/* Display selected tags */}
+              {selectedTags.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-sm text-gray-500 mb-1">Selected tags:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {selectedTags.map(tag => (
+                      <Badge key={tag} color="primary" className="mr-1">
+                        {tag}
+                        <button
+                          type="button"
+                          onClick={() => setSelectedTags(tags => tags.filter(t => t !== tag))}
+                          className="ml-1 text-xs font-bold"
+                          aria-label={`Remove ${tag} tag`}
+                        >
+                          ×
+                        </button>
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {!editingFile && (
+              <div className="mt-4">
+                <div className="flex items-center">
+                  <Checkbox
+                    id="apply-to-all"
+                    checked={applyToAll}
+                    onChange={(e) => setApplyToAll(e.target.checked)}
+                  />
+                  <label htmlFor="apply-to-all" className="ml-2 text-sm text-gray-700">
+                    Apply to all selected files
+                  </label>
+                </div>
+              </div>
+            )}
+          </div>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setShowMetadataModal(false)}
+            className="mr-2"
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            variant="primary"
+            onClick={saveMetadata}
+          >
+            Save
+          </Button>
+        </ModalFooter>
+      </Modal>
     </Card>
   );
 };

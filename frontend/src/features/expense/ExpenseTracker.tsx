@@ -1,13 +1,11 @@
-// ExpenseTracker.tsx
-// Core expense tracking component that integrates all other components
+// src/features/expense/ExpenseTracker.tsx
 import React, { useState, useEffect } from 'react';
-import { Modal } from 'react-bootstrap'; // Using Bootstrap's Modal
+import { useNavigate } from 'react-router-dom';
 import { 
   ExpenseItem, 
   ExpenseGroup, 
   SortConfig, 
   formatCurrency, 
-  groupExpenseData, 
   filterDataByCategory, 
   filterDataByDate,
   filterDataBySearchTerm,
@@ -15,14 +13,11 @@ import {
 } from './expenseHelpers';
 import { 
   fetchExpenseData, 
-  addExpense, 
-  updateExpense, 
-  deleteExpense 
+  fetchCategories 
 } from './expensesApi';
 import ExpenseFilters from './ExpenseFilters';
 import ExpenseSummary from './ExpenseSummary';
 import ExpenseGroups from './ExpenseGroups';
-import ExpenseForm from './ExpenseForm';
 import ExpenseStats from './ExpenseStats';
 
 interface ExpenseTrackerProps {
@@ -31,8 +26,8 @@ interface ExpenseTrackerProps {
 }
 
 const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories = [] }) => {
-  // State for active main tab (Camera, Server, Home Network)
-  const [activeMainTab, setActiveMainTab] = useState('Camera');
+  // State for active category tab - will be set from database
+  const [activeMainTab, setActiveMainTab] = useState('All');
   
   // State for filters
   const [selectedCategory, setSelectedCategory] = useState('All');
@@ -40,7 +35,6 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   const [currentView, setCurrentView] = useState('itemType'); // 'itemType', 'store', 'date', 'card'
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddForm, setShowAddForm] = useState(false);
   const [sortConfig, setSortConfig] = useState<SortConfig>({
     key: 'date',
     direction: 'desc'
@@ -49,42 +43,64 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   // State for expense data
   const [groupedData, setGroupedData] = useState<ExpenseGroup[]>([]);
   const [filteredData, setFilteredData] = useState<ExpenseItem[]>([]);
+  const [availableCategories, setAvailableCategories] = useState<string[]>(['All', 'Uncategorized']);
   
-  // Confirmation modal state
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  // Navigation hook for redirecting to edit page
+  const navigate = useNavigate();
 
-  // Categories for each tab
-  const [categoriesByTab, setCategoriesByTab] = useState<Record<string, string[]>>({
-    'Camera': ['All', 'Cameras', 'Lenses', 'Accessories', 'Storage', 'Tripods'],
-    'Server': ['All', 'CPUs', 'Storage', 'RAM', 'Cases', 'Cooling'],
-    'Home Network': ['All', 'Routers', 'Switches', 'Access Points', 'Cables', 'Security']
-  });
-
-  // Credit card options - these could be fetched from your backend Cards model
-  const [creditCardOptions, setCreditCardOptions] = useState([
-    'Amazon.com Visa Signature ending in 0000',
-    'Capital one Venture X ending in 0000',
-    'United Visa ending in 0000'
-  ]);
+  // Credit card options - could also fetch these from the Cards model in the database
+  const [creditCardOptions, setCreditCardOptions] = useState<string[]>([]);
 
   // Initialize on mount with API data if available
   useEffect(() => {
-    if (initialData && initialData.length > 0) {
-      setGroupedData(initialData);
-      applySearch(initialData);
-    } else {
-      loadExpenseData();
+    // First load categories from backend
+    loadCategories().then(() => {
+      // Then load expense data with categories
+      if (initialData && initialData.length > 0) {
+        setGroupedData(initialData);
+        applySearch(initialData);
+      } else {
+        loadExpenseData();
+      }
+    });
+  }, [initialData]);
+
+  // Load categories and payment methods from API
+  const loadCategories = async () => {
+    try {
+      // Fetch categories
+      const fetchedCategories = await fetchCategories();
+      
+      // Make sure "All" is the first option and we always have "Uncategorized"
+      const categoriesWithDefaults = ['All'];
+      
+      if (fetchedCategories && fetchedCategories.length > 0) {
+        categoriesWithDefaults.push(...fetchedCategories);
+        
+        // Add Uncategorized only if it doesn't exist already
+        if (!fetchedCategories.includes('Uncategorized')) {
+          categoriesWithDefaults.push('Uncategorized');
+        }
+      } else {
+        categoriesWithDefaults.push('Uncategorized');
+      }
+      
+      setAvailableCategories(categoriesWithDefaults);
+      
+      // If no active category is set, use the first one
+      if (activeMainTab === 'All' && categoriesWithDefaults.length > 0) {
+        setActiveMainTab(categoriesWithDefaults[0]);
+      }
+      
+      // Here you could also fetch payment methods/cards
+      // Example: const paymentMethods = await fetchPaymentMethods();
+      // setCreditCardOptions(paymentMethods);
+    } catch (error) {
+      console.error("Error loading categories:", error);
+      // Default fallback for categories
+      setAvailableCategories(['All', 'Uncategorized']);
     }
-    
-    // If categories are provided, update the Camera categories
-    if (categories && categories.length > 0) {
-      setCategoriesByTab(prev => ({
-        ...prev,
-        'Camera': ['All', ...categories]
-      }));
-    }
-  }, [initialData, categories]);
+  };
 
   // Load expense data from API
   const loadExpenseData = async () => {
@@ -136,10 +152,10 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
     return filteredData.reduce((sum, item) => sum + item.total, 0);
   };
 
-  // Function to reset category when changing main tabs
-  const handleMainTabChange = (tab: string) => {
-    setActiveMainTab(tab);
-    setSelectedCategory('All');
+  // Function to select a category tab
+  const handleCategoryTabChange = (category: string) => {
+    setActiveMainTab(category);
+    setSelectedCategory(category);
     setSearchTerm('');
     // Will trigger the useEffect to reload data
   };
@@ -152,53 +168,10 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
     }));
   };
 
-  // Open delete confirmation modal
-  const confirmDeleteItem = (itemId: number) => {
-    setItemToDelete(itemId);
-    setShowDeleteConfirm(true);
-  };
-
-  // Delete an item
-  const handleDeleteItem = async () => {
-    if (!itemToDelete) return;
-    
-    try {
-      setIsLoading(true);
-      
-      // Call the backend API to delete the invoice
-      await deleteExpense(itemToDelete);
-      
-      // Reload the data
-      await loadExpenseData();
-      
-      setShowDeleteConfirm(false);
-      setItemToDelete(null);
-      setIsLoading(false);
-    } catch (error) {
-      console.error('Error deleting expense:', error);
-      setIsLoading(false);
-    }
-  };
-
-  // Handle form submission of new expense
-  const handleAddItem = async (formData: any) => {
-    try {
-      setIsLoading(true);
-      
-      // Call backend API to add expense
-      await addExpense(formData);
-      
-      // Reload data
-      await loadExpenseData();
-      
-      // Reset UI state
-      setShowAddForm(false);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error adding expense:", error);
-      setIsLoading(false);
-      alert("Error adding expense: " + (error as Error).message);
-    }
+  // Handle edit item click
+  const handleEditItem = (itemId: number) => {
+    // Navigate to the invoice detail page
+    navigate(`/invoice/${itemId}`);
   };
 
   // Sort the grouped data based on the sort configuration
@@ -218,66 +191,27 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   
   const tabPercentage = totalAllData > 0 ? (filteredTotal / totalAllData) * 100 : 0;
 
-  // Get categories for the active tab with proper type safety
-  const getCategories = (tabName: string): string[] => {
-    // Check if the tab exists in categoriesByTab
-    if (tabName in categoriesByTab) {
-      return categoriesByTab[tabName as keyof typeof categoriesByTab];
-    }
-    // Fallback to default categories
-    return ['All', 'Uncategorized'];
-  };
-
   return (
     <div className="p-4 bg-gray-50 dark:bg-gray-900 max-w-full overflow-auto">
-      {/* Header with Add Button */}
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expense Categories</h1>
-        
-        {/* Quick add button */}
-        <button
-          onClick={() => setShowAddForm(prev => !prev)}
-          disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center"
-        >
-          {isLoading ? (
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-          ) : (
-            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
-            </svg>
-          )}
-          {showAddForm ? 'Cancel' : 'Add Item'}
-        </button>
       </div>
       
-      {/* Add Item Form */}
-      {showAddForm && (
-        <ExpenseForm 
-          onSubmit={handleAddItem} 
-          categories={getCategories(activeMainTab).filter(cat => cat !== 'All')}
-          creditCardOptions={creditCardOptions}
-          isLoading={isLoading}
-        />
-      )}
-      
-      {/* Main Tabs for Camera, Server, Home Network */}
+      {/* Main Category Tabs - generated from database categories */}
       <div className="border-b mb-6 bg-white dark:bg-dark-card rounded-lg shadow">
-        <div className="flex space-x-1 p-1">
-          {Object.keys(categoriesByTab).map((tab) => (
+        <div className="flex flex-wrap space-x-1 p-1 overflow-x-auto">
+          {availableCategories.map((category) => (
             <button
-              key={tab}
-              onClick={() => handleMainTabChange(tab)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 focus:outline-none ${
-                activeMainTab === tab
+              key={category}
+              onClick={() => handleCategoryTabChange(category)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 focus:outline-none whitespace-nowrap ${
+                activeMainTab === category
                   ? 'border-blue-600 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              {tab}
+              {category}
             </button>
           ))}
         </div>
@@ -285,7 +219,7 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
       
       {/* Filters */}
       <ExpenseFilters 
-        categories={getCategories(activeMainTab)}
+        categories={availableCategories}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         dateFilter={dateFilter}
@@ -313,50 +247,217 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
             filteredData={filteredData}
           />
           
-          {/* Groups of expenses */}
-          <ExpenseGroups 
-            groupedData={getSortedGroupedData()}
-            handleSort={handleSort}
-            sortConfig={sortConfig}
-            formatCurrency={formatCurrency}
-            onDeleteItem={confirmDeleteItem}
-          />
-          
-          {/* No results message */}
-          {groupedData.length === 0 && !isLoading && (
-            <div className="bg-white dark:bg-dark-card rounded-lg shadow p-6 text-center">
-              <svg
-                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-600"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1}
-                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                />
-              </svg>
-              <h3 className="mt-2 text-xl font-medium text-gray-900 dark:text-white">No data found</h3>
-              <p className="mt-1 text-gray-500 dark:text-gray-400">
-                No expenses match your current filter criteria.
-              </p>
-              <div className="mt-6">
-                <button
-                  onClick={() => {
-                    setSelectedCategory('All');
-                    setDateFilter('all');
-                    setSearchTerm('');
-                  }}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Reset Filters
-                </button>
+          {/* Groups of expenses with edit button instead of delete */}
+          <div className="space-y-6">
+            {getSortedGroupedData().map((group, index) => (
+              <div key={index} className="bg-white rounded-lg shadow overflow-hidden">
+                {/* Group Header */}
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-800 p-4 border-b">
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{group.name}</h2>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {group.count} {group.count === 1 ? 'purchase' : 'purchases'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {formatCurrency(group.total)}
+                    </p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {totalAllData > 0 
+                        ? `${Math.round((group.total / totalAllData) * 100)}% of total`
+                        : '0% of total'}
+                    </p>
+                  </div>
+                </div>
+                
+                {/* Progress bar visualization */}
+                <div className="px-4 py-2 bg-gray-50 border-b">
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div 
+                      className="bg-blue-600 h-2.5 rounded-full" 
+                      style={{ 
+                        width: totalAllData > 0 
+                          ? `${Math.round((group.total / totalAllData) * 100)}%` 
+                          : '0%' 
+                      }}
+                    ></div>
+                  </div>
+                </div>
+                
+                {/* Expense Items Table */}
+                <div>
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button 
+                            onClick={() => handleSort('store')}
+                            className="flex items-center hover:text-gray-700"
+                          >
+                            Merchant
+                            {sortConfig.key === 'store' && (
+                              <svg 
+                                className="w-4 h-4 ml-1" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                {sortConfig.direction === 'asc' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                )}
+                              </svg>
+                            )}
+                          </button>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button 
+                            onClick={() => handleSort('date')}
+                            className="flex items-center hover:text-gray-700"
+                          >
+                            Date
+                            {sortConfig.key === 'date' && (
+                              <svg 
+                                className="w-4 h-4 ml-1" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                {sortConfig.direction === 'asc' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                )}
+                              </svg>
+                            )}
+                          </button>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Order #
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Card Used
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Products
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <button 
+                            onClick={() => handleSort('total')}
+                            className="flex items-center justify-end w-full hover:text-gray-700"
+                          >
+                            Total
+                            {sortConfig.key === 'total' && (
+                              <svg 
+                                className="w-4 h-4 ml-1" 
+                                fill="none" 
+                                stroke="currentColor" 
+                                viewBox="0 0 24 24"
+                              >
+                                {sortConfig.direction === 'asc' ? (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                                ) : (
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                                )}
+                              </svg>
+                            )}
+                          </button>
+                        </th>
+                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          Actions
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {group.items.map((item) => (
+                        <tr key={item.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                            {item.store}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.date}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.orderNumber}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            {item.creditCard}
+                          </td>
+                          <td className="px-6 py-4 text-sm text-gray-500">
+                            <ul className="list-disc pl-5">
+                              {item.products.map((product, prodIdx) => (
+                                <li key={prodIdx} className={product.quantity < 0 ? "text-red-500" : ""}>
+                                  {product.name} 
+                                  {product.quantity !== 1 && ` (×${product.quantity})`}
+                                  <span className="ml-1 font-medium">
+                                    {formatCurrency(product.price)}
+                                  </span>
+                                  {product.quantity < 0 && " (Return)"}
+                                </li>
+                              ))}
+                            </ul>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                            <span className={item.total < 0 ? "text-red-600" : "text-gray-900"}>
+                              {formatCurrency(item.total)}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                            <button
+                              onClick={() => handleEditItem(item.id)}
+                              className="text-blue-600 hover:text-blue-900"
+                              title="Edit"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="bg-gray-50">
+                      <tr>
+                        <td colSpan={5} className="px-6 py-3 text-right text-sm font-medium text-gray-500">
+                          Total for {group.name}
+                        </td>
+                        <td className="px-6 py-3 text-right text-sm font-bold text-gray-900">
+                          {formatCurrency(group.total)}
+                        </td>
+                        <td></td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               </div>
-            </div>
-          )}
+            ))}
+
+            {/* Empty state */}
+            {groupedData.length === 0 && (
+              <div className="bg-white rounded-lg shadow p-6 text-center">
+                <svg
+                  className="mx-auto h-12 w-12 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1}
+                    d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                  />
+                </svg>
+                <h3 className="mt-2 text-xl font-medium text-gray-900">No data found</h3>
+                <p className="mt-1 text-gray-500">
+                  No expenses match your current filter criteria.
+                </p>
+              </div>
+            )}
+          </div>
           
           {/* Export actions */}
           {groupedData.length > 0 && (
@@ -395,30 +496,6 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
           )}
         </>
       )}
-      
-      {/* Delete Confirmation Modal */}
-      <Modal show={showDeleteConfirm} onHide={() => setShowDeleteConfirm(false)}>
-        <Modal.Header closeButton>
-          <Modal.Title>Confirm Deletion</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          Are you sure you want to delete this item? This action cannot be undone.
-        </Modal.Body>
-        <Modal.Footer>
-          <button
-            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            onClick={() => setShowDeleteConfirm(false)}
-          >
-            Cancel
-          </button>
-          <button
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 ml-2"
-            onClick={handleDeleteItem}
-          >
-            Delete
-          </button>
-        </Modal.Footer>
-      </Modal>
     </div>
   );
 };
