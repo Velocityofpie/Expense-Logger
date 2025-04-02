@@ -1,7 +1,7 @@
 // src/features/invoices/invoiceDetail/hooks/useInvoiceActions.ts
 import { useState } from 'react';
 import { NavigateFunction } from 'react-router-dom';
-import { updateInvoice, deleteInvoice as apiDeleteInvoice, addPayment as apiAddPayment } from '../../invoicesApi';
+import { updateInvoice, deleteInvoice as apiDeleteInvoice, addPayment as apiAddPayment, deleteCategory as apiDeleteCategory } from '../../invoicesApi';
 import { Invoice, LineItem } from '../../types';
 import { generateFileName } from '../utils/fileNameGenerator';
 
@@ -87,6 +87,25 @@ export const useInvoiceActions = (
     }
   };
 
+  // Delete category
+  const deleteCategory = async (categoryName: string) => {
+    try {
+      const result = await apiDeleteCategory(categoryName);
+      
+      // Dispatch an event to notify that a category was deleted
+      if (window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('category-deleted', {
+          detail: { categoryName }
+        }));
+      }
+      
+      return result;
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      throw error;
+    }
+  };
+
   // Add payment
   const addPayment = async (cardNumberId: string, amount: string, transactionId: string) => {
     if (!invoice) return;
@@ -122,6 +141,7 @@ export const useInvoiceActions = (
   return {
     saveInvoice,
     deleteInvoice,
+    deleteCategory,
     addPayment,
     goToPrevInvoice,
     goToNextInvoice,

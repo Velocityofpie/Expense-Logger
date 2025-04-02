@@ -1,7 +1,7 @@
 // src/features/invoices/invoiceDetail/components/InvoiceBasicInfo.tsx
 import React, { useState } from 'react';
 import { Invoice } from '../../types';
-import InvoiceCategories from './InvoiceCategories';
+import { deleteCategory } from '../../invoicesApi';
 
 interface InvoiceBasicInfoProps {
   invoice: Invoice;
@@ -28,6 +28,13 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
 }) => {
   const [newTag, setNewTag] = useState('');
   const [newCategory, setNewCategory] = useState('');
+  
+  // State for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
 
   // Handle tag selection
   const handleTagChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -53,9 +60,6 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
       }
     } else {
       // If it doesn't exist, add it to the available tags and select it
-      const updatedTags = [...availableTags, newTag.trim()];
-      // Here you would typically call an API to add the new tag
-      // For now, we just update the local state
       setTags([...tags, newTag.trim()]);
     }
     
@@ -75,9 +79,6 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
       }
     } else {
       // If it doesn't exist, add it to the available categories and select it
-      const updatedCategories = [...availableCategories, newCategory.trim()];
-      // Here you would typically call an API to add the new category
-      // For now, we just update the local state
       setCategories([...categories, newCategory.trim()]);
     }
     
@@ -85,14 +86,70 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
     setNewCategory('');
   };
   
-  // Remove a tag
+  // Remove a tag from this invoice
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter(tag => tag !== tagToRemove));
   };
   
-  // Remove a category
+  // Remove a category from this invoice
   const removeCategory = (categoryToRemove: string) => {
     setCategories(categories.filter(category => category !== categoryToRemove));
+  };
+
+  // Open delete confirmation modal
+  const confirmDeleteCategory = (category: string) => {
+    setCategoryToDelete(category);
+    setShowDeleteModal(true);
+  };
+
+  // Close delete confirmation modal
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCategoryToDelete('');
+  };
+
+  // Delete category from database
+  const handleDeleteCategory = async () => {
+    if (!categoryToDelete) return;
+    
+    try {
+      setIsDeleting(true);
+      setDeleteError(null);
+      
+      // Call API to delete category
+      await deleteCategory(categoryToDelete);
+      
+      // Remove category from current invoice if it's selected
+      if (categories.includes(categoryToDelete)) {
+        setCategories(categories.filter(cat => cat !== categoryToDelete));
+      }
+      
+      // Show success message
+      setDeleteSuccess(`Category "${categoryToDelete}" has been deleted from the database.`);
+      
+      // Trigger event to refresh categories
+      window.dispatchEvent(new CustomEvent('category-deleted', {
+        detail: { categoryName: categoryToDelete }
+      }));
+      
+      // Close modal
+      setShowDeleteModal(false);
+      setCategoryToDelete('');
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => {
+        setDeleteSuccess(null);
+      }, 3000);
+    } catch (error) {
+      setDeleteError(`Failed to delete category. ${error instanceof Error ? error.message : ''}`);
+      
+      // Clear error message after 5 seconds
+      setTimeout(() => {
+        setDeleteError(null);
+      }, 5000);
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   // Array of valid statuses
@@ -102,6 +159,21 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
       <div className="p-6">
         <h3 className="text-lg font-medium mb-4 dark:text-white">Basic Information</h3>
+        
+        {/* Success message */}
+        {deleteSuccess && (
+          <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded text-sm text-green-700 dark:text-green-300">
+            {deleteSuccess}
+          </div>
+        )}
+        
+        {/* Error message */}
+        {deleteError && (
+          <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm text-red-700 dark:text-red-300">
+            {deleteError}
+          </div>
+        )}
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">Order Number</label>
@@ -322,26 +394,41 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
               </p>
             </div>
             
-            {/* Categories Section with Add/Remove functionality */}
+            {/* Categories Section with Add/Remove/Delete functionality */}
             <div>
               <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
               
-              {/* Selected categories with remove option */}
+              {/* Selected categories with remove/delete options */}
               <div className="flex flex-wrap gap-2 mb-2">
                 {categories.map((category) => (
                   <div 
                     key={category} 
-                    className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-sm flex items-center"
+                    className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-sm flex items-center group"
                   >
                     {category}
-                    <button 
-                      className="ml-1 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 focus:outline-none"
-                      onClick={() => removeCategory(category)}
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="ml-1 flex">
+                      {/* Remove from invoice button */}
+                      <button 
+                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 focus:outline-none"
+                        onClick={() => removeCategory(category)}
+                        title="Remove from this invoice"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                      
+                      {/* Delete from database button */}
+                      <button 
+                        className="ml-1 text-green-600 dark:text-green-400 hover:text-red-500 dark:hover:text-red-400 focus:outline-none"
+                        onClick={() => confirmDeleteCategory(category)}
+                        title="Delete category from database"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -391,6 +478,44 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Delete Category Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
+            <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">Delete Category</h3>
+            <p className="text-gray-700 dark:text-gray-300 mb-6">
+              Are you sure you want to permanently delete the category <strong>"{categoryToDelete}"</strong> from the database? 
+              This cannot be undone and will remove this category from all invoices.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
+                onClick={cancelDelete}
+              >
+                Cancel
+              </button>
+              <button
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none"
+                onClick={handleDeleteCategory}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

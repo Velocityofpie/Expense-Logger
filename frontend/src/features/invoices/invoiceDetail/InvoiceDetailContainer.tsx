@@ -43,13 +43,15 @@ const InvoiceDetailContainer: React.FC = () => {
     availableCategories,
     isSaving,
     savedMessage,
-    setSavedMessage
+    setSavedMessage,
+    refreshAvailableCategories
   } = useInvoiceData(id);
   
   // Actions
   const {
     saveInvoice,
     deleteInvoice,
+    deleteCategory,
     addPayment,
     goToPrevInvoice,
     goToNextInvoice,
@@ -97,6 +99,24 @@ const InvoiceDetailContainer: React.FC = () => {
   if (!invoice) {
     return <div className="text-center p-8 dark:text-white">Invoice not found</div>;
   }
+
+  // Handle category deletion
+  const handleDeleteCategory = async (categoryName: string) => {
+    try {
+      await deleteCategory(categoryName);
+      refreshAvailableCategories();
+      
+      // If the deleted category was selected for this invoice, remove it
+      if (categories.includes(categoryName)) {
+        setCategories(categories.filter(cat => cat !== categoryName));
+      }
+      
+      return true;
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      return false;
+    }
+  };
 
   // Toggle split view
   const toggleSplitView = () => {

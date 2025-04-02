@@ -87,6 +87,36 @@ export const useInvoiceData = (id: string | undefined) => {
     };
   }, [id]);
 
+  // Listen for category deletions
+  useEffect(() => {
+    const handleCategoryDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      // Refresh categories when a deletion occurs
+      if (customEvent.detail?.categoryName) {
+        // Reload available categories
+        refreshAvailableCategories();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('category-deleted', handleCategoryDeleted);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('category-deleted', handleCategoryDeleted);
+    };
+  }, []);
+
+  // Function to refresh available categories
+  const refreshAvailableCategories = async () => {
+    try {
+      const categoriesData = await fetchCategories();
+      setAvailableCategories(categoriesData);
+    } catch (error) {
+      console.error("Error refreshing categories:", error);
+    }
+  };
+
   // Load invoice details
   const loadInvoiceDetails = async (invoiceId: string | undefined) => {
     if (!invoiceId) return;
@@ -169,7 +199,9 @@ export const useInvoiceData = (id: string | undefined) => {
     setItems,
     setTags,
     setCategories,
+    setAvailableCategories,
     loadInvoiceDetails,
+    refreshAvailableCategories,
     handleInputChange,
     handleDatePaste
   };
