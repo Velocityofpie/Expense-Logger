@@ -1,6 +1,6 @@
 // src/features/invoices/invoiceDetail/components/InvoiceSummary.tsx
 import React from 'react';
-import { Invoice } from '../../types';
+import { Invoice } from '../../invoices/types';
 import { formatCurrency } from '../utils/invoiceCalculations';
 
 interface InvoiceSummaryProps {

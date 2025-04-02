@@ -1,7 +1,7 @@
 // src/features/invoices/invoiceDetail/components/InvoiceBasicInfo.tsx
 import React, { useState } from 'react';
-import { Invoice } from '../../types';
-import { deleteCategory } from '../../invoicesApi';
+import { Invoice } from '../../invoices/types';
+import { deleteCategory } from '../../invoices/invoicesApi';
 
 interface InvoiceBasicInfoProps {
   invoice: Invoice;

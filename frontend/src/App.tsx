@@ -6,7 +6,7 @@ import Navbar from './layout/Navbar';
 import Footer from './layout/Footer';
 import Dashboard from './features/dashboard/Dashboard';
 import { InvoiceExtractor } from './features/invoices';
-import InvoiceDetail from './features/invoices/InvoiceDetail';
+import { InvoiceDetail } from './features/invoiceDetails'; // Updated import
 import { Login, Profile, RequestPasswordReset, ResetPassword } from './features/auth';
 import ExpenseTrackerPage from './features/expense/ExpenseTrackerPage';
 import { Tools } from './features/tools';

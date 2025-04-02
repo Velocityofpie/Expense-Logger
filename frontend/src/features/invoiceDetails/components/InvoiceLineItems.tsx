@@ -1,6 +1,6 @@
 // src/features/invoices/invoiceDetail/components/InvoiceLineItems.tsx
 import React from 'react';
-import { LineItem } from '../../types';
+import { LineItem } from '../../invoices/types';
 
 interface InvoiceLineItemsProps {
   items: LineItem[];

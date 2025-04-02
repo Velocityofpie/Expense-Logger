@@ -1,7 +1,7 @@
 // src/features/invoices/invoiceDetail/hooks/useInvoiceData.ts
 import { useState, useEffect } from 'react';
-import { fetchInvoiceById, fetchInvoices, fetchTags, fetchCategories } from '../../invoicesApi';
-import { Invoice, LineItem } from '../../types';
+import { fetchInvoiceById, fetchInvoices, fetchTags, fetchCategories } from '../../invoices/invoicesApi';
+import { Invoice, LineItem } from '../../invoices/types';
 import { normalizeDateFormat } from '../utils/dateUtils';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';

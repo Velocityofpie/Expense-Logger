@@ -1,7 +1,7 @@
 // src/features/invoices/invoiceDetail/components/InvoiceHeader.tsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Invoice } from '../../types';
+import { Invoice } from '../../invoices/types';
 
 interface InvoiceHeaderProps {
   invoice: Invoice;

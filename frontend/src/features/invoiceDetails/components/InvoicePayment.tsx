@@ -1,6 +1,6 @@
 // src/features/invoices/invoiceDetail/components/InvoicePayment.tsx
 import React, { useState } from 'react';
-import { Invoice } from '../../types';
+import { Invoice } from '../../invoices/types';
 
 interface InvoicePaymentProps {
   invoice: Invoice;

@@ -1,4 +1,5 @@
-// src/features/invoices/invoiceDetail/types/index.ts
+// src/features/invoiceDetails/types.ts
+import { Invoice, LineItem } from '../invoices/types';
 
 // Tab types
 export type TabType = 'details' | 'items' | 'payments' | 'document';
@@ -42,3 +43,6 @@ export interface InvoiceNavigation {
   goToPrevInvoice: () => void;
   goToNextInvoice: () => void;
 }
+
+// Re-export Invoice and LineItem types so components can import from here
+export type { Invoice, LineItem };

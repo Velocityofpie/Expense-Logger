@@ -1,5 +1,5 @@
 // src/features/invoices/invoiceDetail/utils/invoiceCalculations.ts
-import { LineItem } from '../../types';
+import { LineItem } from '../../invoices/types';
 
 /**
  * Format a number as currency with dollar sign

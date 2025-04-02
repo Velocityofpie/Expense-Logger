@@ -1,6 +1,6 @@
 // src/features/invoices/invoiceDetail/components/InvoiceActions.tsx
 import React from 'react';
-import { Button } from '../../../../shared';
+import { Button } from '../../../shared';
 
 interface InvoiceActionsProps {
   onSave: () => Promise<boolean | undefined>;

@@ -1,6 +1,6 @@
 // src/features/invoices/invoiceDetail/components/InvoiceCategories.tsx
 import React, { useState } from 'react';
-import { deleteCategory, fetchCategories } from '../../invoicesApi';
+import { deleteCategory, fetchCategories } from '../../invoices/invoicesApi';
 
 interface InvoiceCategoriesProps {
   categories: string[];

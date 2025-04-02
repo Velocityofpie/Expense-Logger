@@ -1,6 +1,6 @@
-// src/features/invoices/InvoiceDetail.tsx
+// src/features/invoiceDetails/InvoiceDetail.tsx
 import React from 'react';
-import InvoiceDetailContainer from '../invoiceDetails/InvoiceDetailContainer';
+import InvoiceDetailContainer from './InvoiceDetailContainer';
 
 /**
  * Invoice Detail page component

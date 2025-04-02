@@ -1,8 +1,8 @@
 // src/features/invoices/invoiceDetail/hooks/useInvoiceActions.ts
 import { useState } from 'react';
 import { NavigateFunction } from 'react-router-dom';
-import { updateInvoice, deleteInvoice as apiDeleteInvoice, addPayment as apiAddPayment, deleteCategory as apiDeleteCategory } from '../../invoicesApi';
-import { Invoice, LineItem } from '../../types';
+import { updateInvoice, deleteInvoice as apiDeleteInvoice, addPayment as apiAddPayment, deleteCategory as apiDeleteCategory } from '../../invoices/invoicesApi';
+import { Invoice, LineItem } from '../../invoices/types';
 import { generateFileName } from '../utils/fileNameGenerator';
 
 export const useInvoiceActions = (
