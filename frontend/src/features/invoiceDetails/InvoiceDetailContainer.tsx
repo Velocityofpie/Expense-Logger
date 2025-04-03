@@ -44,7 +44,8 @@ const InvoiceDetailContainer: React.FC = () => {
     isSaving,
     savedMessage,
     setSavedMessage,
-    refreshAvailableCategories
+    refreshAvailableCategories,
+    refreshAvailableTags
   } = useInvoiceData(id);
   
   // Actions

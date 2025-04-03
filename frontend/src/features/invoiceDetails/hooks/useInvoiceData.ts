@@ -107,6 +107,26 @@ export const useInvoiceData = (id: string | undefined) => {
     };
   }, []);
 
+  // Listen for tag deletions
+  useEffect(() => {
+    const handleTagDeleted = (event: Event) => {
+      const customEvent = event as CustomEvent;
+      // Refresh tags when a deletion occurs
+      if (customEvent.detail?.tagName) {
+        // Reload available tags
+        refreshAvailableTags();
+      }
+    };
+
+    // Add event listener
+    window.addEventListener('tag-deleted', handleTagDeleted);
+
+    // Clean up
+    return () => {
+      window.removeEventListener('tag-deleted', handleTagDeleted);
+    };
+  }, []);
+
   // Function to refresh available categories
   const refreshAvailableCategories = async () => {
     try {
@@ -114,6 +134,16 @@ export const useInvoiceData = (id: string | undefined) => {
       setAvailableCategories(categoriesData);
     } catch (error) {
       console.error("Error refreshing categories:", error);
+    }
+  };
+
+  // Function to refresh available tags
+  const refreshAvailableTags = async () => {
+    try {
+      const tagsData = await fetchTags();
+      setAvailableTags(tagsData);
+    } catch (error) {
+      console.error("Error refreshing tags:", error);
     }
   };
 
@@ -179,18 +209,6 @@ export const useInvoiceData = (id: string | undefined) => {
     setInvoice({ ...invoice, purchase_date: normalizedDate });
   };
 
-/**
- * Function to refresh available tags
- */
-const refreshAvailableTags = async () => {
-  try {
-    const tagsData = await fetchTags();
-    setAvailableTags(tagsData);
-  } catch (error) {
-    console.error("Error refreshing tags:", error);
-  }
-};
-
   return {
     invoice,
     items,
@@ -214,7 +232,7 @@ const refreshAvailableTags = async () => {
     setAvailableCategories, 
     loadInvoiceDetails,
     refreshAvailableCategories,
-    refreshAvailableTags, // Add this to the return object
+    refreshAvailableTags,
     handleInputChange,
     handleDatePaste
   };

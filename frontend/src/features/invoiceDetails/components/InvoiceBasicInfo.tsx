@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { Invoice } from '../../invoices/types';
 import CategoryManagementModal from './CategoryManagementModal';
-import { Button } from '../../../shared';
 import TagManagementModal from './TagManagementModal';
+import { Button } from '../../../shared';
 
 
 interface InvoiceBasicInfoProps {
@@ -17,7 +17,7 @@ interface InvoiceBasicInfoProps {
   setTags: (tags: string[]) => void;
   setCategories: (categories: string[]) => void;
   refreshAvailableCategories?: () => void;
-  refreshAvailableTags?: () => void; // Add this new prop
+  refreshAvailableTags?: () => void;
 }
 
 const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
@@ -30,7 +30,8 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
   availableCategories,
   setTags,
   setCategories,
-  refreshAvailableCategories
+  refreshAvailableCategories,
+  refreshAvailableTags
 }) => {
   // State for tag and category input fields
   const [newTag, setNewTag] = useState('');
@@ -39,7 +40,7 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
   // State for the category management modal
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   
-  // Add state for the tag management modal
+  // State for the tag management modal
   const [showTagManager, setShowTagManager] = useState(false);
   
   // Success and error message states
@@ -116,6 +117,22 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
     
     // Show success message
     setSuccessMessage("Categories updated successfully");
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 3000);
+  };
+
+  // Handle tag deletion
+  const handleTagDeleted = () => {
+    // Refresh the available tags list
+    if (refreshAvailableTags) {
+      refreshAvailableTags();
+    }
+    
+    // Show success message
+    setSuccessMessage("Tags updated successfully");
     
     // Clear success message after 3 seconds
     setTimeout(() => {
@@ -298,9 +315,18 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
           <h3 className="text-lg font-medium dark:text-white">Tags & Categories</h3>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Tags Section with Add/Remove functionality */}
+            {/* Tags Section with Add/Remove/Manage functionality */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Tags</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Tags</label>
+                <Button 
+                  variant="outline" 
+                  size="xs" 
+                  onClick={() => setShowTagManager(true)}
+                >
+                  Manage Tags
+                </Button>
+              </div>
               
               {/* Selected tags with remove option */}
               <div className="flex flex-wrap gap-2 mb-2">
@@ -451,6 +477,15 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
           isOpen={showCategoryManager} 
           onClose={() => setShowCategoryManager(false)}
           onCategoryDeleted={handleCategoryDeleted}
+        />
+      )}
+
+      {/* Tag Management Modal */}
+      {showTagManager && (
+        <TagManagementModal
+          isOpen={showTagManager} 
+          onClose={() => setShowTagManager(false)}
+          onTagDeleted={handleTagDeleted}
         />
       )}
     </div>
