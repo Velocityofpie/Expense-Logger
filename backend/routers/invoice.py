@@ -532,7 +532,7 @@ async def delete_category(category_name: str, db: Session = Depends(get_db), use
         raise HTTPException(status_code=500, detail=f"An error occurred while deleting the category: {str(e)}")
     
     
-    @router.delete("/tags/{tag_name}")
+@router.delete("/tags/{tag_name}")
 async def delete_tag(tag_name: str, db: Session = Depends(get_db), user_id: int = 1):
     """Delete a tag from the database."""
     try:
@@ -582,4 +582,4 @@ async def delete_tag(tag_name: str, db: Session = Depends(get_db), user_id: int 
         print(f"Error deleting tag: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the tag: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the tag: {str(e)}") 

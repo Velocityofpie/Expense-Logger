@@ -3,6 +3,8 @@ import React, { useState } from 'react';
 import { Invoice } from '../../invoices/types';
 import CategoryManagementModal from './CategoryManagementModal';
 import { Button } from '../../../shared';
+import TagManagementModal from './TagManagementModal';
+
 
 interface InvoiceBasicInfoProps {
   invoice: Invoice;
@@ -15,6 +17,7 @@ interface InvoiceBasicInfoProps {
   setTags: (tags: string[]) => void;
   setCategories: (categories: string[]) => void;
   refreshAvailableCategories?: () => void;
+  refreshAvailableTags?: () => void; // Add this new prop
 }
 
 const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
@@ -35,6 +38,9 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
   
   // State for the category management modal
   const [showCategoryManager, setShowCategoryManager] = useState(false);
+  
+  // Add state for the tag management modal
+  const [showTagManager, setShowTagManager] = useState(false);
   
   // Success and error message states
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -89,6 +95,7 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
     // Clear the input
     setNewCategory('');
   };
+  
   
   // Remove a tag from this invoice
   const removeTag = (tagToRemove: string) => {

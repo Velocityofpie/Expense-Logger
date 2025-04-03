@@ -179,6 +179,18 @@ export const useInvoiceData = (id: string | undefined) => {
     setInvoice({ ...invoice, purchase_date: normalizedDate });
   };
 
+/**
+ * Function to refresh available tags
+ */
+const refreshAvailableTags = async () => {
+  try {
+    const tagsData = await fetchTags();
+    setAvailableTags(tagsData);
+  } catch (error) {
+    console.error("Error refreshing tags:", error);
+  }
+};
+
   return {
     invoice,
     items,
@@ -199,9 +211,10 @@ export const useInvoiceData = (id: string | undefined) => {
     setItems,
     setTags,
     setCategories,
-    setAvailableCategories,
+    setAvailableCategories, 
     loadInvoiceDetails,
     refreshAvailableCategories,
+    refreshAvailableTags, // Add this to the return object
     handleInputChange,
     handleDatePaste
   };

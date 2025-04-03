@@ -154,6 +154,23 @@ export const deleteCategory = async (categoryName: string): Promise<any> => {
   }
 };
 
+/**
+ * Delete a tag from the database
+ * @param tagName - Name of the tag to delete
+ * @returns Promise that resolves to the response data
+ */
+export const deleteTag = async (tagName: string): Promise<any> => {
+  try {
+    // Make sure to encode the tag name to handle special characters
+    const encodedTagName = encodeURIComponent(tagName);
+    const response = await axios.delete(`${API_URL}/tags/${encodedTagName}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting tag:", error);
+    throw error;
+  }
+};
+
 // Add a payment for an invoice
 export const addPayment = async (
   invoiceId: number | string,

@@ -204,6 +204,8 @@ const InvoiceDetailContainer: React.FC = () => {
               availableCategories={availableCategories}
               setTags={setTags}
               setCategories={setCategories}
+              refreshAvailableCategories={refreshAvailableCategories}
+              refreshAvailableTags={refreshAvailableTags}
             />
           )}
 
