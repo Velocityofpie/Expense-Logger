@@ -103,18 +103,23 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   };
 
   // Load expense data from API
-  const loadExpenseData = async () => {
-    try {
-      setIsLoading(true);
-      const data = await fetchExpenseData(currentView, selectedCategory, dateFilter);
-      setGroupedData(data);
-      applySearch(data);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading expense data:", error);
-      setIsLoading(false);
-    }
-  };
+  // When loading expense data
+const loadExpenseData = async () => {
+  try {
+    setIsLoading(true);
+    // Make sure we're using the correct parameter format
+    const categoryParam = selectedCategory === 'All' ? '' : selectedCategory;
+    console.log('Loading data with category:', categoryParam);
+    const data = await fetchExpenseData(currentView, categoryParam, dateFilter);
+    console.log('Received data:', data);
+    setGroupedData(data);
+    applySearch(data);
+    setIsLoading(false);
+  } catch (error) {
+    console.error("Error loading expense data:", error);
+    setIsLoading(false);
+  }
+};
 
   // Effect to reload data when view or filters change
   useEffect(() => {

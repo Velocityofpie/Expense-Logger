@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 import json
 
 from database import get_db
-from models.invoice import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category
+from models.invoice import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category, InvoiceCategory
 from schemas.expense import ExpenseSummary, ExpenseResponse, ExpenseGroupResponse
 
 router = APIRouter(
@@ -47,9 +47,11 @@ async def get_expense_summary(
         if user_id:
             query = query.filter(Invoice.user_id == user_id)
             
+        # Updated category filtering to check regular Categories
         if category and category != "All":
-            query = query.join(InvoiceExpenseCategory).join(ExpenseCategory)
-            query = query.filter(ExpenseCategory.name == category)
+            # Try to find the category in either Category or ExpenseCategory
+            query = query.join(InvoiceCategory).join(Category)
+            query = query.filter(Category.category_name == category)
             
         if date_filter and date_filter != "all":
             # Handle date filtering logic here
