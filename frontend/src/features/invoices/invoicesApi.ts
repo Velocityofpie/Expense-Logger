@@ -137,10 +137,16 @@ export const fetchCategories = async (): Promise<string[]> => {
   }
 };
 
-// Delete a category
-export const deleteCategory = async (categoryName: string): Promise<{ success: boolean; message: string }> => {
+/**
+ * Delete a category from the database
+ * @param categoryName - Name of the category to delete
+ * @returns Promise that resolves to the response data
+ */
+export const deleteCategory = async (categoryName: string): Promise<any> => {
   try {
-    const response = await apiClient.delete(`/categories/${encodeURIComponent(categoryName)}`);
+    // Make sure to encode the category name to handle special characters
+    const encodedCategoryName = encodeURIComponent(categoryName);
+    const response = await axios.delete(`${API_URL}/categories/${encodedCategoryName}`);
     return response.data;
   } catch (error) {
     console.error("Error deleting category:", error);

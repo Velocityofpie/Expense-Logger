@@ -6,6 +6,12 @@ from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 
+from models.invoice import Category, InvoiceCategory
+from utils.audit import log_audit
+
+from models.invoice import Tag, InvoiceTag
+from utils.audit import log_audit
+
 from database import get_db
 from models.invoice import (
     Invoice, InvoiceItem, Tag, Category, InvoiceFile, InvoiceStatusHistory
@@ -482,26 +488,98 @@ async def delete_category(category_name: str, db: Session = Depends(get_db), use
         if not category:
             raise HTTPException(status_code=404, detail="Category not found")
         
-        # Delete all references to this category in the junction table
-        db.query(InvoiceCategory).filter(InvoiceCategory.category_id == category.category_id).delete()
+        # Begin a transaction to ensure atomicity
+        transaction = db.begin_nested()
         
-        # Then delete the category itself
-        db.delete(category)
+        try:
+            # First, remove all references to this category in the junction table
+            junction_count = db.query(InvoiceCategory).filter(
+                InvoiceCategory.category_id == category.category_id
+            ).delete()
+            
+            # Then delete the category itself
+            db.delete(category)
+            
+            # Log the action
+            log_audit(
+                db=db,
+                user_id=user_id,
+                action="DELETE",
+                table_name="categories",
+                record_id=category.category_id,
+                old_data={"category_name": category_name, "junction_references_removed": junction_count}
+            )
+            
+            # Commit the transaction
+            transaction.commit()
+            db.commit()  # Added this explicit commit to finalize changes
+            
+            return {"message": f"Category '{category_name}' deleted successfully", "references_removed": junction_count}
         
-        # Log the action
-        log_audit(
-            db=db,
-            user_id=user_id,
-            action="DELETE",
-            table_name="categories",
-            record_id=category.category_id,
-            old_data={"category_name": category_name}
-        )
-        
-        db.commit()
-        return {"message": f"Category '{category_name}' deleted successfully"}
+        except Exception as e:
+            # Rollback transaction on error
+            transaction.rollback()
+            raise e
+            
     except HTTPException:
         raise
     except Exception as e:
         db.rollback()
-        raise HTTPException(status_code=500, detail=str(e))
+        # Log the error details for debugging
+        print(f"Error deleting category: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the category: {str(e)}")
+    
+    
+    @router.delete("/tags/{tag_name}")
+async def delete_tag(tag_name: str, db: Session = Depends(get_db), user_id: int = 1):
+    """Delete a tag from the database."""
+    try:
+        # Find the tag
+        tag = db.query(Tag).filter(Tag.tag_name == tag_name).first()
+        if not tag:
+            raise HTTPException(status_code=404, detail="Tag not found")
+        
+        # Begin a transaction to ensure atomicity
+        transaction = db.begin_nested()
+        
+        try:
+            # First, remove all references to this tag in the junction table
+            junction_count = db.query(InvoiceTag).filter(
+                InvoiceTag.tag_id == tag.tag_id
+            ).delete()
+            
+            # Then delete the tag itself
+            db.delete(tag)
+            
+            # Log the action
+            log_audit(
+                db=db,
+                user_id=user_id,
+                action="DELETE",
+                table_name="tags",
+                record_id=tag.tag_id,
+                old_data={"tag_name": tag_name, "junction_references_removed": junction_count}
+            )
+            
+            # Commit the transaction
+            transaction.commit()
+            db.commit()  # Added this explicit commit to finalize changes
+            
+            return {"message": f"Tag '{tag_name}' deleted successfully", "references_removed": junction_count}
+        
+        except Exception as e:
+            # Rollback transaction on error
+            transaction.rollback()
+            raise e
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        # Log the error details for debugging
+        print(f"Error deleting tag: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the tag: {str(e)}")

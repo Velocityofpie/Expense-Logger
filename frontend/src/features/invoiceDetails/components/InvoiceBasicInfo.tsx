@@ -1,7 +1,8 @@
-// src/features/invoices/invoiceDetail/components/InvoiceBasicInfo.tsx
+// src/features/invoiceDetails/components/InvoiceBasicInfo.tsx
 import React, { useState } from 'react';
 import { Invoice } from '../../invoices/types';
-import { deleteCategory } from '../../invoices/invoicesApi';
+import CategoryManagementModal from './CategoryManagementModal';
+import { Button } from '../../../shared';
 
 interface InvoiceBasicInfoProps {
   invoice: Invoice;
@@ -13,6 +14,7 @@ interface InvoiceBasicInfoProps {
   availableCategories: string[];
   setTags: (tags: string[]) => void;
   setCategories: (categories: string[]) => void;
+  refreshAvailableCategories?: () => void;
 }
 
 const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
@@ -24,17 +26,19 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
   availableTags,
   availableCategories,
   setTags,
-  setCategories
+  setCategories,
+  refreshAvailableCategories
 }) => {
+  // State for tag and category input fields
   const [newTag, setNewTag] = useState('');
   const [newCategory, setNewCategory] = useState('');
   
-  // State for delete confirmation modal
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [deleteSuccess, setDeleteSuccess] = useState<string | null>(null);
+  // State for the category management modal
+  const [showCategoryManager, setShowCategoryManager] = useState(false);
+  
+  // Success and error message states
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Handle tag selection
   const handleTagChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -96,60 +100,20 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
     setCategories(categories.filter(category => category !== categoryToRemove));
   };
 
-  // Open delete confirmation modal
-  const confirmDeleteCategory = (category: string) => {
-    setCategoryToDelete(category);
-    setShowDeleteModal(true);
-  };
-
-  // Close delete confirmation modal
-  const cancelDelete = () => {
-    setShowDeleteModal(false);
-    setCategoryToDelete('');
-  };
-
-  // Delete category from database
-  const handleDeleteCategory = async () => {
-    if (!categoryToDelete) return;
-    
-    try {
-      setIsDeleting(true);
-      setDeleteError(null);
-      
-      // Call API to delete category
-      await deleteCategory(categoryToDelete);
-      
-      // Remove category from current invoice if it's selected
-      if (categories.includes(categoryToDelete)) {
-        setCategories(categories.filter(cat => cat !== categoryToDelete));
-      }
-      
-      // Show success message
-      setDeleteSuccess(`Category "${categoryToDelete}" has been deleted from the database.`);
-      
-      // Trigger event to refresh categories
-      window.dispatchEvent(new CustomEvent('category-deleted', {
-        detail: { categoryName: categoryToDelete }
-      }));
-      
-      // Close modal
-      setShowDeleteModal(false);
-      setCategoryToDelete('');
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setDeleteSuccess(null);
-      }, 3000);
-    } catch (error) {
-      setDeleteError(`Failed to delete category. ${error instanceof Error ? error.message : ''}`);
-      
-      // Clear error message after 5 seconds
-      setTimeout(() => {
-        setDeleteError(null);
-      }, 5000);
-    } finally {
-      setIsDeleting(false);
+  // Handle category deletion (from the database)
+  const handleCategoryDeleted = () => {
+    // Refresh the available categories list
+    if (refreshAvailableCategories) {
+      refreshAvailableCategories();
     }
+    
+    // Show success message
+    setSuccessMessage("Categories updated successfully");
+    
+    // Clear success message after 3 seconds
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 3000);
   };
 
   // Array of valid statuses
@@ -161,16 +125,16 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
         <h3 className="text-lg font-medium mb-4 dark:text-white">Basic Information</h3>
         
         {/* Success message */}
-        {deleteSuccess && (
+        {successMessage && (
           <div className="mb-4 p-3 bg-green-50 dark:bg-green-900/20 border-l-4 border-green-500 rounded text-sm text-green-700 dark:text-green-300">
-            {deleteSuccess}
+            {successMessage}
           </div>
         )}
         
         {/* Error message */}
-        {deleteError && (
+        {errorMessage && (
           <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 rounded text-sm text-red-700 dark:text-red-300">
-            {deleteError}
+            {errorMessage}
           </div>
         )}
         
@@ -394,41 +358,36 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
               </p>
             </div>
             
-            {/* Categories Section with Add/Remove/Delete functionality */}
+            {/* Categories Section with Add/Remove/Manage functionality */}
             <div>
-              <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">Categories</label>
+              <div className="flex justify-between items-center mb-2">
+                <label className="block text-xs font-medium text-gray-500 dark:text-gray-400">Categories</label>
+                <Button 
+                  variant="outline" 
+                  size="xs" 
+                  onClick={() => setShowCategoryManager(true)}
+                >
+                  Manage Categories
+                </Button>
+              </div>
               
-              {/* Selected categories with remove/delete options */}
+              {/* Selected categories with remove option */}
               <div className="flex flex-wrap gap-2 mb-2">
                 {categories.map((category) => (
                   <div 
                     key={category} 
-                    className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-sm flex items-center group"
+                    className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-sm flex items-center"
                   >
                     {category}
-                    <div className="ml-1 flex">
-                      {/* Remove from invoice button */}
-                      <button 
-                        className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 focus:outline-none"
-                        onClick={() => removeCategory(category)}
-                        title="Remove from this invoice"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
-                      
-                      {/* Delete from database button */}
-                      <button 
-                        className="ml-1 text-green-600 dark:text-green-400 hover:text-red-500 dark:hover:text-red-400 focus:outline-none"
-                        onClick={() => confirmDeleteCategory(category)}
-                        title="Delete category from database"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
-                    </div>
+                    <button 
+                      className="ml-1 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-200 focus:outline-none"
+                      onClick={() => removeCategory(category)}
+                      title="Remove from this invoice"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -479,42 +438,13 @@ const InvoiceBasicInfo: React.FC<InvoiceBasicInfoProps> = ({
         </div>
       </div>
       
-      {/* Delete Category Confirmation Modal */}
-      {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
-            <h3 className="text-lg font-medium text-red-600 dark:text-red-400 mb-4">Delete Category</h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-6">
-              Are you sure you want to permanently delete the category <strong>"{categoryToDelete}"</strong> from the database? 
-              This cannot be undone and will remove this category from all invoices.
-            </p>
-            <div className="flex justify-end space-x-3">
-              <button
-                className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none"
-                onClick={cancelDelete}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none"
-                onClick={handleDeleteCategory}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Deleting...
-                  </>
-                ) : (
-                  'Delete'
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Category Management Modal */}
+      {showCategoryManager && (
+        <CategoryManagementModal
+          isOpen={showCategoryManager} 
+          onClose={() => setShowCategoryManager(false)}
+          onCategoryDeleted={handleCategoryDeleted}
+        />
       )}
     </div>
   );
