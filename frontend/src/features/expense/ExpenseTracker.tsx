@@ -1,4 +1,4 @@
-// src/features/expense/ExpenseTracker.tsx
+// src/features/expense/ExpenseTracker.tsx - Updated
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -45,6 +45,9 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   const [filteredData, setFilteredData] = useState<ExpenseItem[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>(['All', 'Uncategorized']);
   
+  // NEW STATE: For tracking expanded items - initially all are expanded
+  const [expandedItems, setExpandedItems] = useState<Record<number, boolean>>({});
+  
   // Navigation hook for redirecting to edit page
   const navigate = useNavigate();
 
@@ -59,6 +62,15 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
       if (initialData && initialData.length > 0) {
         setGroupedData(initialData);
         applySearch(initialData);
+        
+        // NEW: Initialize expanded state for all items to be true (expanded)
+        const newExpandedState: Record<number, boolean> = {};
+        initialData.forEach(group => {
+          group.items.forEach(item => {
+            newExpandedState[item.id] = true; // Set to true to expand by default
+          });
+        });
+        setExpandedItems(newExpandedState);
       } else {
         loadExpenseData();
       }
@@ -91,10 +103,6 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
       if (activeMainTab === 'All' && categoriesWithDefaults.length > 0) {
         setActiveMainTab(categoriesWithDefaults[0]);
       }
-      
-      // Here you could also fetch payment methods/cards
-      // Example: const paymentMethods = await fetchPaymentMethods();
-      // setCreditCardOptions(paymentMethods);
     } catch (error) {
       console.error("Error loading categories:", error);
       // Default fallback for categories
@@ -103,28 +111,43 @@ const ExpenseTracker: React.FC<ExpenseTrackerProps> = ({ initialData, categories
   };
 
   // Load expense data from API
-  // When loading expense data
-const loadExpenseData = async () => {
-  try {
-    setIsLoading(true);
-    // Make sure we're using the correct parameter format
-    const categoryParam = selectedCategory === 'All' ? '' : selectedCategory;
-    console.log('Loading data with category:', categoryParam);
-    const data = await fetchExpenseData(currentView, categoryParam, dateFilter);
-    console.log('Received data:', data);
-    setGroupedData(data);
-    applySearch(data);
-    setIsLoading(false);
-  } catch (error) {
-    console.error("Error loading expense data:", error);
-    setIsLoading(false);
-  }
-};
+  const loadExpenseData = async () => {
+    try {
+      setIsLoading(true);
+      // Make sure we're using the correct parameter format
+      const categoryParam = selectedCategory === 'All' ? '' : selectedCategory;
+      console.log('Loading data with category:', categoryParam);
+      const data = await fetchExpenseData(currentView, categoryParam, dateFilter);
+      console.log('Received data:', data);
+      setGroupedData(data);
+      applySearch(data);
+      
+      // NEW: Initialize expanded state for all items to be true (expanded)
+      const newExpandedState: Record<number, boolean> = {};
+      data.forEach((group: ExpenseGroup) => {
+        group.items.forEach((item: ExpenseItem) => {
+          newExpandedState[item.id] = true; // Set to true to expand by default
+        });
+      });
+      setExpandedItems(newExpandedState);
+      
+      setIsLoading(false);
+    } catch (error) {
+      console.error("Error loading expense data:", error);
+      setIsLoading(false);
+    }
+  };
 
   // Effect to reload data when view or filters change
   useEffect(() => {
     loadExpenseData();
-  }, [currentView, selectedCategory, dateFilter, activeMainTab]);
+  }, [currentView, selectedCategory, dateFilter]);
+
+  // MODIFIED: Effect to reload data when active main tab changes
+  useEffect(() => {
+    // When active main tab changes, update selectedCategory to match
+    setSelectedCategory(activeMainTab);
+  }, [activeMainTab]);
 
   // Apply search filter to grouped data
   const applySearch = (data: ExpenseGroup[]) => {
@@ -160,9 +183,7 @@ const loadExpenseData = async () => {
   // Function to select a category tab
   const handleCategoryTabChange = (category: string) => {
     setActiveMainTab(category);
-    setSelectedCategory(category);
-    setSearchTerm('');
-    // Will trigger the useEffect to reload data
+    // setSelectedCategory is now moved to the useEffect that watches activeMainTab
   };
 
   // Handler for sort button clicks
@@ -177,6 +198,14 @@ const loadExpenseData = async () => {
   const handleEditItem = (itemId: number) => {
     // Navigate to the invoice detail page
     navigate(`/invoice/${itemId}`);
+  };
+  
+  // NEW: Toggle expense item expansion
+  const toggleItemExpansion = (itemId: number) => {
+    setExpandedItems(prev => ({
+      ...prev,
+      [itemId]: !prev[itemId]
+    }));
   };
 
   // Sort the grouped data based on the sort configuration
@@ -377,50 +406,103 @@ const loadExpenseData = async () => {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                       {group.items.map((item) => (
-                        <tr key={item.id} className="hover:bg-gray-50">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                            {item.store}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.date}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.orderNumber}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {item.creditCard}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-500">
-                            <ul className="list-disc pl-5">
-                              {item.products.map((product, prodIdx) => (
-                                <li key={prodIdx} className={product.quantity < 0 ? "text-red-500" : ""}>
-                                  {product.name} 
-                                  {product.quantity !== 1 && ` (×${product.quantity})`}
-                                  <span className="ml-1 font-medium">
-                                    {formatCurrency(product.price)}
-                                  </span>
-                                  {product.quantity < 0 && " (Return)"}
-                                </li>
-                              ))}
-                            </ul>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
-                            <span className={item.total < 0 ? "text-red-600" : "text-gray-900"}>
-                              {formatCurrency(item.total)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
-                            <button
-                              onClick={() => handleEditItem(item.id)}
-                              className="text-blue-600 hover:text-blue-900"
-                              title="Edit"
-                            >
-                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
-                            </button>
-                          </td>
-                        </tr>
+                        <React.Fragment key={item.id}>
+                          <tr 
+                            className="hover:bg-gray-50 cursor-pointer"
+                            onClick={() => toggleItemExpansion(item.id)}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                              {item.store}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.date}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.orderNumber}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {item.creditCard}
+                            </td>
+                            <td className="px-6 py-4 text-sm text-gray-500">
+                              {!expandedItems[item.id] && (
+                                <span>{item.products.length} products</span>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right font-medium">
+                              <span className={item.total < 0 ? "text-red-600" : "text-gray-900"}>
+                                {formatCurrency(item.total)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-right">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation(); // Prevent row click from triggering
+                                  handleEditItem(item.id);
+                                }}
+                                className="text-blue-600 hover:text-blue-900"
+                                title="Edit"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                              </button>
+                            </td>
+                          </tr>
+                          {/* Product Details - expanded by default, collapsed when clicked */}
+                          {expandedItems[item.id] && (
+                            <tr className="bg-gray-50">
+                              <td colSpan={7} className="px-6 py-4">
+                                <div className="flex flex-col md:flex-row justify-between">
+                                  {/* Products List - Left side */}
+                                  <div className="w-full md:w-2/3">
+                                    <ul className="list-disc pl-5">
+                                      {item.products.map((product, prodIdx) => (
+                                        <li key={prodIdx} className={product.quantity < 0 ? "text-red-500" : ""}>
+                                          {product.name} 
+                                          {product.quantity !== 1 && ` (×${product.quantity})`}
+                                          <span className="ml-1 font-medium">
+                                            {formatCurrency(product.price)}
+                                          </span>
+                                          {product.quantity < 0 && " (Return)"}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                  
+                                  {/* Financial Summary - Right side */}
+                                  <div className="mt-4 md:mt-0 md:ml-6">
+                                    <div className="w-48 space-y-1">
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">
+                                          {formatCurrency(item.products.reduce((sum, p) => sum + (p.price * p.quantity), 0))}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Shipping:</span>
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">
+                                          {formatCurrency(item.total * 0.05)} {/* Estimate as 5% */}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between">
+                                        <span className="text-sm text-gray-600 dark:text-gray-400">Tax:</span>
+                                        <span className="text-sm text-gray-800 dark:text-gray-200">
+                                          {formatCurrency(item.total * 0.08)} {/* Estimate as 8% */}
+                                        </span>
+                                      </div>
+                                      <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                                        <span className="text-sm font-bold text-gray-900 dark:text-white">
+                                          {formatCurrency(item.total)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       ))}
                     </tbody>
                     <tfoot className="bg-gray-50">

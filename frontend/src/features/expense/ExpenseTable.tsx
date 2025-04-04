@@ -1,5 +1,5 @@
 // src/features/expense/ExpenseTable.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { formatCurrency } from './expenseHelpers';
 
 interface Product {
@@ -54,8 +54,18 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
     }
   };
 
-  // Toggle expense details visibility
+  // Initialize expandedExpenses with all expenses expanded by default
   const [expandedExpenses, setExpandedExpenses] = useState<Record<number, boolean>>({});
+  
+  // Initialize expandedExpenses based on whether products exist for each expense
+  useEffect(() => {
+    const initialExpanded: Record<number, boolean> = {};
+    expenses.forEach(expense => {
+      // Only expand expenses that have products
+      initialExpanded[expense.id] = expense.products && expense.products.length > 0;
+    });
+    setExpandedExpenses(initialExpanded);
+  }, [expenses]);
   
   const toggleExpenseDetails = (id: number) => {
     setExpandedExpenses(prev => ({
@@ -104,13 +114,27 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   <div className="text-xs text-gray-500 dark:text-gray-400">Order #</div>
                   <div className="font-medium text-gray-900 dark:text-white truncate">{expense.orderNumber}</div>
                 </div>
-                <div className="col-span-8 sm:col-span-3">
+                <div className="col-span-8 sm:col-span-2">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Card Used</div>
                   <div className="font-medium text-gray-900 dark:text-white truncate">{expense.cardUsed}</div>
                 </div>
-                <div className="col-span-4 sm:col-span-2 text-right">
+                <div className="col-span-3 sm:col-span-2 text-right">
                   <div className="text-xs text-gray-500 dark:text-gray-400">Total</div>
                   <div className="font-medium text-gray-900 dark:text-white">{formatCurrency(expense.total)}</div>
+                </div>
+                <div className="col-span-1 sm:col-span-1 flex items-center justify-end">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(expense.id);
+                    }}
+                    className="text-blue-600 hover:text-blue-800"
+                    title="Edit"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                  </button>
                 </div>
               </div>
               
@@ -120,10 +144,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                   {/* Products section */}
                   <div className="mb-4">
                     <div className="flex items-center mb-3">
-                      <svg className="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
-                      </svg>
-                      <h4 className="text-base font-semibold text-gray-700 dark:text-gray-300">Products</h4>
+                      <div className="flex items-center">
+                        <svg className="w-5 h-5 mr-2 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                        </svg>
+                        <span className="text-base font-semibold text-gray-700 dark:text-gray-300 leading-none">Products</span>
+                      </div>
                     </div>
                     <div className="space-y-3">
                       {expense.products.map((product, index) => (
@@ -150,56 +176,35 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
                     </div>
                   </div>
                   
-                  {/* Financial details and action buttons */}
-                  <div className="flex flex-col sm:flex-row justify-between mt-4">
-                    {/* Financial details */}
-                    <div className="mb-4 sm:mb-0">
-                      <div className="w-48 space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Subtotal:</span>
-                          <span className="text-sm text-gray-800 dark:text-gray-200">{formatCurrency(expense.subtotal)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Shipping:</span>
-                          <span className="text-sm text-gray-800 dark:text-gray-200">{formatCurrency(expense.shipping)}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600 dark:text-gray-400">Tax:</span>
-                          <span className="text-sm text-gray-800 dark:text-gray-200">{formatCurrency(expense.tax)}</span>
-                        </div>
-                        <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
-                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total:</span>
-                          <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(expense.total)}</span>
-                        </div>
-                      </div>
+                  {/* Products and Financial Summary in a flex layout */}
+                  <div className="flex flex-col sm:flex-row justify-between mt-2">
+                    {/* Products section takes more space */}
+                    <div className="sm:w-3/4">
+                      {/* This div intentionally left empty - products are already displayed above */}
                     </div>
                     
-                    {/* Action buttons */}
-                    <div className="flex space-x-2 self-end">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEdit(expense.id);
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                      >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Edit
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(expense.id);
-                        }}
-                        className="px-3 py-1.5 bg-red-600 text-white rounded-md hover:bg-red-700 flex items-center"
-                      >
-                        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                        Delete
-                      </button>
+                    {/* Financial details on the right - more compact */}
+                    <div className="mt-2 sm:mt-0 sm:w-1/4 sm:pl-2">
+                      <div className="w-full">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Subtotal:</span>
+                            <span className="text-gray-800 dark:text-gray-200">{formatCurrency(expense.subtotal)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Shipping:</span>
+                            <span className="text-gray-800 dark:text-gray-200">{formatCurrency(expense.shipping)}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600 dark:text-gray-400">Tax:</span>
+                            <span className="text-gray-800 dark:text-gray-200">{formatCurrency(expense.tax)}</span>
+                          </div>
+                          <div className="flex justify-between pt-1 mt-1 border-t border-gray-200 dark:border-gray-700">
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total:</span>
+                            <span className="text-sm font-bold text-gray-900 dark:text-white">{formatCurrency(expense.total)}</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
