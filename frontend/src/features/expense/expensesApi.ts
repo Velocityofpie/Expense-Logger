@@ -6,6 +6,8 @@ import { ExpenseItem, Product } from './expenseHelpers';
 // Define API_URL from environment or fallback to localhost
 const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
 
+// Updating the fetchExpenseData function in expensesApi.ts
+
 /**
  * Fetch expense data with optional filters
  * @param viewBy Group view parameter ('itemType', 'store', 'date', 'card')
@@ -15,13 +17,14 @@ const API_URL = process.env.REACT_APP_API_URL || "http://localhost:8000";
  */
 export async function fetchExpenseData(
   viewBy: string = 'itemType', 
-  category: string = 'All', 
+  category: string = '', 
   dateFilter: string = 'all'
 ): Promise<any> {
   try {
     // Build the query string based on parameters
     let url = `${API_URL}/expenses/summary/?view_by=${viewBy}`;
     
+    // Only add category parameter if it's not 'All' and not empty
     if (category && category !== 'All') {
       url += `&category=${encodeURIComponent(category)}`;
     }
@@ -29,6 +32,8 @@ export async function fetchExpenseData(
     if (dateFilter && dateFilter !== 'all') {
       url += `&date_filter=${dateFilter}`;
     }
+    
+    console.log(`Fetching expense data with URL: ${url}`);
     
     const response = await fetch(url);
     
@@ -43,7 +48,6 @@ export async function fetchExpenseData(
     throw error;
   }
 }
-
 /**
  * Add a new expense
  * @param expenseData Expense data to add

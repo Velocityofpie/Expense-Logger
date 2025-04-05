@@ -67,18 +67,35 @@ const ExpenseTrackerPage: React.FC = () => {
     try {
       setIsLoading(true);
       
-      // Fetch invoices and categories in parallel
+      // Fetch categories first
       const categoriesData = await fetchCategories();
+      setCategories(['All', ...categoriesData]);
+      
+      // Then fetch expense data with the selected category filter
+      const categoryParam = selectedCategory === 'All' ? '' : selectedCategory;
+      console.log(`Loading data with category: ${categoryParam}`);
+      
       const invoicesData = await apiClient.get('/invoices/');
       
       // Transform invoice data to the format expected by ExpenseTracker
       const rawTransformedData = transformInvoicesToExpenseTrackerFormat(invoicesData);
 
       // Convert the Record<string, ExpenseItem[]> to ExpenseGroup[]
-      const transformedData = convertToExpenseGroups(rawTransformedData);
+      let transformedData = convertToExpenseGroups(rawTransformedData);
+      
+      // Apply category filtering if a specific category is selected
+      if (selectedCategory !== 'All') {
+        transformedData = transformedData.map(group => ({
+          ...group,
+          items: group.items.filter(item => item.category === selectedCategory),
+          count: group.items.filter(item => item.category === selectedCategory).length,
+          total: group.items
+            .filter(item => item.category === selectedCategory)
+            .reduce((sum, item) => sum + item.total, 0)
+        })).filter(group => group.count > 0); // Remove empty groups
+      }
       
       setExpenseData(transformedData);
-      setCategories(['All', ...categoriesData]);
       setIsLoading(false);
     } catch (error) {
       console.error("Error loading expense data:", error);
@@ -132,7 +149,9 @@ const ExpenseTrackerPage: React.FC = () => {
       setExpenseData(filteredGroups);
     } else {
       // If search is cleared, reload data
-      loadData();
+      if (searchTerm === '') {
+        loadData();
+      }
     }
   }, [searchTerm]);
   
@@ -203,22 +222,31 @@ const ExpenseTrackerPage: React.FC = () => {
   
   return (
     <div className="container mx-auto px-4 py-6">
-      <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Expense Tracker</h1>
+      {/* Simple header that shows category and price when a category is selected */}
+      <h1 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">
+        {selectedCategory === 'All' 
+          ? 'Expense Tracker' 
+          : `${selectedCategory} (${summaryStats.filteredTotal.toLocaleString('en-US', { style: 'currency', currency: 'USD' })})`}
+      </h1>
       
-      {/* Main Category Tabs - ORIGINAL LOCATION AT THE TOP */}
-      <div className="border-b mb-6 bg-white dark:bg-dark-card rounded-lg shadow">
-        <div className="flex flex-wrap space-x-1 p-1 overflow-x-auto">
+      {/* Main Category Tabs */}
+      <div className="border-b mb-6 bg-white dark:bg-dark-card rounded-lg shadow overflow-hidden">
+        <div className="flex flex-wrap p-1 overflow-x-auto">
           {categories.map((category) => (
             <button
               key={category}
               onClick={() => handleCategoryTabChange(category)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 focus:outline-none whitespace-nowrap ${
-                selectedCategory === category
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600'
-              }`}
+              className={`relative px-4 py-3 text-sm font-medium focus:outline-none whitespace-nowrap transition-all duration-200 
+                ${selectedCategory === category 
+                  ? 'bg-blue-600 text-white rounded-t-lg' 
+                  : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:bg-gray-700'
+                }`}
             >
               {category}
+              {/* Active indicator bar */}
+              {selectedCategory === category && (
+                <span className="absolute bottom-0 left-0 w-full h-1 bg-blue-700"></span>
+              )}
             </button>
           ))}
         </div>
@@ -245,6 +273,8 @@ const ExpenseTrackerPage: React.FC = () => {
         filteredData={summaryStats.filteredData}
       />
       
+      {/* Note: Removed the second heading that said "All Expenses" or "[Category] Expenses" */}
+      
       {/* Enhanced Expense Tables by Category */}
       {expenseData && expenseData.length > 0 ? (
         <div className="space-y-8">
@@ -265,7 +295,9 @@ const ExpenseTrackerPage: React.FC = () => {
           </svg>
           <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No expenses found</h3>
           <p className="mt-1 text-gray-500 dark:text-gray-400">
-            Try adjusting your filters to see more results.
+            {selectedCategory !== 'All' 
+              ? `No expenses found for the category '${selectedCategory}'. Try selecting a different category.`
+              : 'Try adjusting your filters to see more results.'}
           </p>
         </div>
       )}

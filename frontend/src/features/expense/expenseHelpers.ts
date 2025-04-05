@@ -48,7 +48,6 @@ export const formatCurrency = (value: number): string => {
     maximumFractionDigits: 2
   }).format(value);
 };
-
 /**
  * Filter expenses by category
  * @param data - Array of expense items
@@ -56,8 +55,15 @@ export const formatCurrency = (value: number): string => {
  * @returns Filtered array of expense items
  */
 export const filterDataByCategory = (data: ExpenseItem[], category: string): ExpenseItem[] => {
+  // If category is empty or 'All', return all data
   if (!category || category === 'All') return data;
-  return data.filter(item => item.category === category);
+  
+  // Filter items by category (case-insensitive)
+  return data.filter(item => {
+    // Handle case where item.category could be undefined
+    const itemCategory = item.category || 'Uncategorized';
+    return itemCategory.toLowerCase() === category.toLowerCase();
+  });
 };
 
 /**
