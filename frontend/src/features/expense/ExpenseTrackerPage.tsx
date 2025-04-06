@@ -2,12 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExpenseTable from './ExpenseTable';
-import { ExpenseGroup } from './expenseHelpers';
+import { ExpenseGroup, ExpenseItem } from './expenseHelpers';
 import { transformInvoicesToExpenseTrackerFormat } from '../../utils';
 import { apiClient } from '../../services/api';
 import ExpenseFilters from './ExpenseFilters';
 import ExpenseSummary from './ExpenseSummary';
 import ExpenseStats from './ExpenseStats';
+import ExpenseTrackerIntegration from './ExpenseTrackerIntegration';
 import { fetchExpenseData, fetchCategories, deleteExpense } from './expensesApi';
 
 // Utility function to convert Record<string, ExpenseItem[]> to ExpenseGroup[]
@@ -79,9 +80,59 @@ const ExpenseTrackerPage: React.FC = () => {
       
       // Transform invoice data to the format expected by ExpenseTracker
       const rawTransformedData = transformInvoicesToExpenseTrackerFormat(invoicesData);
-
-      // Convert the Record<string, ExpenseItem[]> to ExpenseGroup[]
-      let transformedData = convertToExpenseGroups(rawTransformedData);
+      
+      // Get all expense items as a flat list
+      const allExpenseItems = Object.values(rawTransformedData).flat();
+      
+      // Group by the selected view type
+      let groupedItems: Record<string, ExpenseItem[]> = {};
+      
+      // Apply grouping based on the current view
+      if (currentView === 'itemType') {
+        // Group by item category
+        groupedItems = allExpenseItems.reduce((acc, item) => {
+          const key = item.category || 'Uncategorized';
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ExpenseItem[]>);
+      } else if (currentView === 'store') {
+        // Group by merchant/store
+        groupedItems = allExpenseItems.reduce((acc, item) => {
+          const key = item.store || 'Unknown Store';
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ExpenseItem[]>);
+      } else if (currentView === 'date') {
+        // Group by month and year
+        groupedItems = allExpenseItems.reduce((acc, item) => {
+          const date = new Date(item.date);
+          const key = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ExpenseItem[]>);
+      } else if (currentView === 'card') {
+        // Group by credit card
+        groupedItems = allExpenseItems.reduce((acc, item) => {
+          const key = item.creditCard || 'Unknown Card';
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(item);
+          return acc;
+        }, {} as Record<string, ExpenseItem[]>);
+      } else {
+        // Default to category grouping
+        groupedItems = rawTransformedData;
+      }
+      
+      // Convert to ExpenseGroup[] format
+      let transformedData = Object.entries(groupedItems).map(([name, items]) => ({
+        name,
+        items,
+        count: items.length,
+        total: items.reduce((sum, item) => sum + item.total, 0)
+      }));
       
       // Apply category filtering if a specific category is selected
       if (selectedCategory !== 'All') {
@@ -95,6 +146,9 @@ const ExpenseTrackerPage: React.FC = () => {
         })).filter(group => group.count > 0); // Remove empty groups
       }
       
+      // Sort groups by total (descending)
+      transformedData.sort((a, b) => b.total - a.total);
+      
       setExpenseData(transformedData);
       setIsLoading(false);
     } catch (error) {
@@ -104,11 +158,18 @@ const ExpenseTrackerPage: React.FC = () => {
     }
   };
   
-  // Load data on mount and when filters change
+  // Effect to reload data on mount and when filters change
   useEffect(() => {
+    console.log(`View changed to: ${currentView}, category: ${selectedCategory}, date filter: ${dateFilter}`);
     loadData();
   }, [selectedCategory, dateFilter, currentView]);
-
+  
+  // Function to handle view change
+  const handleViewChange = (newView: string) => {
+    setCurrentView(newView);
+    // Data will be reloaded by the useEffect above
+  };
+  
   // Handle edit expense
   const handleEditExpense = (id: number) => {
     navigate(`/invoice/${id}`);
@@ -273,21 +334,13 @@ const ExpenseTrackerPage: React.FC = () => {
         filteredData={summaryStats.filteredData}
       />
       
-      {/* Note: Removed the second heading that said "All Expenses" or "[Category] Expenses" */}
-      
       {/* Enhanced Expense Tables by Category */}
       {expenseData && expenseData.length > 0 ? (
-        <div className="space-y-8">
-          {expenseData.map((group, index) => (
-            <ExpenseTable
-              key={index}
-              expenses={transformExpenseDataForTable(group)}
-              categoryTitle={group.name}
-              onEdit={handleEditExpense}
-              onDelete={handleDeleteExpense}
-            />
-          ))}
-        </div>
+        <ExpenseTrackerIntegration 
+          groupedData={expenseData}
+          onDataChange={loadData}
+          currentView={currentView}
+        />
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
           <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">

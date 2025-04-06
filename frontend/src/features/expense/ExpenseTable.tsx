@@ -77,9 +77,12 @@ const ExpenseTable: React.FC<ExpenseTableProps> = ({
   return (
     <div className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 py-6 bg-gray-50 dark:bg-gray-900">
       <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden">
-        <h2 className="text-xl md:text-2xl font-bold p-6 text-gray-800 dark:text-white border-b pb-4 border-gray-200 dark:border-gray-700">
-          Expense Tracker
-        </h2>
+        {/* Only show the header when the category is "All" */}
+        {categoryTitle === 'All' && (
+          <h2 className="text-xl md:text-2xl font-bold p-6 text-gray-800 dark:text-white border-b pb-4 border-gray-200 dark:border-gray-700">
+            Expense Tracker
+          </h2>
+        )}
         
         {/* Category Section */}
         <div className="px-6 py-4">

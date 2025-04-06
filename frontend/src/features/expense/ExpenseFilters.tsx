@@ -115,6 +115,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
+            aria-label="Group by Item Type"
           >
             Item Type
           </button>
@@ -125,6 +126,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
+            aria-label="Group by Merchant"
           >
             Merchant
           </button>
@@ -135,6 +137,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
+            aria-label="Group by Date"
           >
             Date
           </button>
@@ -145,6 +148,7 @@ const ExpenseFilters: React.FC<ExpenseFiltersProps> = ({
                 ? 'bg-blue-600 text-white border-blue-600'
                 : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600 dark:hover:bg-gray-600'
             }`}
+            aria-label="Group by Card"
           >
             Card
           </button>

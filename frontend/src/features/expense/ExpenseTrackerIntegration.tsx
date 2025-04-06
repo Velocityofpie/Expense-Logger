@@ -1,23 +1,25 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import ExpenseTable from './ExpenseTable';
-import { ExpenseGroup } from './expenseHelpers';
+import { ExpenseGroup, ExpenseItem } from './expenseHelpers';
 import { deleteExpense } from './expensesApi';
 
 interface ExpenseTrackerIntegrationProps {
   groupedData: ExpenseGroup[];
   onDataChange?: () => void;
+  currentView?: string;
 }
 
 // This is a wrapper component that adapts the grouped data from your existing
 // ExpenseTrackerPage to the new EnhancedExpenseTable format
 const ExpenseTrackerIntegration: React.FC<ExpenseTrackerIntegrationProps> = ({ 
   groupedData,
-  onDataChange
+  onDataChange,
+  currentView = 'itemType'
 }) => {
   const navigate = useNavigate();
 
-  // Transform expense data for the EnhancedExpenseTable format
+  // Transform expense data for the ExpenseTable format
   const transformExpenseDataForTable = (group: ExpenseGroup) => {
     return group.items.map(item => ({
       id: item.id,
