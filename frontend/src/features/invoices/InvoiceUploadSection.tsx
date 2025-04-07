@@ -366,21 +366,14 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Upload Invoices</h2>
           <div className="flex space-x-2">
-            {/* FIXED: Properly call toggleUploadSection for the Hide Upload button */}
+            {/* FIXED: Button with directly embedded SVG and text */}
             <Button 
               variant="outline"
-              onClick={toggleUploadSection} // This is the key fix - properly calling the parent's function
-              className="flex items-center px-3 py-1.5"
-              icon={
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  {showUploadSection 
-                    ? <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                    : <path fillRule="evenodd" d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" clipRule="evenodd" />
-                  }
-                </svg>
-              }
+              onClick={toggleUploadSection}
             >
-              {showUploadSection ? 'Hide Upload' : 'Show Upload'} 
+              <div className="flex items-center">
+                {showUploadSection ? 'Hide Upload' : 'Show Upload'}
+              </div>
             </Button>
             <Button 
               variant={showManualEntry ? "secondary" : "primary"}
