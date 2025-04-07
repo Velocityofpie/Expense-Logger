@@ -1,266 +1,164 @@
 /* src/features/dashboard/dashboard.css */
 
-/* Dashboard Card Styles */
+/* Reset chart SVG styles to prevent fill inheritance problems */
+svg {
+  fill: none;
+}
+
+svg path,
+svg line,
+svg polyline,
+svg rect,
+svg circle {
+  fill: none;
+}
+
+/* Allow specific chart elements to have fills */
+.recharts-pie-sector,
+.recharts-bar-rectangle,
+.recharts-area-area {
+  fill: currentColor;
+}
+
+/* Dashboard card styling */
 .dashboard-card {
-    @apply bg-white dark:bg-dark-card rounded-lg shadow-sm transition-all duration-200;
-  }
-  
-  .dashboard-card:hover {
-    @apply shadow-md;
-  }
-  
-  /* Dashboard Stat Cards */
-  .dashboard-stat-card {
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
-  }
-  
-  .dashboard-stat-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  }
-  
-  /* Card Gradients */
-  .bg-gradient-indigo {
-    background: linear-gradient(135deg, #4f46e5 0%, #3730a3 100%);
-  }
-  
-  .bg-gradient-purple {
-    background: linear-gradient(135deg, #7c3aed 0%, #5b21b6 100%);
-  }
-  
-  .bg-gradient-pink {
-    background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
-  }
-  
-  .bg-gradient-blue {
-    background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
-  }
-  
-  /* Card Icon Containers */
-  .dashboard-icon-container {
-    width: 56px;
-    height: 56px;
-    border-radius: 9999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background-color: rgba(255, 255, 255, 0.1);
-    margin-bottom: 1rem;
-  }
-  
-  .dashboard-icon-container svg {
-    width: 24px;
-    height: 24px;
-    color: white;
-  }
-  
-  /* Dashboard Chart Containers */
-  .dashboard-chart-container {
-    height: 20rem;
-    background-color: white;
-    border-radius: 0.5rem;
-    overflow: hidden;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-  }
-  
-  .dark .dashboard-chart-container {
-    background-color: #1e1e1e;
-  }
-  
-  .dashboard-chart-header {
-    padding: 1.25rem;
-    border-bottom: 1px solid rgba(229, 231, 235, 1);
-  }
-  
-  .dark .dashboard-chart-header {
-    border-bottom-color: rgba(55, 65, 81, 1);
-  }
-  
-  .dashboard-chart-body {
-    padding: 1.25rem;
-    height: calc(100% - 4rem);
-  }
-  
-  /* Recent Activity Section */
-  .recent-activity-item {
-    @apply p-4 border-b border-gray-100 dark:border-dark-border last:border-b-0;
-  }
-  
-  .recent-activity-item:hover {
-    @apply bg-gray-50 dark:bg-gray-800;
-  }
-  
-  /* Dashboard Labels & Badges */
-  .dashboard-label {
-    @apply inline-block text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1;
-  }
-  
-  .dashboard-badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 0.125rem 0.625rem;
-    border-radius: 9999px;
-    font-size: 0.75rem;
-    font-weight: 500;
-  }
-  
-  .dashboard-badge-primary {
-    background-color: rgba(79, 70, 229, 0.1);
-    color: #4f46e5;
-  }
-  
-  .dark .dashboard-badge-primary {
-    background-color: rgba(79, 70, 229, 0.2);
-    color: #818cf8;
-  }
-  
-  .dashboard-badge-success {
-    background-color: rgba(5, 150, 105, 0.1);
-    color: #059669;
-  }
-  
-  .dark .dashboard-badge-success {
-    background-color: rgba(5, 150, 105, 0.2);
-    color: #10b981;
-  }
-  
-  .dashboard-badge-warning {
-    background-color: rgba(245, 158, 11, 0.1);
-    color: #f59e0b;
-  }
-  
-  .dark .dashboard-badge-warning {
-    background-color: rgba(245, 158, 11, 0.2);
-    color: #fbbf24;
-  }
-  
-  .dashboard-badge-danger {
-    background-color: rgba(220, 38, 38, 0.1);
-    color: #dc2626;
-  }
-  
-  .dark .dashboard-badge-danger {
-    background-color: rgba(220, 38, 38, 0.2);
-    color: #ef4444;
-  }
-  
-  /* Responsive Grid Layouts */
-  .dashboard-grid {
-    @apply grid gap-6;
-  }
-  
-  .dashboard-grid-cols-1 {
-    @apply grid-cols-1;
-  }
-  
-  @media (min-width: 640px) {
-    .dashboard-grid-cols-sm-2 {
-      @apply grid-cols-2;
-    }
-  }
-  
-  @media (min-width: 768px) {
-    .dashboard-grid-cols-md-2 {
-      @apply grid-cols-2;
-    }
-  
-    .dashboard-grid-cols-md-3 {
-      @apply grid-cols-3;
-    }
-  }
-  
-  @media (min-width: 1024px) {
-    .dashboard-grid-cols-lg-3 {
-      @apply grid-cols-3;
-    }
-  
-    .dashboard-grid-cols-lg-4 {
-      @apply grid-cols-4;
-    }
-  }
-  
-  /* Dashboard Card Extras */
-  .dashboard-card-header {
-    @apply px-5 py-4 border-b border-gray-100 dark:border-dark-border flex justify-between items-center;
-  }
-  
-  .dashboard-card-body {
-    @apply p-5;
-  }
-  
-  .dashboard-card-footer {
-    @apply px-5 py-4 border-t border-gray-100 dark:border-dark-border;
-  }
-  
-  /* Dashboard Metrics */
-  .dashboard-metric {
-    @apply flex flex-col;
-  }
-  
-  .dashboard-metric-label {
-    @apply text-sm font-medium text-gray-500 dark:text-dark-text-secondary;
-  }
-  
-  .dashboard-metric-value {
-    @apply text-3xl font-bold text-gray-900 dark:text-dark-text-primary;
-  }
-  
-  .dashboard-metric-change {
-    @apply text-sm font-medium mt-1 flex items-center;
-  }
-  
-  .dashboard-metric-change.positive {
-    @apply text-green-600 dark:text-green-400;
-  }
-  
-  .dashboard-metric-change.negative {
-    @apply text-red-600 dark:text-red-400;
-  }
-  
-  /* Empty State */
-  .dashboard-empty-state {
-    @apply flex flex-col items-center justify-center p-12 text-center;
-  }
-  
-  .dashboard-empty-state-icon {
-    @apply w-16 h-16 text-gray-400 dark:text-gray-600 mb-4;
-  }
-  
-  .dashboard-empty-state-title {
-    @apply text-xl font-medium text-gray-900 dark:text-dark-text-primary mb-2;
-  }
-  
-  .dashboard-empty-state-description {
-    @apply text-gray-500 dark:text-dark-text-secondary max-w-md mb-6;
-  }
-  svg {
-    fill: none;
-  }
-  
-  svg * {
-    fill: none;
-  }
-  
-  /* Allow specific elements to have fill */
-  svg circle:not([fill="none"]) {
-    fill: currentColor;
-  }
-  
-  /* Fix icon sizing and alignment */
-  .inline-flex.items-center.justify-center svg {
-    width: 24px;
-    height: 24px;
-  }
-  
-  /* Ensure icon container appears correctly */
-  .dashboard-card .inline-flex {
-    overflow: visible !important;
-  }
-  
-  /* Override any global SVG styles that might be causing issues */
-  .text-white svg {
-    color: white !important;
-  }
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 transition duration-200;
+}
+
+.dashboard-card:hover {
+  @apply shadow-md;
+}
+
+/* Improved stat cards styling */
+.stat-card {
+  @apply rounded-lg shadow-sm overflow-hidden;
+}
+
+.stat-card-icon {
+  @apply inline-flex items-center justify-center h-16 w-16 rounded-full mb-4;
+}
+
+.stat-card-value {
+  @apply text-3xl font-bold;
+}
+
+.stat-card-label {
+  @apply font-medium opacity-90;
+}
+
+/* Chart container styling */
+.chart-container {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden;
+}
+
+.chart-header {
+  @apply px-6 py-4 border-b border-gray-200 dark:border-gray-700;
+}
+
+.chart-title {
+  @apply text-lg font-medium text-gray-900 dark:text-white;
+}
+
+.chart-body {
+  @apply p-6 h-80;
+}
+
+/* Status badge styling */
+.status-badge {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-badge-paid {
+  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
+}
+
+.status-badge-open {
+  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
+}
+
+.status-badge-attention {
+  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
+}
+
+.status-badge-draft {
+  @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300;
+}
+
+/* Table styling */
+.table-container {
+  @apply bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg;
+}
+
+.table-header {
+  @apply px-4 py-5 sm:px-6 flex justify-between items-center border-b border-gray-200 dark:border-gray-700;
+}
+
+.table-title {
+  @apply text-lg leading-6 font-medium text-gray-900 dark:text-white;
+}
+
+.table-view-all {
+  @apply inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800;
+}
+
+.recent-invoices-table {
+  @apply min-w-full divide-y divide-gray-200 dark:divide-gray-700;
+}
+
+.recent-invoices-table th {
+  @apply px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+}
+
+.recent-invoices-table td {
+  @apply px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400;
+}
+
+.recent-invoices-table tr {
+  @apply hover:bg-gray-50 dark:hover:bg-gray-700;
+}
+
+/* Loading state */
+.loading-spinner {
+  @apply animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto;
+}
+
+/* Empty state */
+.empty-state {
+  @apply text-center py-10 text-gray-500 dark:text-gray-400;
+}
+
+.empty-state-icon {
+  @apply h-10 w-10 mx-auto mb-2 text-gray-400 dark:text-gray-500;
+}
+
+/* Recharts tooltip customization */
+.recharts-tooltip-wrapper {
+  @apply !opacity-100 !pointer-events-auto;
+}
+
+.custom-tooltip {
+  @apply bg-white dark:bg-gray-800 p-3 border border-gray-200 dark:border-gray-700 rounded shadow-lg;
+}
+
+.tooltip-label {
+  @apply text-gray-600 dark:text-gray-300;
+}
+
+.tooltip-value {
+  @apply text-lg font-semibold text-indigo-600 dark:text-indigo-400;
+}
+
+/* Category tag styling */
+.category-tag {
+  @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200;
+}
+
+/* Override the base SVG fill value from global.css if present */
+.recharts-surface {
+  fill: none !important;
+}
+
+/* Fix text colors in charts */
+.recharts-text {
+  fill: currentColor;
+}
