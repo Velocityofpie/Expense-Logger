@@ -1,7 +1,6 @@
 // src/services/api.ts
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import { getToken, removeToken } from './storage';
-import { apiUrl } from '../utils/config';
 
 /**
  * Core API client configuration
@@ -12,14 +11,16 @@ class ApiClient {
   private baseURL: string;
 
   constructor() {
-    // Use the apiUrl from config helper instead of direct environment variable
-    this.baseURL = apiUrl;
+    // Use environment variable or default for API URL
+    this.baseURL = process.env.REACT_APP_API_URL || "http://localhost:8000";
     
     this.client = axios.create({
       baseURL: this.baseURL,
       headers: {
         'Content-Type': 'application/json',
       },
+      // Set longer timeout for file uploads
+      timeout: 30000
     });
 
     // Add request interceptor to attach auth token to requests
@@ -40,9 +41,10 @@ class ApiClient {
       (error) => {
         // Handle 401 Unauthorized errors (expired or invalid token)
         if (error.response && error.response.status === 401) {
-          removeToken(); // Clear the invalid token
+          removeToken();
           // Redirect to login page if needed
-          window.location.href = '/login';
+          // window.location.href = '/login';
+          console.warn('Session expired or unauthorized access');
         }
         return Promise.reject(error);
       }
@@ -151,26 +153,122 @@ class ApiClient {
 }
 
 // Create API client instance
-export const apiClient = new ApiClient();
+const apiClient = new ApiClient();
 
-// Export the fetchInvoices function for dashboard
+// Specialized API functions for the dashboard
+
+/**
+ * Fetch invoices from the API
+ * @param skip Number of records to skip
+ * @param limit Maximum number of records to return
+ * @param userId Optional user ID filter
+ * @returns Promise with invoices data
+ */
 export const fetchInvoices = async (skip = 0, limit = 100, userId: string | null = null) => {
-  let url = `/invoices/?skip=${skip}&limit=${limit}`;
-  if (userId) {
-    url += `&user_id=${userId}`;
+  try {
+    let url = `/invoices/?skip=${skip}&limit=${limit}`;
+    if (userId) {
+      url += `&user_id=${userId}`;
+    }
+    return await apiClient.get(url);
+  } catch (error) {
+    console.error('Error fetching invoices:', error);
+    return [];
   }
-  return apiClient.get(url);
 };
 
-// Export the fetchCategories function
+/**
+ * Fetch categories from the API
+ * @returns Promise with categories data
+ */
 export const fetchCategories = async () => {
-  return apiClient.get('/categories/');
+  try {
+    return await apiClient.get('/categories/');
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return [];
+  }
 };
 
-// Export the fetchTags function
+/**
+ * Fetch tags from the API
+ * @returns Promise with tags data
+ */
 export const fetchTags = async () => {
-  return apiClient.get('/tags/');
+  try {
+    return await apiClient.get('/tags/');
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    return [];
+  }
 };
 
-// Export default api client
+/**
+ * Upload invoice file
+ * @param file File to upload
+ * @param category Optional category
+ * @param tags Optional tags array
+ * @returns Promise with upload result
+ */
+export const uploadInvoice = async (file: File, category?: string, tags?: string[]) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  if (category) {
+    formData.append('category', category);
+  }
+  
+  if (tags && tags.length > 0) {
+    tags.forEach(tag => {
+      formData.append('tags', tag);
+    });
+  }
+  
+  return apiClient.uploadFile('/upload/', formData);
+};
+
+/**
+ * Get invoice details
+ * @param invoiceId Invoice ID
+ * @returns Promise with invoice details
+ */
+export const getInvoiceDetails = async (invoiceId: number) => {
+  try {
+    return await apiClient.get(`/invoice/${invoiceId}`);
+  } catch (error) {
+    console.error(`Error fetching invoice ${invoiceId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Update an invoice
+ * @param invoiceId Invoice ID
+ * @param data Invoice data to update
+ * @returns Promise with update result
+ */
+export const updateInvoice = async (invoiceId: number, data: any) => {
+  try {
+    return await apiClient.put(`/update/${invoiceId}`, data);
+  } catch (error) {
+    console.error(`Error updating invoice ${invoiceId}:`, error);
+    throw error;
+  }
+};
+
+/**
+ * Delete an invoice
+ * @param invoiceId Invoice ID
+ * @returns Promise with delete result
+ */
+export const deleteInvoice = async (invoiceId: number) => {
+  try {
+    return await apiClient.delete(`/delete/${invoiceId}`);
+  } catch (error) {
+    console.error(`Error deleting invoice ${invoiceId}:`, error);
+    throw error;
+  }
+};
+
+export { apiClient };
 export default apiClient;

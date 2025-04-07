@@ -1,8 +1,11 @@
-// dashboard/index.ts - Barrel exports for the dashboard feature
+// src/features/dashboard/index.ts
 
 export { default as Dashboard } from './Dashboard';
-export { default as DashboardCard } from './DashboardCard';
+export { default as DashboardFilters } from './DashboardFilters';
+export { default as StatsCards } from './StatsCards';
+export { default as SpendingCharts } from './SpendingChart';
+export { default as CategoryCharts } from './CategoryCharts';
 export { default as RecentInvoices } from './RecentInvoices';
-export { default as SpendingChart } from './SpendingChart';
+
+// Export types
 export * from './types';
-export * from './dashboardApi';
