@@ -45,6 +45,22 @@ export interface ChartData {
   paymentMethod: ChartDataPoint[];
 }
 
+// Add these missing type aliases
+export type CategoryChartData = ChartDataPoint[];
+export type StatusChartData = ChartDataPoint[];
+export type PaymentMethodChartData = ChartDataPoint[];
+
+// Add the missing DashboardCardProps interface
+export interface DashboardCardProps {
+  title: string;
+  value: React.ReactNode;
+  icon: React.ReactNode;
+  color: 'blue' | 'indigo' | 'purple' | 'pink';
+  percentage?: number;
+  trend?: 'up' | 'down';
+  className?: string;
+}
+
 export const CHART_COLORS = [
   "#4f46e5", "#3730a3", "#6d28d9", "#be185d", "#0284c7", 
   "#0891b2", "#4338ca", "#db2777", "#0ea5e9", "#14b8a6"

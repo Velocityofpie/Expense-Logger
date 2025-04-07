@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { fetchInvoices, fetchCategories, fetchTags } from "../../services/api";
 import DashboardFilters from "./DashboardFilters";
 import StatsCards from "./StatsCards";
-import SpendingCharts from "./SpendingCharts";
+import SpendingCharts from "./SpendingChart";
 import CategoryCharts from "./CategoryCharts";
 import RecentInvoices from "./RecentInvoices";
 import "./dashboard.css";
