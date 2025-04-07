@@ -1,3 +1,18 @@
+
+# Expense Logger - Summary 
+
+​Expense Logger is a self-hosted expense tracking application designed to help you monitor individual purchases through invoice receipts or manual inputs. It allows you to categorize each entry by item type, providing a detailed record of your spending habits.​
+
+Key Features:
+
+Itemized Expense Tracking: Log each purchase with specific details, enabling precise monitoring of items such as HVAC filters or water heaters over extended periods.​
+
+Receipt and Document Management: Attach PDF receipts and warranty documents to each entry, ensuring all relevant information is easily accessible for future reference, such as warranty claims.​
+
+Categorization: Organize expenses by categories and item types, facilitating analysis of spending patterns across different hobbies or household needs.​
+
+This tool is particularly useful for individuals who wish to keep a comprehensive record of their purchases, track the frequency of specific item replacements, manage warranty information efficiently, and analyze spending across various interests over time.
+
 # Expense Logger - Setup Guide
 
 This guide provides comprehensive instructions for setting up the Expense Logger application using Docker with centralized environment configuration.

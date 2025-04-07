@@ -1,10 +1,17 @@
-// src/features/invoices/InvoiceUploadSection.tsx with fixes
+// src/features/invoices/InvoiceUploadSection.tsx
 import React, { useState, useEffect } from 'react';
 import { 
-  Card, CardHeader, CardBody, Button, Badge, ClickableBadge, Checkbox,
-  Modal, ModalHeader, ModalBody, ModalFooter, Input, Select
+  Card, CardHeader, CardBody, Button
 } from '../../shared';
 import { InvoiceForm } from './';
+import { FileMetadata } from './components/types';
+
+// Import refactored components
+import FileUploadArea from './components/FileUploadArea';
+import SelectedFilesList from './components/SelectedFilesList';
+import FileMetadataModal from './components/FileMetadataModal';
+import UploadOptions from './components/UploadOptions';
+import UploadStatus from './components/UploadStatus';
 
 // Constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -18,11 +25,6 @@ interface InvoiceUploadSectionProps {
   toggleManualEntry: () => void;
   showUploadSection: boolean;
   toggleUploadSection: () => void;
-}
-
-interface FileMetadata {
-  category: string;
-  tags: string[];
 }
 
 const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
@@ -51,8 +53,6 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   const [showMetadataModal, setShowMetadataModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [newCategory, setNewCategory] = useState<string>('');
-  const [newTag, setNewTag] = useState<string>('');
   const [fileMetadata, setFileMetadata] = useState<{[filename: string]: FileMetadata}>({});
   const [applyToAll, setApplyToAll] = useState(false);
   const [editingFile, setEditingFile] = useState<string | null>(null);
@@ -80,7 +80,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     });
     
     setFileMetadata(updatedMetadata);
-  }, [selectedFiles]);
+  }, [selectedFiles, fileMetadata]);
 
   // Format file size to human-readable format
   const formatFileSize = (bytes: number): string => {
@@ -91,16 +91,8 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  // Handle file selection with multiple file support
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || e.target.files.length === 0) {
-      setUploadDebug("No files selected");
-      return;
-    }
-    
-    // Convert FileList to array
-    const newFiles = Array.from(e.target.files);
-    
+  // Handle files selected in FileUploadArea
+  const handleFilesSelected = (newFiles: File[]): void => {
     // Check file sizes and filter out files that are too large
     const validFiles: File[] = [];
     const oversizedFiles: File[] = [];
@@ -133,13 +125,37 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setUploadResults({ success: [], failed: [] });
   };
   
-  // Remove a file from the selected files
-  const removeFile = (index: number) => {
+  // FIXED: Remove a file from the selected files - prevent removal of uploaded files
+  const removeFile = (index: number): void => {
+    const file = selectedFiles[index];
+    
+    // Don't allow removal if file has been successfully uploaded
+    if (uploadResults.success.includes(file.name)) {
+      setUploadError(`The file "${file.name}" has already been uploaded and cannot be removed.`);
+      return;
+    }
+    
+    // Don't allow removal if file is currently uploading
+    if (isUploading && uploadProgress[file.name] !== undefined) {
+      setUploadError(`The file "${file.name}" is currently being uploaded and cannot be removed.`);
+      return;
+    }
+    
+    // Otherwise, proceed with removal
     setSelectedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+    
+    // Also clean up any associated data
+    if (uploadProgress[file.name]) {
+      setUploadProgress(prev => {
+        const updated = {...prev};
+        delete updated[file.name];
+        return updated;
+      });
+    }
   };
   
   // Open metadata modal for a specific file
-  const openMetadataModal = (filename: string) => {
+  const openMetadataModal = (filename: string): void => {
     setEditingFile(filename);
     setSelectedCategory(fileMetadata[filename]?.category || '');
     setSelectedTags(fileMetadata[filename]?.tags || []);
@@ -147,7 +163,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   };
   
   // Open metadata modal for batch editing
-  const openBatchMetadataModal = () => {
+  const openBatchMetadataModal = (): void => {
     setEditingFile(null);
     setSelectedCategory('');
     setSelectedTags([]);
@@ -156,7 +172,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   };
   
   // Save metadata changes
-  const saveMetadata = () => {
+  const saveMetadata = (): void => {
     if (editingFile) {
       // Update single file
       setFileMetadata(prev => ({
@@ -185,35 +201,8 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setApplyToAll(false);
   };
   
-  // Add a new category
-  const addNewCategory = () => {
-    if (newCategory && !availableCategories.includes(newCategory)) {
-      // We don't modify the availableCategories prop here as it's coming from the parent
-      setSelectedCategory(newCategory);
-      setNewCategory('');
-    }
-  };
-  
-  // Add a new tag
-  const addNewTag = () => {
-    if (newTag && !availableTags.includes(newTag)) {
-      // We don't modify the availableTags prop here as it's coming from the parent
-      setSelectedTags(prev => [...prev, newTag]);
-      setNewTag('');
-    }
-  };
-  
-  // Handle tag selection
-  const handleTagSelection = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag) 
-        : [...prev, tag]
-    );
-  };
-  
   // Upload all selected files
-  const handleUploadAll = async () => {
+  const handleUploadAll = async (): Promise<void> => {
     if (selectedFiles.length === 0) {
       setUploadError("Please select files to upload");
       return;
@@ -230,7 +219,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     // Process files sequentially
     for (let i = 0; i < selectedFiles.length; i++) {
       const file = selectedFiles[i];
-      setUploadDebug(prev => `${prev}\nUploading file ${i+1}/${selectedFiles.length}: ${file.name}`);
+      setUploadDebug(prev => prev ? `${prev}\nUploading file ${i+1}/${selectedFiles.length}: ${file.name}` : "");
       
       try {
         const formData = new FormData();
@@ -264,7 +253,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
             body: formData,
           });
           
-          setUploadDebug(prev => `${prev}\n- Response status: ${response.status}`);
+          setUploadDebug(prev => prev ? `${prev}\n- Response status: ${response.status}` : "");
           
           if (response.ok) {
             const data = await response.json();
@@ -284,7 +273,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
               });
             }
             
-            setUploadDebug(prev => `${prev}\n- Upload successful`);
+            setUploadDebug(prev => prev ? `${prev}\n- Upload successful` : "");
             successfulUploads.push(file.name);
             // Update progress to 100%
             setUploadProgress(prev => ({
@@ -293,8 +282,8 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
             }));
           } else {
             const errorText = await response.text();
-            setUploadDebug(prev => `${prev}\n- Upload failed: ${response.status} ${response.statusText}`);
-            setUploadDebug(prev => `${prev}\n- Error response: ${errorText}`);
+            setUploadDebug(prev => prev ? `${prev}\n- Upload failed: ${response.status} ${response.statusText}` : "");
+            setUploadDebug(prev => prev ? `${prev}\n- Error response: ${errorText}` : "");
             failedUploads.push(file.name);
             
             // Handle specific errors
@@ -304,12 +293,12 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
           }
         } catch (fetchError) {
           console.error(`Error uploading ${file.name}:`, fetchError);
-          setUploadDebug(prev => `${prev}\n- Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}`);
+          setUploadDebug(prev => prev ? `${prev}\n- Network error: ${fetchError instanceof Error ? fetchError.message : String(fetchError)}` : "");
           failedUploads.push(file.name);
         }
       } catch (error) {
         console.error(`Error processing ${file.name}:`, error);
-        setUploadDebug(prev => `${prev}\n- Processing error: ${error instanceof Error ? error.message : String(error)}`);
+        setUploadDebug(prev => prev ? `${prev}\n- Processing error: ${error instanceof Error ? error.message : String(error)}` : "");
         failedUploads.push(file.name);
       }
     }
@@ -321,7 +310,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     });
     
     // Final summary
-    setUploadDebug(prev => `${prev}\n\nUpload complete: ${successfulUploads.length} successful, ${failedUploads.length} failed`);
+    setUploadDebug(prev => prev ? `${prev}\n\nUpload complete: ${successfulUploads.length} successful, ${failedUploads.length} failed` : "");
     
     // Notify parent component of success
     if (successfulUploads.length > 0) {
@@ -331,18 +320,42 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setIsUploading(false);
   };
   
-  // Clear all selected files
-  const handleClearFiles = () => {
-    setSelectedFiles([]);
+  // FIXED: Clear all selected files - don't clear already uploaded files
+  const handleClearFiles = (): void => {
+    // Don't clear files that have been uploaded
+    const successfullyUploadedFiles = uploadResults.success;
+    if (successfullyUploadedFiles.length > 0) {
+      // Filter out successfully uploaded files from clearing
+      setSelectedFiles(prevFiles => 
+        prevFiles.filter(file => successfullyUploadedFiles.includes(file.name))
+      );
+      
+      setUploadError("Only non-uploaded files have been cleared.");
+    } else {
+      setSelectedFiles([]);
+    }
+    
+    // Clean up other states
     setUploadProgress({});
-    setUploadResults({ success: [], failed: [] });
-    setUploadError(null);
+    setUploadResults(prev => ({
+      success: prev.success,
+      failed: []
+    }));
     setUploadDebug(null);
-    setFileMetadata({});
-    setUsedTemplateInfo(null);
+    
+    // Clean file metadata for non-uploaded files
+    setFileMetadata(prev => {
+      const updatedMetadata = { ...prev };
+      Object.keys(updatedMetadata).forEach(filename => {
+        if (!successfullyUploadedFiles.includes(filename)) {
+          delete updatedMetadata[filename];
+        }
+      });
+      return updatedMetadata;
+    });
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (): void => {
     toggleManualEntry();
     onUploadSuccess();
   };
@@ -353,9 +366,10 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Upload Invoices</h2>
           <div className="flex space-x-2">
+            {/* FIXED: Properly call toggleUploadSection for the Hide Upload button */}
             <Button 
               variant="outline"
-              onClick={toggleUploadSection}
+              onClick={toggleUploadSection} // This is the key fix - properly calling the parent's function
               className="flex items-center px-3 py-1.5"
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -366,9 +380,8 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
                 </svg>
               }
             >
-              {showUploadSection ? 'Hide Upload' : 'Show Upload'}
+              {showUploadSection ? 'Hide Upload' : 'Show Upload'} 
             </Button>
-            
             <Button 
               variant={showManualEntry ? "secondary" : "primary"}
               onClick={toggleManualEntry}
@@ -388,378 +401,66 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
             />
           ) : showUploadSection ? (
             <div className="py-6">
-              <div className="text-center mb-6">
-                <svg className="mx-auto h-12 w-12 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="mt-2 text-sm text-gray-600">Drag and drop files here, or click to select files</p>
-                <div className="mt-4">
-                  <input
-                    type="file"
-                    className="hidden"
-                    id="file-upload"
-                    accept=".pdf,.png,.jpg,.jpeg"
-                    onChange={handleFileSelect}
-                    multiple
-                  />
-                  <label
-                    htmlFor="file-upload"
-                    className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer"
-                  >
-                    Select Invoice Files
-                  </label>
-                  <p className="mt-2 text-xs text-gray-500">Maximum file size: {formatFileSize(MAX_FILE_SIZE)}</p>
-                </div>
-              </div>
+              {/* File upload area component */}
+              <FileUploadArea 
+                onFilesSelected={handleFilesSelected}
+                maxFileSize={MAX_FILE_SIZE}
+                formatFileSize={formatFileSize}
+              />
               
-              {/* Selected files list */}
-              {selectedFiles.length > 0 && (
-                <div className="mt-6">
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-medium text-gray-700">Selected Files ({selectedFiles.length})</h3>
-                    <div className="space-x-2">
-                      {/* Batch metadata button */}
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={openBatchMetadataModal}
-                        disabled={isUploading || selectedFiles.length === 0}
-                      >
-                        Add Categories & Tags
-                      </Button>
-                      
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={handleClearFiles}
-                        disabled={isUploading}
-                      >
-                        Clear All
-                      </Button>
-                      <Button 
-                        variant="primary" 
-                        size="sm" 
-                        onClick={handleUploadAll}
-                        disabled={isUploading || selectedFiles.length === 0}
-                        isLoading={isUploading}
-                        loadingText="Uploading..."
-                      >
-                        Upload All
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="border border-gray-200 rounded-md overflow-hidden">
-                    <ul className="divide-y divide-gray-200 max-h-60 overflow-y-auto">
-                      {selectedFiles.map((file, index) => (
-                        <li 
-                          key={`${file.name}-${index}`} 
-                          className={`px-4 py-3 flex items-center justify-between text-sm ${
-                            uploadResults.success.includes(file.name) 
-                              ? 'bg-green-50' 
-                              : uploadResults.failed.includes(file.name) 
-                                ? 'bg-red-50' 
-                                : ''
-                          }`}
-                        >
-                          <div className="flex items-center flex-grow">
-                            <svg className="flex-shrink-0 h-5 w-5 text-gray-400 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
-                            </svg>
-                            <div className="flex-grow truncate">
-                              <span className="truncate">{file.name}</span>
-                              <span className="ml-2 text-xs text-gray-500">{formatFileSize(file.size)}</span>
-                              
-                              {/* Show metadata summary */}
-                              {fileMetadata[file.name] && (
-                                <div className="mt-1 text-xs text-gray-600">
-                                  {fileMetadata[file.name].category && (
-                                    <Badge color="primary" className="mr-1">
-                                      {fileMetadata[file.name].category}
-                                    </Badge>
-                                  )}
-                                  {fileMetadata[file.name].tags.map(tag => (
-                                    <Badge key={tag} color="secondary" className="mr-1">
-                                      {tag}
-                                    </Badge>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center">
-                            {/* Status indicators */}
-                            {uploadResults.success.includes(file.name) && (
-                              <span className="mr-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                                Uploaded
-                              </span>
-                            )}
-                            
-                            {uploadResults.failed.includes(file.name) && (
-                              <span className="mr-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                Failed
-                              </span>
-                            )}
-                            
-                            {!isUploading && !uploadResults.success.includes(file.name) && !uploadResults.failed.includes(file.name) && (
-                              <>
-                                {/* Add metadata button */}
-                                <button 
-                                  type="button"
-                                  onClick={() => openMetadataModal(file.name)} 
-                                  className="text-blue-600 hover:text-blue-900 p-1 mr-1"
-                                  title="Add metadata"
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                                  </svg>
-                                </button>
-                              
-                                {/* Remove file button */}
-                                <button 
-                                  type="button"
-                                  onClick={() => removeFile(index)} 
-                                  className="text-red-600 hover:text-red-900 p-1"
-                                  title="Remove file"
-                                >
-                                  <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                  </svg>
-                                </button>
-                              </>
-                            )}
-                            
-                            {isUploading && uploadProgress[file.name] !== undefined && (
-                              <div className="ml-2 w-16 bg-gray-200 rounded-full h-2.5">
-                                <div 
-                                  className="bg-primary-600 h-2.5 rounded-full" 
-                                  style={{ width: `${uploadProgress[file.name]}%` }}
-                                ></div>
-                              </div>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
+              {/* Selected files list component */}
+              <SelectedFilesList
+                files={selectedFiles}
+                isUploading={isUploading}
+                uploadProgress={uploadProgress}
+                uploadResults={uploadResults}
+                fileMetadata={fileMetadata}
+                formatFileSize={formatFileSize}
+                onRemoveFile={removeFile}
+                onEditMetadata={openMetadataModal}
+                onBatchEditMetadata={openBatchMetadataModal}
+                onClearFiles={handleClearFiles}
+                onUploadAll={handleUploadAll}
+              />
               
-              {/* Toggle section with OCR and Debug options */}
-              <div className="mt-6 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="use-ocr-templates"
-                    checked={useOcrTemplates}
-                    onChange={(e) => setUseOcrTemplates(e.target.checked)}
-                  />
-                  <label htmlFor="use-ocr-templates" className="ml-2 block text-sm text-gray-900">
-                    Use OCR Templates for extraction
-                  </label>
-                </div>
-                
-                <div className="flex items-center">
-                  <Checkbox
-                    id="show-debug-info"
-                    checked={showDebugInfo}
-                    onChange={(e) => setShowDebugInfo(e.target.checked)}
-                  />
-                  <label htmlFor="show-debug-info" className="ml-2 block text-sm text-gray-900">
-                    Show Debug Information
-                  </label>
-                </div>
-              </div>
+              {/* Upload options component */}
+              <UploadOptions
+                useOcrTemplates={useOcrTemplates}
+                setUseOcrTemplates={setUseOcrTemplates}
+                showDebugInfo={showDebugInfo}
+                setShowDebugInfo={setShowDebugInfo}
+              />
               
-              {/* Upload status and debug info */}
-              {isUploading && (
-                <div className="mt-4 text-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary-600 mx-auto"></div>
-                  <p className="mt-2 text-sm text-gray-600">
-                    Uploading {uploadResults.success.length + uploadResults.failed.length} of {selectedFiles.length} files...
-                  </p>
-                </div>
-              )}
-              
-              {uploadError && (
-                <div className="mt-4 p-3 bg-red-100 text-red-800 rounded text-sm">
-                  <div className="font-medium">Error:</div>
-                  <div>{uploadError}</div>
-                </div>
-              )}
-              
-              {/* Debug info - only shown when toggle is enabled */}
-              {showDebugInfo && (uploadDebug || usedTemplateInfo) && (
-                <div className="mt-4 p-3 bg-gray-100 text-gray-800 rounded text-sm text-left whitespace-pre-wrap overflow-auto max-h-64">
-                  <div className="font-medium mb-1">Debug Info:</div>
-                  {uploadDebug}
-                  
-                  {/* Display OCR template information */}
-                  {usedTemplateInfo && (
-                    <>
-                      <div className="font-medium mt-3 mb-1">OCR Template Info:</div>
-                      {usedTemplateInfo}
-                    </>
-                  )}
-                </div>
-              )}
-              
-              {/* Upload summary */}
-              {(uploadResults.success.length > 0 || uploadResults.failed.length > 0) && !isUploading && (
-                <div className="mt-4 p-3 bg-gray-50 rounded-md">
-                  <h3 className="text-sm font-medium text-gray-700">Upload Summary</h3>
-                  <div className="flex mt-2">
-                    <div className="mr-6">
-                      <span className="text-sm text-gray-500">Successful:</span>
-                      <span className="ml-2 text-sm font-medium text-green-600">{uploadResults.success.length}</span>
-                    </div>
-                    <div>
-                      <span className="text-sm text-gray-500">Failed:</span>
-                      <span className="ml-2 text-sm font-medium text-red-600">{uploadResults.failed.length}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* Upload status component */}
+              <UploadStatus
+                isUploading={isUploading}
+                uploadError={uploadError}
+                uploadDebug={uploadDebug}
+                usedTemplateInfo={usedTemplateInfo}
+                uploadResults={uploadResults}
+                showDebugInfo={showDebugInfo}
+                selectedFiles={selectedFiles}
+              />
             </div>
           ) : null}
         </CardBody>
       )}
 
-      {/* Metadata Modal */}
-      <Modal
+      {/* File metadata modal */}
+      <FileMetadataModal
         isOpen={showMetadataModal}
         onClose={() => setShowMetadataModal(false)}
-        size="md"
-      >
-        <ModalHeader modalTitle={`Add Categories & Tags to ${editingFile || 'All Files'}`} onClose={() => setShowMetadataModal(false)} />
-        <ModalBody>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Category
-              </label>
-              <Select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="mb-2"
-              >
-                <option value="">Select a category</option>
-                {availableCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </Select>
-              
-              {/* New category input */}
-              <div className="flex mt-2">
-                <Input
-                  type="text"
-                  placeholder="Add new category"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  className="rounded-r-none"
-                />
-                <Button
-                  type="button"
-                  onClick={addNewCategory}
-                  disabled={!newCategory}
-                  className="rounded-l-none"
-                >
-                  Add
-                </Button>
-              </div>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Tags
-              </label>
-              <div className="mb-2 flex flex-wrap gap-2">
-                {availableTags.map(tag => (
-                  <ClickableBadge
-                    key={tag}
-                    onClick={() => handleTagSelection(tag)}
-                    color={selectedTags.includes(tag) ? "primary" : "secondary"}
-                  >
-                    {tag}
-                  </ClickableBadge>
-                ))}
-              </div>
-              
-              {/* New tag input */}
-              <div className="flex mt-2">
-                <Input
-                  type="text"
-                  placeholder="Add new tag"
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  className="rounded-r-none"
-                />
-                <Button
-                  type="button"
-                  onClick={addNewTag}
-                  disabled={!newTag}
-                  className="rounded-l-none"
-                >
-                  Add
-                </Button>
-              </div>
-              
-              {/* Display selected tags */}
-              {selectedTags.length > 0 && (
-                <div className="mt-3">
-                  <p className="text-sm text-gray-500 mb-1">Selected tags:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {selectedTags.map(tag => (
-                      <Badge key={tag} color="primary" className="mr-1">
-                        {tag}
-                        <button
-                          type="button"
-                          onClick={() => setSelectedTags(tags => tags.filter(t => t !== tag))}
-                          className="ml-1 text-xs font-bold"
-                          aria-label={`Remove ${tag} tag`}
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            
-            {!editingFile && (
-              <div className="mt-4">
-                <div className="flex items-center">
-                  <Checkbox
-                    id="apply-to-all"
-                    checked={applyToAll}
-                    onChange={(e) => setApplyToAll(e.target.checked)}
-                  />
-                  <label htmlFor="apply-to-all" className="ml-2 text-sm text-gray-700">
-                    Apply to all selected files
-                  </label>
-                </div>
-              </div>
-            )}
-          </div>
-        </ModalBody>
-        <ModalFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => setShowMetadataModal(false)}
-            className="mr-2"
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="primary"
-            onClick={saveMetadata}
-          >
-            Save
-          </Button>
-        </ModalFooter>
-      </Modal>
+        fileName={editingFile}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedTags={selectedTags}
+        setSelectedTags={setSelectedTags}
+        availableCategories={availableCategories}
+        availableTags={availableTags}
+        onSave={saveMetadata}
+        applyToAll={applyToAll}
+        setApplyToAll={setApplyToAll}
+      />
     </Card>
   );
 };
