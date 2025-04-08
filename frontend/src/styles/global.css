@@ -103,10 +103,48 @@ button {
 }
 
 /* SVG enhancements */
+/* MODIFIED: Changed default SVG behavior to not fill by default */
 svg {
   display: inline-block;
   vertical-align: middle;
-  fill: currentColor;
+}
+
+/* SVG icon fixes - ensure outline icons render correctly */
+svg[stroke="currentColor"] {
+  fill: none !important;
+  stroke: currentColor;
+}
+
+.navbar-link svg,
+.mobile-nav-link svg,
+.icon-fix svg {
+  fill: none !important;
+  stroke: currentColor;
+  stroke-width: 2;
+  width: 24px;
+  height: 24px;
+}
+
+.dashboard-card-icon {
+  fill: none;
+  stroke: currentColor;
+}
+
+button svg {
+  fill: none;
+  stroke: currentColor;
+}
+
+/* Exception for logos or icons that should be filled */
+.logo-icon svg,
+svg.filled-icon {
+  fill: currentColor !important;
+}
+
+/* Ensure chart icons don't get affected by these rules */
+.recharts-wrapper svg,
+.recharts-surface {
+  fill: inherit !important;
 }
 
 /* Utility classes that complement Tailwind */
