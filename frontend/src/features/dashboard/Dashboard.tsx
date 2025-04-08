@@ -14,6 +14,7 @@ import { Invoice, ChartData, DashboardStats } from "./types";
 const Dashboard: React.FC = () => {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [filteredInvoices, setFilteredInvoices] = useState<Invoice[]>([]);
+  const [allInvoices, setAllInvoices] = useState<Invoice[]>([]); // Keep a reference to all invoices for Recent Invoices section
   const [categories, setCategories] = useState<string[]>([]);
   const [tags, setTags] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<number | string>(new Date().getFullYear());
@@ -49,6 +50,7 @@ const Dashboard: React.FC = () => {
       // Fetch real data from the API
       const invoiceData = await fetchInvoices();
       setInvoices(invoiceData);
+      setAllInvoices(invoiceData); // Store all invoices for Recent Invoices section
       
       // Fetch categories and tags
       const categoriesData = await fetchCategories();
@@ -331,8 +333,8 @@ const Dashboard: React.FC = () => {
         paymentMethodData={chartData.paymentMethod}
       />
       
-      {/* Recent Invoices Component */}
-      <RecentInvoices invoices={filteredInvoices.slice(0, 5)} />
+      {/* Recent Invoices Component - Now using allInvoices instead of filteredInvoices */}
+      <RecentInvoices invoices={allInvoices.slice(0, 5)} />
     </div>
   );
 };
