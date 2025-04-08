@@ -1,10 +1,21 @@
 // src/features/dashboard/CategoryCharts.tsx
-import React from 'react';
+import React, { useContext } from 'react';
 import { 
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
 } from "recharts";
-import { ChartDataPoint, CHART_COLORS, tooltipFormatter } from './types';
+import { ThemeContext } from '../../context/ThemeContext';
+import { ChartDataPoint, CHART_COLORS } from './types';
+
+// Format currency for display
+const formatCurrency = (value: any) => {
+  if (value === undefined || value === null) return '$0.00';
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD'
+  }).format(numValue);
+};
 
 interface CategoryChartsProps {
   categoryData: ChartDataPoint[];
@@ -17,6 +28,8 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
   statusData,
   paymentMethodData
 }) => {
+  const { darkMode } = useContext(ThemeContext);
+  
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       {/* Category Spending Chart */}
@@ -36,14 +49,25 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
                 paddingAngle={5}
                 dataKey="value"
                 nameKey="name"
-                label={(entry) => entry.name}
               >
                 {categoryData.slice(0, 7).map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip formatter={tooltipFormatter} />
-              <Legend />
+              <Tooltip 
+                formatter={(value) => formatCurrency(value)} 
+                contentStyle={{ 
+                  backgroundColor: darkMode ? '#1F2937' : '#fff', 
+                  borderColor: darkMode ? '#374151' : '#e5e7eb' 
+                }} 
+              />
+              <Legend 
+                formatter={(value) => (
+                  <span style={{ color: darkMode ? '#E5E7EB' : '#374151' }}>
+                    {value}
+                  </span>
+                )}
+              />
             </PieChart>
           </ResponsiveContainer>
         </div>
@@ -61,12 +85,27 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
               layout="vertical"
               margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
             >
-              <XAxis type="number" stroke="#6b7280" />
-              <YAxis type="category" dataKey="name" stroke="#6b7280" />
-              <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-              <Tooltip formatter={tooltipFormatter} />
-              <Legend />
-              <Bar dataKey="value" name="Amount" fill="#3b82f6">
+              <XAxis 
+                type="number" 
+                stroke={darkMode ? "#9CA3AF" : "#6b7280"} 
+              />
+              <YAxis 
+                type="category" 
+                dataKey="name" 
+                stroke={darkMode ? "#9CA3AF" : "#6b7280"} 
+              />
+              <CartesianGrid 
+                strokeDasharray="3 3" 
+                stroke={darkMode ? "#374151" : "#f0f0f0"} 
+              />
+              <Tooltip 
+                formatter={(value) => formatCurrency(value)} 
+                contentStyle={{ 
+                  backgroundColor: darkMode ? '#1F2937' : '#fff', 
+                  borderColor: darkMode ? '#374151' : '#e5e7eb' 
+                }} 
+              />
+              <Bar dataKey="value" fill="#3b82f6">
                 {paymentMethodData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                 ))}
@@ -75,38 +114,6 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
           </ResponsiveContainer>
         </div>
       </div>
-      
-      {/* Optional: Add Status Chart if you want to include it */}
-      {/* 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white">Invoice Status</h2>
-        </div>
-        <div className="p-6 h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={statusData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={90}
-                paddingAngle={5}
-                dataKey="value"
-                nameKey="name"
-                label
-              >
-                {statusData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={CHART_COLORS[index % CHART_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value) => value} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-      */}
     </div>
   );
 };
