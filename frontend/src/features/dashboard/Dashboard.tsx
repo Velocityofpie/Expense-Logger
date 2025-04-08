@@ -127,6 +127,13 @@ const Dashboard: React.FC = () => {
   // Generate chart data from invoice data
   const generateChartData = (invoiceData: Invoice[]): void => {
     if (!invoiceData || invoiceData.length === 0) {
+      // Provide default empty data
+      setChartData({
+        monthly: [],
+        category: [],
+        status: [],
+        paymentMethod: []
+      });
       return;
     }
     
