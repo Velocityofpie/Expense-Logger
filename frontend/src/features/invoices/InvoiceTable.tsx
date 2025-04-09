@@ -249,8 +249,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
               onClick={cycleWidthMode}
               className="text-sm whitespace-nowrap"
             >
-              {widthMode === 'standard' ? 'Standard Width' : 
-               widthMode === 'compact' ? 'Compact Width' : 'Full Width'}
+              {widthMode === 'standard' ? 'Standard Width (Responsive)' : 
+               widthMode === 'compact' ? 'Compact Width (Medium)' : 'Full Width'}
             </Button>
           </div>
         </div>
@@ -421,65 +421,65 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
                 <td colSpan={8} className="text-center py-12">
                   <div className="flex flex-col items-center">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-300 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-lg text-gray-500">No invoices found</p>
-                  <p className="text-sm text-gray-400 mt-1">Upload some invoices or add them manually</p>
-                </div>
-              </td>
-            </tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-
-    {/* Pagination controls below the table (if needed for larger datasets) */}
-    {totalInvoices > 0 && pageSize > 0 && totalPages > 1 && (
-      <div className="flex justify-between items-center mt-4">
-        <div className="text-sm text-gray-500">
-          Showing {Math.min((currentPage - 1) * pageSize + 1, totalInvoices)} to {Math.min(currentPage * pageSize, totalInvoices)} of {totalInvoices} results
-        </div>
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(1)}
-            disabled={currentPage === 1}
-          >
-            First
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToPrevPage}
-            disabled={currentPage === 1}
-          >
-            Previous
-          </Button>
-          <span className="px-2">
-            Page {currentPage} of {totalPages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={goToNextPage}
-            disabled={currentPage === totalPages}
-          >
-            Next
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setCurrentPage(totalPages)}
-            disabled={currentPage === totalPages}
-          >
-            Last
-          </Button>
-        </div>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p className="text-lg text-gray-500">No invoices found</p>
+                    <p className="text-sm text-gray-400 mt-1">Upload some invoices or add them manually</p>
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
-    )}
-  </div>
-);
+
+      {/* Pagination controls below the table (if needed for larger datasets) */}
+      {totalInvoices > 0 && pageSize > 0 && totalPages > 1 && (
+        <div className="flex justify-between items-center mt-4">
+          <div className="text-sm text-gray-500">
+            Showing {Math.min((currentPage - 1) * pageSize + 1, totalInvoices)} to {Math.min(currentPage * pageSize, totalInvoices)} of {totalInvoices} results
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+            >
+              First
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </Button>
+            <span className="px-2">
+              Page {currentPage} of {totalPages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages}
+            >
+              Next
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+            >
+              Last
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 };
 
 export default InvoiceTable;

@@ -192,9 +192,9 @@ const InvoiceExtractor: React.FC = () => {
   return (
     <div className={`space-y-6 ${
       widthMode === 'full' ? 'w-full' : 
-      widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
-      'max-w-screen-lg mx-auto'
-    }`}>
+      widthMode === 'compact' ? 'w-full max-w-screen-lg mx-auto' : 
+      'w-full'
+    }`}>    
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Invoice Management</h1>
       </div>
@@ -212,11 +212,7 @@ const InvoiceExtractor: React.FC = () => {
       />
       
       {/* Invoice List with Filters */}
-      <Card className={
-        widthMode === 'full' ? 'w-full' : 
-        widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
-        'max-w-screen-lg mx-auto'
-      }>
+      <Card className="w-full">
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <h2 className="text-lg font-medium">Invoice List</h2>

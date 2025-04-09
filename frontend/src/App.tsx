@@ -37,8 +37,8 @@ const App: React.FC = () => {
           <Navbar />
           <main className={`flex-grow py-6 ${
             widthMode === 'full' ? 'w-full px-4' : 
-            widthMode === 'compact' ? 'px-6 max-w-screen-xl mx-auto' : 
-            'px-8 max-w-screen-lg mx-auto'
+            widthMode === 'compact' ? 'w-full px-6 max-w-screen-lg mx-auto' : 
+            'w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24'
           }`}>
             <Routes>
               <Route path="/" element={<Dashboard />} />

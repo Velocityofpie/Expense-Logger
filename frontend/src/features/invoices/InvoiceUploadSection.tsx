@@ -363,11 +363,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   };
   
  return (
-    <Card className={
-      widthMode === 'full' ? 'w-full' : 
-      widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
-      'max-w-screen-lg mx-auto'
-    }>
+    <Card className="w-full">
       <CardHeader>
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Upload Invoices</h2>
