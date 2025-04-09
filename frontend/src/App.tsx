@@ -12,19 +12,21 @@ import ExpenseTrackerPage from './features/expense/ExpenseTrackerPage';
 import { Tools } from './features/tools';
 
 const App: React.FC = () => {
-  // State for wide mode
-  const [wideMode, setWideMode] = useState(true);
+  // State for width mode
+  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
+    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
+  );
   
-  // Listen for wide mode changes
+  // Listen for width mode changes
   useEffect(() => {
-    const handleWideModeChange = (e: CustomEvent) => {
-      setWideMode(e.detail.wideMode);
+    const handleWidthModeChange = (e: CustomEvent) => {
+      setWidthMode(e.detail.widthMode);
     };
     
-    window.addEventListener('widemodechange', handleWideModeChange as EventListener);
+    window.addEventListener('widthmodechange', handleWidthModeChange as EventListener);
     
     return () => {
-      window.removeEventListener('widemodechange', handleWideModeChange as EventListener);
+      window.removeEventListener('widthmodechange', handleWidthModeChange as EventListener);
     };
   }, []);
 
@@ -33,7 +35,11 @@ const App: React.FC = () => {
       <Router>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-dark-bg">
           <Navbar />
-          <main className={`flex-grow ${wideMode ? 'w-full px-4' : 'container mx-auto px-6'} py-6`}>
+          <main className={`flex-grow py-6 ${
+            widthMode === 'full' ? 'w-full px-4' : 
+            widthMode === 'compact' ? 'px-6 max-w-screen-xl mx-auto' : 
+            'px-8 max-w-screen-lg mx-auto'
+          }`}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />

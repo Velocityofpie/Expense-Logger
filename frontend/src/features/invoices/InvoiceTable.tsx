@@ -42,8 +42,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const [pageSize, setPageSize] = useState(25); // Default page size
   const [paginatedInvoices, setPaginatedInvoices] = useState<Invoice[]>([]);
   
-  // Wide mode toggle
-  const [wideMode, setWideMode] = useState(true);
+  // Width mode state - default to 'compact' (middle size)
+  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
+    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
+  );
   
   // Calculate total pages
   const totalInvoices = invoices.length;
@@ -119,13 +121,26 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newSize = parseInt(e.target.value);
     setPageSize(newSize);
+    // Save page size preference
+    localStorage.setItem('pageSize', String(newSize));
   };
   
-  // Handle wide mode toggle
-  const toggleWideMode = () => {
-    setWideMode(!wideMode);
+  // Handle width mode toggle
+  const cycleWidthMode = () => {
+    // Cycle through the three width modes: standard -> compact -> full -> standard
+    const nextMode = 
+      widthMode === 'standard' ? 'compact' : 
+      widthMode === 'compact' ? 'full' : 'standard';
+    
+    setWidthMode(nextMode);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('widthMode', nextMode);
+    
     // Dispatch a custom event that parent components can listen for
-    window.dispatchEvent(new CustomEvent('widemodechange', { detail: { wideMode: !wideMode } }));
+    window.dispatchEvent(new CustomEvent('widthmodechange', { 
+      detail: { widthMode: nextMode } 
+    }));
   };
 
   // Pagination controls
@@ -231,10 +246,11 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={toggleWideMode}
-              className="text-sm"
+              onClick={cycleWidthMode}
+              className="text-sm whitespace-nowrap"
             >
-              {wideMode ? 'Standard Width' : 'Full Width'}
+              {widthMode === 'standard' ? 'Standard Width' : 
+               widthMode === 'compact' ? 'Compact Width' : 'Full Width'}
             </Button>
           </div>
         </div>

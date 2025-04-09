@@ -25,7 +25,7 @@ interface InvoiceUploadSectionProps {
   toggleManualEntry: () => void;
   showUploadSection: boolean;
   toggleUploadSection: () => void;
-  wideMode?: boolean;
+  widthMode?: 'standard' | 'compact' | 'full';
 }
 
 const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
@@ -36,7 +36,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   toggleManualEntry,
   showUploadSection,
   toggleUploadSection,
-  wideMode = true
+  widthMode = 'compact'
 }) => {
   // State for file upload
   const [isUploading, setIsUploading] = useState(false);
@@ -361,9 +361,13 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     toggleManualEntry();
     onUploadSuccess();
   };
-
-  return (
-    <Card className={wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}>
+  
+ return (
+    <Card className={
+      widthMode === 'full' ? 'w-full' : 
+      widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
+      'max-w-screen-lg mx-auto'
+    }>
       <CardHeader>
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Upload Invoices</h2>

@@ -172,23 +172,29 @@ const InvoiceExtractor: React.FC = () => {
     }
   };
 
-  // Listen for wide mode changes
-  const [wideMode, setWideMode] = useState(true);
+  // Listen for width mode changes
+  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
+    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
+  );
   
   useEffect(() => {
-    const handleWideModeChange = (e: CustomEvent) => {
-      setWideMode(e.detail.wideMode);
+    const handleWidthModeChange = (e: CustomEvent) => {
+      setWidthMode(e.detail.widthMode);
     };
     
-    window.addEventListener('widemodechange', handleWideModeChange as EventListener);
+    window.addEventListener('widthmodechange', handleWidthModeChange as EventListener);
     
     return () => {
-      window.removeEventListener('widemodechange', handleWideModeChange as EventListener);
+      window.removeEventListener('widthmodechange', handleWidthModeChange as EventListener);
     };
   }, []);
 
   return (
-    <div className={`space-y-6 ${wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}`}>
+    <div className={`space-y-6 ${
+      widthMode === 'full' ? 'w-full' : 
+      widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
+      'max-w-screen-lg mx-auto'
+    }`}>
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Invoice Management</h1>
       </div>
@@ -202,11 +208,15 @@ const InvoiceExtractor: React.FC = () => {
         toggleManualEntry={toggleManualEntry}
         showUploadSection={showUploadSection}
         toggleUploadSection={toggleUploadSection}
-        wideMode={wideMode}
+        widthMode={widthMode}
       />
       
       {/* Invoice List with Filters */}
-      <Card className={wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}>
+      <Card className={
+        widthMode === 'full' ? 'w-full' : 
+        widthMode === 'compact' ? 'max-w-screen-xl mx-auto' : 
+        'max-w-screen-lg mx-auto'
+      }>
         <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
             <h2 className="text-lg font-medium">Invoice List</h2>
