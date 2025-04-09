@@ -9,7 +9,6 @@ import InvoiceBasicInfo from './components/InvoiceBasicInfo';
 import InvoiceLineItems from './components/InvoiceLineItems';
 import InvoicePayment from './components/InvoicePayment';
 import InvoiceDocumentViewer from './components/InvoiceDocumentViewer';
-import InvoiceActions from './components/InvoiceActions';
 import InvoiceDeleteModal from './components/InvoiceDeleteModal';
 
 // Hooks
@@ -56,6 +55,7 @@ const InvoiceDetailContainer: React.FC = () => {
     addPayment,
     goToPrevInvoice,
     goToNextInvoice,
+    isSubmitting
   } = useInvoiceActions(invoice, items, tags, categories, navigate, id);
   
   // Local state
@@ -126,14 +126,10 @@ const InvoiceDetailContainer: React.FC = () => {
 
   return (
     <div className="container mx-auto px-4 py-6 dark:bg-gray-900">
-      {/* Header with breadcrumbs and navigation */}
+      {/* Header with breadcrumbs, navigation, and action buttons */}
       <InvoiceHeader 
         invoice={invoice} 
         onGoBack={() => navigate('/invoices')}
-      />
-      
-      {/* Action buttons */}
-      <InvoiceActions
         onSave={saveInvoice}
         onDelete={() => setShowDeleteModal(true)}
         onPrev={() => goToPrevInvoice(allInvoices, currentIndex)}
@@ -141,6 +137,8 @@ const InvoiceDetailContainer: React.FC = () => {
         canGoPrev={currentIndex > 0}
         canGoNext={currentIndex < allInvoices.length - 1}
         isSaving={isSaving}
+        toggleSplitView={toggleSplitView}
+        splitView={splitView}
       />
       
       {/* Success message banner */}
@@ -166,23 +164,6 @@ const InvoiceDetailContainer: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Split View Toggle */}
-      <div className="mb-4 flex justify-end">
-        <button
-          className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
-            splitView 
-              ? 'bg-blue-500 text-white dark:bg-blue-600' 
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
-          }`}
-          onClick={toggleSplitView}
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-          </svg>
-          {splitView ? "Exit Split View" : "Split View"}
-        </button>
-      </div>
 
       {/* Tabs */}
       <InvoiceTabs 

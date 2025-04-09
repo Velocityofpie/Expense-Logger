@@ -5,7 +5,6 @@ export { default as InvoiceDetail } from './InvoiceDetail';
 export { default as InvoiceDetailContainer } from './InvoiceDetailContainer';
 
 // Component exports
-export { default as InvoiceActions } from './components/InvoiceActions';
 export { default as InvoiceBasicInfo } from './components/InvoiceBasicInfo';
 export { default as CategoryManagementModal } from './components/CategoryManagementModal';
 export { default as TagManagementModal } from './components/TagManagementModal';
