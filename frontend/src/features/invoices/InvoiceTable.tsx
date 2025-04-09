@@ -1,5 +1,5 @@
 // src/features/invoices/InvoiceTable.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Table, 
   TableHead,
@@ -10,7 +10,8 @@ import {
   TableFooter,
   Badge, 
   Button, 
-  Checkbox 
+  Checkbox,
+  Select
 } from '../../shared';
 import { Invoice } from './types';
 
@@ -35,6 +36,35 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const [selectedInvoices, setSelectedInvoices] = useState<number[]>([]);
   const [selectAll, setSelectAll] = useState(false);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(25); // Default page size
+  const [paginatedInvoices, setPaginatedInvoices] = useState<Invoice[]>([]);
+  
+  // Wide mode toggle
+  const [wideMode, setWideMode] = useState(true);
+  
+  // Calculate total pages
+  const totalInvoices = invoices.length;
+  const totalPages = pageSize === 0 ? 1 : Math.ceil(totalInvoices / pageSize);
+
+  // Handle pagination
+  useEffect(() => {
+    if (pageSize === 0) {
+      // "All" option selected
+      setPaginatedInvoices(invoices);
+    } else {
+      const startIndex = (currentPage - 1) * pageSize;
+      const endIndex = Math.min(startIndex + pageSize, totalInvoices);
+      setPaginatedInvoices(invoices.slice(startIndex, endIndex));
+    }
+  }, [invoices, currentPage, pageSize]);
+
+  // Reset to first page when page size changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pageSize]);
 
   // Format currency
   const formatCurrency = (value?: number): string => {
@@ -54,12 +84,13 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     }
   };
 
-  // Handle "select all" checkbox
+  // Handle "select all" checkbox for current page
   const handleSelectAll = () => {
     if (selectAll) {
       setSelectedInvoices([]);
     } else {
-      setSelectedInvoices(invoices.map(inv => inv.invoice_id));
+      const currentPageIds = paginatedInvoices.map(inv => inv.invoice_id);
+      setSelectedInvoices(currentPageIds);
     }
     setSelectAll(!selectAll);
   };
@@ -82,6 +113,37 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   // Cancel batch delete
   const cancelBatchDelete = () => {
     setShowDeleteAlert(false);
+  };
+
+  // Handle page size change
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(e.target.value);
+    setPageSize(newSize);
+  };
+  
+  // Handle wide mode toggle
+  const toggleWideMode = () => {
+    setWideMode(!wideMode);
+    // Dispatch a custom event that parent components can listen for
+    window.dispatchEvent(new CustomEvent('widemodechange', { detail: { wideMode: !wideMode } }));
+  };
+
+  // Pagination controls
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+  
+  // Format page size display text
+  const formatPageSizeText = (size: number): string => {
+    return size === 0 ? "All" : size.toString();
   };
 
   if (isLoading) {
@@ -146,6 +208,71 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
         </div>
       )}
 
+      {/* Pagination controls above the table */}
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex items-center space-x-4">
+          <div className="flex items-center">
+            <span className="text-sm text-gray-500 mr-3 whitespace-nowrap">Rows per page:</span>
+            <Select
+              value={pageSize.toString()}
+              onChange={handlePageSizeChange}
+              className="w-24 text-sm"
+            >
+              <option value="10">10</option>
+              <option value="15">15</option>
+              <option value="25">25</option>
+              <option value="50">50</option>
+              <option value="100">100</option>
+              <option value="0">All</option>
+            </Select>
+          </div>
+          <div className="flex items-center">
+            <span className="text-sm text-gray-500 mr-3 whitespace-nowrap">Layout:</span>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={toggleWideMode}
+              className="text-sm"
+            >
+              {wideMode ? 'Standard Width' : 'Full Width'}
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center">
+          <span className="text-sm text-gray-500 mr-4">
+            {pageSize > 0 ? (
+              `${Math.min((currentPage - 1) * pageSize + 1, totalInvoices)}-${Math.min(currentPage * pageSize, totalInvoices)} of ${totalInvoices}`
+            ) : (
+              `All ${totalInvoices} items`
+            )}
+          </span>
+          <div className="flex space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToPrevPage}
+              disabled={currentPage === 1 || pageSize === 0}
+              className="px-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToNextPage}
+              disabled={currentPage === totalPages || pageSize === 0}
+              className="px-2"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Button>
+          </div>
+        </div>
+      </div>
+
       {/* Invoice Table */}
       <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-dark-border">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-dark-border">
@@ -182,8 +309,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
             </tr>
           </thead>
           <tbody className="bg-white dark:bg-dark-card divide-y divide-gray-200 dark:divide-dark-border">
-            {invoices.length > 0 ? (
-              invoices.map(invoice => (
+            {paginatedInvoices.length > 0 ? (
+              paginatedInvoices.map(invoice => (
                 <tr 
                   key={invoice.invoice_id} 
                   className={selectedInvoices.includes(invoice.invoice_id) ? "bg-primary-50" : ""}
@@ -289,6 +416,52 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
         </tbody>
       </table>
     </div>
+
+    {/* Pagination controls below the table (if needed for larger datasets) */}
+    {totalInvoices > 0 && pageSize > 0 && totalPages > 1 && (
+      <div className="flex justify-between items-center mt-4">
+        <div className="text-sm text-gray-500">
+          Showing {Math.min((currentPage - 1) * pageSize + 1, totalInvoices)} to {Math.min(currentPage * pageSize, totalInvoices)} of {totalInvoices} results
+        </div>
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+          >
+            First
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToPrevPage}
+            disabled={currentPage === 1}
+          >
+            Previous
+          </Button>
+          <span className="px-2">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToNextPage}
+            disabled={currentPage === totalPages}
+          >
+            Next
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={currentPage === totalPages}
+          >
+            Last
+          </Button>
+        </div>
+      </div>
+    )}
   </div>
 );
 };

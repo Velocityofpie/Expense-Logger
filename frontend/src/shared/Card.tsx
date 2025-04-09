@@ -1,5 +1,4 @@
-// Update the Card.tsx file
-
+// Updated Card.tsx component for wider display
 import React, { forwardRef } from 'react';
 import { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from './types';
 
@@ -7,13 +6,14 @@ import { CardProps, CardHeaderProps, CardBodyProps, CardFooterProps } from './ty
  * Card component for grouping related content
  */
 export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ children, className = '', hover = false, ...props }, ref) => {
+  ({ children, className = '', hover = false, fullWidth = false, ...props }, ref) => {
     return (
       <div 
         ref={ref}
         className={`bg-white dark:bg-dark-card rounded-lg shadow-sm 
                     border border-gray-100 dark:border-dark-border 
-                    transition-colors duration-200 
+                    transition-colors duration-200
+                    ${fullWidth ? 'w-full' : ''}
                     ${hover ? 'hover:shadow-md' : ''} 
                     ${className}`} 
         {...props}

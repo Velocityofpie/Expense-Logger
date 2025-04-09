@@ -25,6 +25,7 @@ interface InvoiceUploadSectionProps {
   toggleManualEntry: () => void;
   showUploadSection: boolean;
   toggleUploadSection: () => void;
+  wideMode?: boolean;
 }
 
 const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
@@ -34,7 +35,8 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   showManualEntry,
   toggleManualEntry,
   showUploadSection,
-  toggleUploadSection
+  toggleUploadSection,
+  wideMode = true
 }) => {
   // State for file upload
   const [isUploading, setIsUploading] = useState(false);
@@ -125,7 +127,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setUploadResults({ success: [], failed: [] });
   };
   
-  // FIXED: Remove a file from the selected files - prevent removal of uploaded files
+  // Remove a file from the selected files
   const removeFile = (index: number): void => {
     const file = selectedFiles[index];
     
@@ -320,7 +322,7 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setIsUploading(false);
   };
   
-  // FIXED: Clear all selected files - don't clear already uploaded files
+  // Clear all selected files - don't clear already uploaded files
   const handleClearFiles = (): void => {
     // Don't clear files that have been uploaded
     const successfullyUploadedFiles = uploadResults.success;
@@ -361,12 +363,11 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
   };
 
   return (
-    <Card>
+    <Card className={wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}>
       <CardHeader>
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-medium">Upload Invoices</h2>
           <div className="flex space-x-2">
-            {/* FIXED: Button with directly embedded SVG and text */}
             <Button 
               variant="outline"
               onClick={toggleUploadSection}

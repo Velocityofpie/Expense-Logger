@@ -83,6 +83,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 // Card Component Types
+// Card Component Types
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   /**
    * Card contents (optional)
@@ -98,6 +99,11 @@ export interface CardProps extends HTMLAttributes<HTMLDivElement> {
    * Whether to add hover effect
    */
   hover?: boolean;
+
+  /**
+   * Whether the card should take up full width
+   */
+  fullWidth?: boolean;
 }
 
 export interface CardHeaderProps extends HTMLAttributes<HTMLDivElement> {

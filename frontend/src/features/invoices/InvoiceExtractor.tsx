@@ -1,4 +1,4 @@
-// src/features/invoices/InvoiceExtractor.tsx
+// Updated InvoiceExtractor.tsx to work with the enhanced pagination
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody, Input, Select } from '../../shared';
@@ -172,8 +172,23 @@ const InvoiceExtractor: React.FC = () => {
     }
   };
 
+  // Listen for wide mode changes
+  const [wideMode, setWideMode] = useState(true);
+  
+  useEffect(() => {
+    const handleWideModeChange = (e: CustomEvent) => {
+      setWideMode(e.detail.wideMode);
+    };
+    
+    window.addEventListener('widemodechange', handleWideModeChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('widemodechange', handleWideModeChange as EventListener);
+    };
+  }, []);
+
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}`}>
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Invoice Management</h1>
       </div>
@@ -187,51 +202,54 @@ const InvoiceExtractor: React.FC = () => {
         toggleManualEntry={toggleManualEntry}
         showUploadSection={showUploadSection}
         toggleUploadSection={toggleUploadSection}
+        wideMode={wideMode}
       />
       
       {/* Invoice List with Filters */}
-      <Card>
+      <Card className={wideMode ? 'w-full' : 'max-w-screen-xl mx-auto'}>
         <CardHeader>
-          <h2 className="text-lg font-medium">Invoice List</h2>
-        </CardHeader>
-        <CardBody>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-              <Input
-                type="text"
-                placeholder="Search by order #, merchant, etc."
-                value={filters.searchTerm}
-                onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-              <Select
-                value={filters.status}
-                onChange={(e) => handleFilterChange("status", e.target.value)}
-              >
-                <option value="All">All Statuses</option>
-                <option value="Open">Open</option>
-                <option value="Paid">Paid</option>
-                <option value="Draft">Draft</option>
-                <option value="Needs Attention">Needs Attention</option>
-                <option value="Resolved">Resolved</option>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <Select
-                value={filters.category}
-                onChange={(e) => handleFilterChange("category", e.target.value)}
-              >
-                <option value="All">All Categories</option>
-                {availableCategories.map(category => (
-                  <option key={category} value={category}>{category}</option>
-                ))}
-              </Select>
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+            <h2 className="text-lg font-medium">Invoice List</h2>
+            <div className="flex flex-col md:flex-row items-start md:items-center space-y-4 md:space-y-0 md:space-x-4 w-full md:w-auto">
+              <div className="w-full md:w-48">
+                <Input
+                  type="text"
+                  placeholder="Search invoices..."
+                  value={filters.searchTerm}
+                  onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
+                  className="text-sm"
+                />
+              </div>
+              <div className="w-full md:w-40">
+                <Select
+                  value={filters.status}
+                  onChange={(e) => handleFilterChange("status", e.target.value)}
+                  className="text-sm"
+                >
+                  <option value="All">All Statuses</option>
+                  <option value="Open">Open</option>
+                  <option value="Paid">Paid</option>
+                  <option value="Draft">Draft</option>
+                  <option value="Needs Attention">Needs Attention</option>
+                  <option value="Resolved">Resolved</option>
+                </Select>
+              </div>
+              <div className="w-full md:w-40">
+                <Select
+                  value={filters.category}
+                  onChange={(e) => handleFilterChange("category", e.target.value)}
+                  className="text-sm"
+                >
+                  <option value="All">All Categories</option>
+                  {availableCategories.map(category => (
+                    <option key={category} value={category}>{category}</option>
+                  ))}
+                </Select>
+              </div>
             </div>
           </div>
+        </CardHeader>
+        <CardBody>
           
           <InvoiceTable 
             invoices={filteredInvoices}
