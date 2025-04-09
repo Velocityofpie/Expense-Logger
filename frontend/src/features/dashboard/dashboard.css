@@ -1,6 +1,6 @@
-/* Critical fixes for Recharts colors - add these to your dashboard.css */
+/* Critical fixes for Recharts colors - update these in your dashboard.css */
 
-/* IMPORTANT: Override fill-opacity to ensure colors show */
+/* Make sure fill-opacity doesn't override our explicit colors */
 .recharts-sector {
   fill-opacity: 1 !important;
 }
@@ -9,24 +9,19 @@
   fill-opacity: 1 !important;
 }
 
-/* Force SVG elements to use their specified colors */
-.recharts-pie-sector path,
-.recharts-rectangle.recharts-bar-rectangle {
-  fill: currentColor !important;
+/* IMPORTANT: Remove the "fill: currentColor !important" rule that was causing color issues */
+/* Instead, use this more targeted approach */
+.recharts-pie-sector path {
   fill-opacity: 1 !important;
+  /* We're not forcing fill: currentColor anymore - let Cell component's fill property work */
 }
 
-/* Override any inherited fill properties */
-.recharts-layer {
-  fill: none;
+.recharts-rectangle.recharts-bar-rectangle {
+  fill-opacity: 1 !important;
+  /* We're not forcing fill: currentColor anymore - let Cell component's fill property work */
 }
 
-/* Make sure bar rectangles show correctly */
-.recharts-bar-rectangles {
-  fill: none;
-}
-
-/* Make pie slices visible with white borders */
+/* Make sure sector stroke matches fill color for pie slices */
 .recharts-sector {
   stroke: #FFFFFF;
   stroke-width: 1px;
@@ -34,7 +29,7 @@
 
 /* Fix any fill issues for rectangle */
 rect.recharts-rectangle.recharts-bar-rectangle {
-  fill: currentColor !important;
+  /* We're not forcing fill: currentColor anymore - let Cell component set the color */
 }
 
 /* Make text elements visible */

@@ -1,5 +1,5 @@
 // src/features/dashboard/CategoryCharts.tsx
-import React, { useContext } from 'react';
+import React, { useContext, useState } from 'react';
 import { 
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid
@@ -29,6 +29,13 @@ const formatCurrency = (value: any) => {
     style: 'currency',
     currency: 'USD'
   }).format(numValue);
+};
+
+// Format percentage for display
+const formatPercentage = (value: any, total: number) => {
+  if (value === undefined || value === null || total === 0) return '0%';
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  return `${((numValue / total) * 100).toFixed(1)}%`;
 };
 
 // Default demo data
@@ -63,6 +70,13 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
   paymentMethodData = DEFAULT_PAYMENT_DATA
 }) => {
   const { darkMode } = useContext(ThemeContext);
+  // Separate state for each chart's display mode
+  const [showPiePercentage, setShowPiePercentage] = useState<boolean>(false);
+  const [showBarPercentage, setShowBarPercentage] = useState<boolean>(false);
+  
+  // Calculate totals for percentage display
+  const categoryTotal = categoryData.reduce((sum, item) => sum + item.value, 0);
+  const paymentTotal = paymentMethodData.reduce((sum, item) => sum + item.value, 0);
   
   // Define colors based on theme
   const textColor = darkMode ? "#E5E7EB" : "#374151";
@@ -74,8 +88,16 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
       {/* Category Spending Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">Spending by Category</h2>
+          <div className="flex items-center">
+            <button
+              onClick={() => setShowPiePercentage(!showPiePercentage)}
+              className="px-3 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            >
+              {showPiePercentage ? 'Show Values' : 'Show Percentages'}
+            </button>
+          </div>
         </div>
         <div className="p-6" style={{ height: '320px' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -93,18 +115,24 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
                 strokeWidth={1}
               >
                 {categoryData.map((entry, index) => {
-                  const color = CHART_COLORS[index % CHART_COLORS.length];
+                  // Use modulo to cycle through colors if there are more data points than colors
+                  const colorIndex = index % CHART_COLORS.length;
                   return (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={color}
-                      style={{ fill: color }} // Force inline style
+                      fill={CHART_COLORS[colorIndex]}
+                      stroke={CHART_COLORS[colorIndex]}
+                      style={{ fill: CHART_COLORS[colorIndex] }} 
                     />
                   );
                 })}
               </Pie>
               <Tooltip 
-                formatter={(value) => formatCurrency(value)} 
+                formatter={(value) => 
+                  showPiePercentage 
+                    ? formatPercentage(value, categoryTotal) 
+                    : formatCurrency(value)
+                } 
                 contentStyle={{ 
                   backgroundColor: backgroundColor, 
                   borderColor: borderColor,
@@ -112,9 +140,16 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
                 }}
               />
               <Legend 
-                formatter={(value) => (
-                  <span style={{ color: textColor }}>{value}</span>
-                )}
+                formatter={(value, entry, index) => {
+                  const item = categoryData[index % categoryData.length];
+                  return (
+                    <span style={{ color: textColor }}>
+                      {value} {showPiePercentage 
+                        ? ` (${formatPercentage(item.value, categoryTotal)})` 
+                        : ` (${formatCurrency(item.value)})`}
+                    </span>
+                  );
+                }}
               />
             </PieChart>
           </ResponsiveContainer>
@@ -123,8 +158,16 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
       
       {/* Payment Methods Chart */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">Payment Methods</h2>
+          <div className="flex items-center">
+            <button
+              onClick={() => setShowBarPercentage(!showBarPercentage)}
+              className="px-3 py-1 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            >
+              {showBarPercentage ? 'Show Values' : 'Show Percentages'}
+            </button>
+          </div>
         </div>
         <div className="p-6" style={{ height: '320px' }}>
           <ResponsiveContainer width="100%" height="100%">
@@ -137,6 +180,10 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
               <XAxis 
                 type="number" 
                 tick={{ fill: textColor }}
+                tickFormatter={(value) => showBarPercentage 
+                  ? formatPercentage(value, paymentTotal) 
+                  : formatCurrency(value)
+                }
               />
               <YAxis 
                 type="category" 
@@ -145,7 +192,11 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
                 width={120}
               />
               <Tooltip 
-                formatter={(value) => formatCurrency(value)} 
+                formatter={(value) => 
+                  showBarPercentage 
+                    ? formatPercentage(value, paymentTotal) 
+                    : formatCurrency(value)
+                } 
                 contentStyle={{ 
                   backgroundColor: backgroundColor, 
                   borderColor: borderColor,
@@ -154,12 +205,12 @@ const CategoryCharts: React.FC<CategoryChartsProps> = ({
               />
               <Bar dataKey="value">
                 {paymentMethodData.map((entry, index) => {
-                  const color = CHART_COLORS[index % CHART_COLORS.length];
+                  const colorIndex = index % CHART_COLORS.length;
                   return (
                     <Cell 
                       key={`cell-${index}`} 
-                      fill={color}
-                      style={{ fill: color }} // Force inline style
+                      fill={CHART_COLORS[colorIndex]}
+                      style={{ fill: CHART_COLORS[colorIndex] }} 
                     />
                   );
                 })}
