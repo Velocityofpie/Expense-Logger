@@ -1,4 +1,4 @@
-// Updated InvoiceExtractor.tsx to work with the enhanced pagination
+// src/features/invoices/InvoiceExtractor.tsx
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody, Input, Select } from '../../shared';
@@ -6,6 +6,7 @@ import { InvoiceTable } from './';
 import { fetchInvoices, deleteInvoice, fetchTags, fetchCategories } from './invoicesApi';
 import { Invoice, InvoiceFilters } from './types';
 import InvoiceUploadSection from './InvoiceUploadSection';
+import { loadWidthMode, getWidthModeClasses, WidthMode } from '../../utils/layoutStyles';
 
 const InvoiceExtractor: React.FC = () => {
   const navigate = useNavigate();
@@ -32,6 +33,9 @@ const InvoiceExtractor: React.FC = () => {
   const [availableTags, setAvailableTags] = useState<string[]>([]);
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
   
+  // Width mode state - now using the centralized utilities
+  const [widthMode, setWidthMode] = useState<WidthMode>(loadWidthMode());
+  
   // Fetch data on component mount
   useEffect(() => {
     fetchAllData();
@@ -41,6 +45,19 @@ const InvoiceExtractor: React.FC = () => {
   useEffect(() => {
     applyFilters();
   }, [invoices, filters]);
+  
+  // Listen for width mode changes
+  useEffect(() => {
+    const handleWidthModeChange = (e: CustomEvent) => {
+      setWidthMode(e.detail.widthMode);
+    };
+    
+    window.addEventListener('widthmodechange', handleWidthModeChange as EventListener);
+    
+    return () => {
+      window.removeEventListener('widthmodechange', handleWidthModeChange as EventListener);
+    };
+  }, []);
   
   // Fetch all necessary data
   const fetchAllData = async () => {
@@ -172,29 +189,8 @@ const InvoiceExtractor: React.FC = () => {
     }
   };
 
-  // Listen for width mode changes
-  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
-    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
-  );
-  
-  useEffect(() => {
-    const handleWidthModeChange = (e: CustomEvent) => {
-      setWidthMode(e.detail.widthMode);
-    };
-    
-    window.addEventListener('widthmodechange', handleWidthModeChange as EventListener);
-    
-    return () => {
-      window.removeEventListener('widthmodechange', handleWidthModeChange as EventListener);
-    };
-  }, []);
-
   return (
-    <div className={`space-y-6 ${
-      widthMode === 'full' ? 'w-full' : 
-      widthMode === 'compact' ? 'w-full max-w-screen-lg mx-auto' : 
-      'w-full'
-    }`}>    
+    <div className={`space-y-6 ${getWidthModeClasses(widthMode)}`}>    
       <div className="flex justify-between items-center">
         <h1 className="text-2xl font-semibold">Invoice Management</h1>
       </div>

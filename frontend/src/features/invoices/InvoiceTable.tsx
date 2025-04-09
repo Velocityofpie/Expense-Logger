@@ -14,6 +14,12 @@ import {
   Select
 } from '../../shared';
 import { Invoice } from './types';
+import { 
+  loadWidthMode, 
+  cycleWidthMode as cycleMode, 
+  getWidthModeLabel, 
+  WidthMode 
+} from '../../utils/layoutStyles';
 
 interface InvoiceTableProps {
   invoices: Invoice[];
@@ -42,10 +48,8 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
   const [pageSize, setPageSize] = useState(25); // Default page size
   const [paginatedInvoices, setPaginatedInvoices] = useState<Invoice[]>([]);
   
-  // Width mode state - default to 'compact' (middle size)
-  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
-    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
-  );
+  // Width mode state - using centralized utility
+  const [widthMode, setWidthMode] = useState<WidthMode>(loadWidthMode());
   
   // Calculate total pages
   const totalInvoices = invoices.length;
@@ -125,22 +129,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
     localStorage.setItem('pageSize', String(newSize));
   };
   
-  // Handle width mode toggle
-  const cycleWidthMode = () => {
-    // Cycle through the three width modes: standard -> compact -> full -> standard
-    const nextMode = 
-      widthMode === 'standard' ? 'compact' : 
-      widthMode === 'compact' ? 'full' : 'standard';
-    
+  // Handle width mode toggle - using centralized utility
+  const handleCycleWidthMode = () => {
+    const nextMode = cycleMode(widthMode);
     setWidthMode(nextMode);
-    
-    // Save to localStorage for persistence
-    localStorage.setItem('widthMode', nextMode);
-    
-    // Dispatch a custom event that parent components can listen for
-    window.dispatchEvent(new CustomEvent('widthmodechange', { 
-      detail: { widthMode: nextMode } 
-    }));
   };
 
   // Pagination controls
@@ -246,11 +238,10 @@ const InvoiceTable: React.FC<InvoiceTableProps> = ({
             <Button
               variant="outline"
               size="sm"
-              onClick={cycleWidthMode}
+              onClick={handleCycleWidthMode}
               className="text-sm whitespace-nowrap"
             >
-              {widthMode === 'standard' ? 'Standard Width (Responsive)' : 
-               widthMode === 'compact' ? 'Compact Width (Medium)' : 'Full Width'}
+              {getWidthModeLabel(widthMode)}
             </Button>
           </div>
         </div>

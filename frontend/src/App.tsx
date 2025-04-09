@@ -1,4 +1,4 @@
-// src/App.tsx
+// src/App.tsx - Using centralized layout styles
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
@@ -6,16 +6,15 @@ import Navbar from './layout/Navbar';
 import Footer from './layout/Footer';
 import Dashboard from './features/dashboard/Dashboard';
 import { InvoiceExtractor } from './features/invoices';
-import { InvoiceDetail } from './features/invoiceDetails'; // Updated import
+import { InvoiceDetail } from './features/invoiceDetails';
 import { Login, Profile, RequestPasswordReset, ResetPassword } from './features/auth';
 import ExpenseTrackerPage from './features/expense/ExpenseTrackerPage';
 import { Tools } from './features/tools';
+import { loadWidthMode, getWidthModeClasses, WidthMode } from './utils/layoutStyles';
 
 const App: React.FC = () => {
   // State for width mode
-  const [widthMode, setWidthMode] = useState<'standard' | 'compact' | 'full'>(
-    () => (localStorage.getItem('widthMode') as 'standard' | 'compact' | 'full') || 'compact'
-  );
+  const [widthMode, setWidthMode] = useState<WidthMode>(loadWidthMode);
   
   // Listen for width mode changes
   useEffect(() => {
@@ -35,11 +34,7 @@ const App: React.FC = () => {
       <Router>
         <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-dark-bg">
           <Navbar />
-          <main className={`flex-grow py-6 ${
-            widthMode === 'full' ? 'w-full px-4' : 
-            widthMode === 'compact' ? 'w-full px-6 max-w-screen-lg mx-auto' : 
-            'w-full px-4 sm:px-6 md:px-8 lg:px-12 xl:px-16 2xl:px-24'
-          }`}>
+          <main className={`flex-grow py-6 ${getWidthModeClasses(widthMode)}`}>
             <Routes>
               <Route path="/" element={<Dashboard />} />
               <Route path="/dashboard" element={<Dashboard />} />

@@ -35,6 +35,19 @@ module.exports = {
           },
         },
       },
+      // Width mode configurations
+      padding: {
+        'standard-sm': '16px',   // px-16 for small screens
+        'standard-md': '24px',   // px-24 for medium screens
+        'standard-lg': '32px',   // px-32 for large screens
+        'standard-xl': '40px',   // px-40 for extra large screens
+        'compact': '6px',        // px-6 for compact mode
+        'full': '4px',           // px-4 for full width mode
+      },
+      maxWidth: {
+        'standard': '1536px',    // max-w-screen-2xl for standard mode
+        'compact': '1024px',     // max-w-screen-lg for compact mode
+      },
       boxShadow: {
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       },
