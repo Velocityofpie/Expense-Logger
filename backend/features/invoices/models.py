@@ -3,8 +3,8 @@ import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
-from models.base import TimestampMixin, SoftDeleteMixin
+from core.database import Base
+from backend.core.models import Base, TimestampMixin, SoftDeleteMixin
 
 # backend/models/invoice.py - Update the Invoice model to add merchant_name
 

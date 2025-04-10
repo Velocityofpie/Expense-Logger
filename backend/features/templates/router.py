@@ -7,17 +7,17 @@ import os
 import json
 import tempfile
 
-from database import get_db
-from models.template import InvoiceTemplate, TemplateTestResult
-from models.invoice import Invoice, InvoiceFile
-from schemas.template import (
+from backend.core.database import get_db
+from backend.features.templates.models import InvoiceTemplate, TemplateTestResult
+from backend.features.invoices.models import Invoice, InvoiceFile
+from backend.features.templates.schemas import (
     TemplateResponse, 
     TemplateCreate, 
     TemplateUpdate,
     TemplateTestRequest,
     TemplateTestResponse
 )
-from services.template import process_with_template
+from backend.features.templates.services import process_with_template
 
 router = APIRouter(
     prefix="/templates",

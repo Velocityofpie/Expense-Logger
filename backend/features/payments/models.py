@@ -2,8 +2,8 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
-from models.base import TimestampMixin
+from backend.core.database import Base
+from backend.core.models import Base, TimestampMixin
 
 class Card(Base, TimestampMixin):
     __tablename__ = "cards"

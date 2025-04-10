@@ -1,0 +1,1 @@
+"""Wishlist feature for managing user's wishlist items."""

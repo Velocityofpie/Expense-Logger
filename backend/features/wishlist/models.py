@@ -2,7 +2,7 @@
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from database import Base
+from backend.Core.database import Base
 from models.base import TimestampMixin
 
 class WishlistItem(Base, TimestampMixin):

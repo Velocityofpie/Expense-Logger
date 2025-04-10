@@ -2,10 +2,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models.payment import Card, CardNumber, Payment
-from models.invoice import Invoice
-from schemas.payment import CardCreate, CardResponse, CardNumberCreate, PaymentCreate
+from backend.Core.database import get_db
+from backend.features.payments.models import Card, CardNumber, Payment
+from backend.features.invoices.models import Invoice
+from backend.features.payments.schemas import CardCreate, CardResponse, CardNumberCreate, PaymentCreate
 
 router = APIRouter(
     prefix="",

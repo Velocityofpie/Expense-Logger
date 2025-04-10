@@ -6,9 +6,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 import json
 
-from database import get_db
-from models.invoice import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category, InvoiceCategory
-from schemas.expense import ExpenseSummary, ExpenseResponse, ExpenseGroupResponse
+from backend.core.database import get_db
+from backend.features.invoices.models import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category, InvoiceCategory
+from backend.features.expenses.schemas import ExpenseSummary, ExpenseResponse, ExpenseGroupResponse
 
 router = APIRouter(
     prefix="/expenses",

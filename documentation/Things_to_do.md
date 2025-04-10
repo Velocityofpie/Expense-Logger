@@ -53,3 +53,7 @@ Things to fix
 
 - [ ] Payment method cash, card, money transfer app, when you select card a new drop down will appear and card will allow you to select 
 - [ ]Payment Cards looks like a credit card 
+
+- [ ] Achrive on items, project, and invoice
+- [ ] null on items, project, and invoice
+- [ ] Item was sold on items check mark with how much you made back

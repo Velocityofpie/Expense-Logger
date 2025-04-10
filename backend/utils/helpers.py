@@ -2,7 +2,7 @@
 from typing import Optional
 from datetime import datetime, date
 from sqlalchemy.orm import Session
-from models.invoice import Tag, Category
+from backend.features.invoices.models import Tag, Category
 
 def parse_date(date_str: Optional[str]) -> Optional[date]:
     """Parse date string to date object."""
@@ -43,7 +43,7 @@ def get_or_create_category(db: Session, category_name: str) -> Category:
 
 def add_status_history(db: Session, invoice_id: int, status: str):
     """Add status change to history."""
-    from models.invoice import InvoiceStatusHistory
+    from backend.features.invoices.models import InvoiceStatusHistory
     
     history = InvoiceStatusHistory(
         invoice_id=invoice_id,

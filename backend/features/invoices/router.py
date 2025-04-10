@@ -6,17 +6,17 @@ from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 
-from models.invoice import Category, InvoiceCategory
+from backend.features.invoices.models import Category, InvoiceCategory
 from utils.audit import log_audit
 
-from models.invoice import Tag, InvoiceTag
+from backend.features.invoices.models import Tag, InvoiceTag
 from utils.audit import log_audit
 
-from database import get_db
-from models.invoice import (
+from backend.Core.database import get_db
+from backend.features.invoices.models import (
     Invoice, InvoiceItem, Tag, Category, InvoiceFile, InvoiceStatusHistory
 )
-from schemas.invoice import (
+from backend.features.invoices.schemas import (
     InvoiceCreate, InvoiceResponse, InvoiceUpdate, InvoiceItemBase
 )
 from utils.helpers import parse_date, get_or_create_tag, get_or_create_category, add_status_history

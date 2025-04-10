@@ -1,19 +1,10 @@
-# backend/services/ocr.py
+# backend/features/ocr/services.py
 import os
 import tempfile
 import pytesseract
 from PIL import Image
 from pdf2image import convert_from_path
 from typing import List, Dict, Optional, Union
-
-class OcrOptions:
-    """Options for OCR processing."""
-    def __init__(self, language="eng", dpi=300, preprocess=False, page_range=None):
-        self.language = language
-        self.dpi = dpi
-        self.preprocess = preprocess
-        self.page_range = page_range
-
 
 def extract_text_from_file(file_path: str) -> str:
     """Extract text content from a file (PDF or image)."""
@@ -62,7 +53,7 @@ def extract_text_from_image(image_path: str) -> str:
     return pytesseract.image_to_string(image)
 
 
-def process_pdf_with_ocr(pdf_path: str, options: OcrOptions) -> str:
+def process_pdf_with_ocr(pdf_path: str, options) -> str:
     """Process a PDF file with OCR using specified options."""
     # Create a temporary directory for extracted images
     with tempfile.TemporaryDirectory() as temp_dir:

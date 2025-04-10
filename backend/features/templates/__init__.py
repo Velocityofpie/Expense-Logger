@@ -1,0 +1,1 @@
+"""Invoice template feature for managing and applying templates to invoices."""

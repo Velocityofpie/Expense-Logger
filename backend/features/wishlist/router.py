@@ -3,9 +3,9 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 
-from database import get_db
-from models.wishlist import WishlistItem
-from schemas.wishlist import WishlistItemResponse
+from backend.core.database import get_db
+from backend.features.wishlist.models import WishlistItem
+from backend.features.wishlist.schemas import WishlistItemResponse
 
 router = APIRouter(
     prefix="",

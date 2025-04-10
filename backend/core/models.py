@@ -1,7 +1,7 @@
-# backend/models/base.py
+# core/models.py
 from sqlalchemy import Column, Integer, DateTime, Boolean
 from sqlalchemy.sql import func
-from database import Base
+from core.models import Base, TimestampMixin, SoftDeleteMixin
 
 class TimestampMixin:
     """Mixin for adding created_at and updated_at timestamps to models."""

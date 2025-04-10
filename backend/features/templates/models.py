@@ -3,8 +3,8 @@ import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
-from database import Base
-from models.base import TimestampMixin
+from backend.core.database import Base
+from backend.core.models import Base, TimestampMixin
 
 class InvoiceTemplate(Base, TimestampMixin):
     __tablename__ = "invoice_templates"
