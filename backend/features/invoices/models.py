@@ -1,12 +1,10 @@
-# backend/models/invoice.py
+# features/invoices/models.py
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 from datetime import datetime
 from core.database import Base
-from backend.core.models import Base, TimestampMixin, SoftDeleteMixin
-
-# backend/models/invoice.py - Update the Invoice model to add merchant_name
+from core.models import TimestampMixin, SoftDeleteMixin
 
 class Invoice(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "invoices"
@@ -140,8 +138,6 @@ class AuditLog(Base):
     
     # Relationships
     user = relationship("User", back_populates="audit_logs")
-
-# backend/models/invoice.py - Add new models or extend existing
 
 class ExpenseCategory(Base, TimestampMixin):
     __tablename__ = "expense_categories"

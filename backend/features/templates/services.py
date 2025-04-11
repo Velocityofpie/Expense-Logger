@@ -1,11 +1,11 @@
-# backend/services/template.py
+# features/templates/services.py
 
 import re
 from typing import Dict, Optional, Any, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
-from backend.features.ocr.services import extract_text_from_file
+from features.ocr.services import extract_text_from_file
 from utils.helpers import parse_date
 
 def match_template_to_text(template_data: Dict, text: str) -> float:
@@ -269,7 +269,7 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
             setattr(invoice, invoice_field, value)
     
     # Import here to avoid circular imports
-    from backend.features.invoices.models import InvoiceItem
+    from features.invoices.models import InvoiceItem
     
     # Handle item details if available (preferred method)
     if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
@@ -374,7 +374,7 @@ def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     extracted_text = extract_text_from_file(file_path)
     
     # Import here to avoid circular imports
-    from backend.features.templates.models import InvoiceTemplate
+    from features.templates.models import InvoiceTemplate
     
     # Get all active templates
     templates = db.query(InvoiceTemplate).filter(InvoiceTemplate.is_active == True).all()

@@ -1,7 +1,7 @@
-# backend/schemas/template.py
+# features/templates/schemas.py
 from typing import Dict, Any, Optional, List, Union
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class TemplateBase(BaseModel):
     name: str
@@ -11,8 +11,7 @@ class TemplateBase(BaseModel):
     is_active: Optional[bool] = True
     template_data: Dict[str, Any]
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateCreate(TemplateBase):
@@ -24,9 +23,6 @@ class TemplateResponse(TemplateBase):
     created_at: datetime
     updated_at: datetime
     created_by: Optional[int] = None
-    
-    class Config:
-        orm_mode = True
 
 
 class TemplateUpdate(BaseModel):
@@ -37,16 +33,14 @@ class TemplateUpdate(BaseModel):
     is_active: Optional[bool] = None
     template_data: Optional[Dict[str, Any]] = None
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateTestRequest(BaseModel):
     template_id: int
     invoice_id: int
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class FieldResult(BaseModel):
@@ -56,8 +50,7 @@ class FieldResult(BaseModel):
     matched: bool
     value: Optional[str] = None  # Ensure this is explicitly defined as a string type
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class TemplateTestResponse(BaseModel):
@@ -73,5 +66,4 @@ class TemplateTestResponse(BaseModel):
     extracted_data: Dict[str, Any]
     field_results: Optional[List[FieldResult]] = None
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

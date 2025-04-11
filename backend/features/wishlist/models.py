@@ -1,9 +1,9 @@
-# backend/models/wishlist.py
+# features/wishlist/models.py
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from backend.Core.database import Base
-from models.base import TimestampMixin
+from core.database import Base
+from core.models import TimestampMixin
 
 class WishlistItem(Base, TimestampMixin):
     __tablename__ = "wishlist"

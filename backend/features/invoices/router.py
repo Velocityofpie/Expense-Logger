@@ -1,4 +1,4 @@
-# backend/routers/invoices.py
+# features/invoices/router.py
 import os
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Body
@@ -6,17 +6,17 @@ from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
 
-from backend.features.invoices.models import Category, InvoiceCategory
+from features.invoices.models import Category, InvoiceCategory
 from utils.audit import log_audit
 
-from backend.features.invoices.models import Tag, InvoiceTag
+from features.invoices.models import Tag, InvoiceTag
 from utils.audit import log_audit
 
-from backend.Core.database import get_db
-from backend.features.invoices.models import (
+from core.database import get_db
+from features.invoices.models import (
     Invoice, InvoiceItem, Tag, Category, InvoiceFile, InvoiceStatusHistory
 )
-from backend.features.invoices.schemas import (
+from features.invoices.schemas import (
     InvoiceCreate, InvoiceResponse, InvoiceUpdate, InvoiceItemBase
 )
 from utils.helpers import parse_date, get_or_create_tag, get_or_create_category, add_status_history
@@ -582,4 +582,4 @@ async def delete_tag(tag_name: str, db: Session = Depends(get_db), user_id: int 
         print(f"Error deleting tag: {str(e)}")
         import traceback
         traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the tag: {str(e)}") 
+        raise HTTPException(status_code=500, detail=f"An error occurred while deleting the tag: {str(e)}")

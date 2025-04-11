@@ -1,8 +1,8 @@
-# backend/models/user.py
+# features/auth/models.py
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
-from backend.core.database import Base
-from backend.core.models import Base, TimestampMixin, SoftDeleteMixin
+from core.database import Base
+from core.models import TimestampMixin, SoftDeleteMixin
 
 class User(Base, TimestampMixin, SoftDeleteMixin):
     __tablename__ = "users"

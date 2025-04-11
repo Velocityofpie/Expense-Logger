@@ -1,11 +1,11 @@
-# backend/routers/wishlist.py
+# features/wishlist/router.py
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Body
 from sqlalchemy.orm import Session
 
-from backend.core.database import get_db
-from backend.features.wishlist.models import WishlistItem
-from backend.features.wishlist.schemas import WishlistItemResponse
+from core.database import get_db
+from features.wishlist.models import WishlistItem
+from features.wishlist.schemas import WishlistItemResponse
 
 router = APIRouter(
     prefix="",

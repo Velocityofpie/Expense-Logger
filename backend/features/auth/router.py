@@ -1,10 +1,10 @@
-# backend/routers/users.py
+# features/auth/router.py
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from backend.core.database import get_db
-from auth.models import User
-from auth.schemas import UserCreate, UserResponse
+from core.database import get_db
+from features.auth.models import User
+from features.auth.schemas import UserCreate, UserResponse
 
 router = APIRouter(
     prefix="/users",

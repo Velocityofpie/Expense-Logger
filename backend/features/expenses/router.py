@@ -1,4 +1,4 @@
-# backend/routers/expense.py
+# features/expenses/router.py
 from typing import List, Optional
 from datetime import datetime, timedelta
 from fastapi import APIRouter, Depends, HTTPException
@@ -6,9 +6,9 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 import json
 
-from backend.core.database import get_db
-from backend.features.invoices.models import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category, InvoiceCategory
-from backend.features.expenses.schemas import ExpenseSummary, ExpenseResponse, ExpenseGroupResponse
+from core.database import get_db
+from features.invoices.models import Invoice, InvoiceItem, ExpenseCategory, InvoiceExpenseCategory, Category, InvoiceCategory
+from features.expenses.schemas import ExpenseSummary, ExpenseResponse, ExpenseGroupResponse
 
 router = APIRouter(
     prefix="/expenses",

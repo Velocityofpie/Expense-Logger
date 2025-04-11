@@ -1,6 +1,6 @@
-# backend/schemas/expense.py
+# features/expenses/schemas.py
 from typing import List, Optional, Dict, Any
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 
 class ExpenseProductItem(BaseModel):
@@ -18,8 +18,7 @@ class ExpenseItem(BaseModel):
     total: float
     products: List[ExpenseProductItem]
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ExpenseGroupResponse(BaseModel):
     name: str
@@ -27,8 +26,7 @@ class ExpenseGroupResponse(BaseModel):
     total: float
     items: List[ExpenseItem]
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ExpenseSummary(BaseModel):
     total_spending: float
@@ -36,12 +34,10 @@ class ExpenseSummary(BaseModel):
     average_purchase: float
     top_category: Optional[str] = None
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ExpenseResponse(BaseModel):
     summary: ExpenseSummary
     data: List[ExpenseGroupResponse]
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)

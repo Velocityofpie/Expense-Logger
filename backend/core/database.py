@@ -1,4 +1,4 @@
-# backend/database.py
+# core/database.py
 import os
 import sqlalchemy as sa
 from sqlalchemy.ext.declarative import declarative_base

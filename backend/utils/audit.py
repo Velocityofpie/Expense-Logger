@@ -1,7 +1,8 @@
-# backend/utils/audit.py
+
+# utils/audit.py
 from typing import Dict, Optional
 from sqlalchemy.orm import Session
-from backend.features.invoices.models import AuditLog
+from features.invoices.models import AuditLog
 
 def log_audit(db: Session, user_id: int, action: str, table_name: str, record_id: int, old_data: Optional[Dict] = None, new_data: Optional[Dict] = None):
     """Create audit log entry."""

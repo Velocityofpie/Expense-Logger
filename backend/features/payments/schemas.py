@@ -1,13 +1,12 @@
-# backend/schemas/payment.py
+# features/payments/schemas.py
 from typing import Optional, List
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class CardBase(BaseModel):
     card_name: str
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CardCreate(CardBase):
@@ -18,17 +17,13 @@ class CardResponse(CardBase):
     card_id: int
     user_id: int
     created_at: datetime
-    
-    class Config:
-        orm_mode = True
 
 
 class CardNumberBase(BaseModel):
     last_four: str
     expiration_date: str
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class CardNumberCreate(CardNumberBase):
@@ -39,9 +34,6 @@ class CardNumberResponse(CardNumberBase):
     card_number_id: int
     card_id: int
     added_at: datetime
-    
-    class Config:
-        orm_mode = True
 
 
 class PaymentBase(BaseModel):
@@ -50,8 +42,7 @@ class PaymentBase(BaseModel):
     amount: float
     transaction_id: str
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class PaymentCreate(PaymentBase):
@@ -61,6 +52,3 @@ class PaymentCreate(PaymentBase):
 class PaymentResponse(PaymentBase):
     payment_id: int
     payment_date: datetime
-    
-    class Config:
-        orm_mode = True

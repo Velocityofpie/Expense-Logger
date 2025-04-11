@@ -1,9 +1,9 @@
-# backend/models/payment.py
+# features/payments/models.py
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from backend.core.database import Base
-from backend.core.models import Base, TimestampMixin
+from core.database import Base
+from core.models import TimestampMixin
 
 class Card(Base, TimestampMixin):
     __tablename__ = "cards"

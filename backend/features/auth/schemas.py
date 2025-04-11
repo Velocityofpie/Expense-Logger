@@ -1,14 +1,13 @@
-# backend/schemas/user.py
+# features/auth/schemas.py
 from typing import Optional
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from datetime import datetime
 
 class UserBase(BaseModel):
     username: str
     email: EmailStr
     
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
         
 
 class UserCreate(UserBase):
@@ -18,6 +17,3 @@ class UserCreate(UserBase):
 class UserResponse(UserBase):
     user_id: int
     created_at: datetime
-    
-    class Config:
-        orm_mode = True

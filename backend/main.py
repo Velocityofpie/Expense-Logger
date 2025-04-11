@@ -11,7 +11,6 @@ from core.database import engine, Base, get_db
 
 # Import feature routers
 from features.auth.router import router as auth_router
-from features.auth.models import User
 from features.invoices.router import router as invoices_router
 from features.payments.router import router as payments_router
 from features.expenses.router import router as expenses_router
@@ -60,6 +59,7 @@ async def startup_event():
     # Ensure default user exists
     db = next(get_db())
     try:
+        from features.auth.models import User
         user = db.query(User).filter(User.user_id == 1).first()
         if not user:
             default_user = User(

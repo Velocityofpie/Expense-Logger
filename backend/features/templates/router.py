@@ -1,4 +1,4 @@
-# backend/routers/templates.py
+# features/templates/router.py
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks, Form, Body
 from fastapi.responses import FileResponse, JSONResponse
@@ -7,17 +7,17 @@ import os
 import json
 import tempfile
 
-from backend.core.database import get_db
-from backend.features.templates.models import InvoiceTemplate, TemplateTestResult
-from backend.features.invoices.models import Invoice, InvoiceFile
-from backend.features.templates.schemas import (
+from core.database import get_db
+from features.templates.models import InvoiceTemplate, TemplateTestResult
+from features.invoices.models import Invoice, InvoiceFile
+from features.templates.schemas import (
     TemplateResponse, 
     TemplateCreate, 
     TemplateUpdate,
     TemplateTestRequest,
     TemplateTestResponse
 )
-from backend.features.templates.services import process_with_template
+from features.templates.services import process_with_template
 
 router = APIRouter(
     prefix="/templates",

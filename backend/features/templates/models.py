@@ -1,10 +1,10 @@
-# backend/models/template.py
+# features/templates/models.py
 import sqlalchemy as sa
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import JSONB
 from datetime import datetime
-from backend.core.database import Base
-from backend.core.models import Base, TimestampMixin
+from core.database import Base  # Changed from backend.core.database
+from core.models import TimestampMixin
 
 class InvoiceTemplate(Base, TimestampMixin):
     __tablename__ = "invoice_templates"
