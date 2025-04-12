@@ -1,7 +1,7 @@
 # features/invoices/router.py
 import os
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, UploadFile, File, Form
 from fastapi.responses import JSONResponse, FileResponse
 from sqlalchemy.orm import Session
 from pathlib import Path
@@ -128,6 +128,91 @@ async def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
             categories=[category.category_name for category in invoice.categories]
         )
     except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/upload/", response_model=dict)
+async def upload_file(
+    file: UploadFile = File(...),
+    category: Optional[str] = Form(None),
+    tags: Optional[str] = Form(None),
+    user_id: int = Form(1),
+    db: Session = Depends(get_db)
+):
+    """Upload an invoice file."""
+    try:
+        # Make sure the upload folder exists
+        if not UPLOAD_FOLDER.exists():
+            UPLOAD_FOLDER.mkdir(parents=True, exist_ok=True)
+            
+        # Create a unique filename or use the original
+        filename = file.filename
+        file_path = UPLOAD_FOLDER / filename
+        
+        # Save the file
+        with open(file_path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        # Process tags if provided
+        tag_list = []
+        if tags:
+            tag_list = [tag.strip() for tag in tags.split(",")]
+        
+        # Create a new invoice record
+        new_invoice = Invoice(
+            user_id=user_id,
+            file_name=filename,
+            merchant_name=os.path.splitext(filename)[0],  # Use filename as default merchant name
+            status="Open"
+        )
+        db.add(new_invoice)
+        db.flush()
+        
+        # Add invoice file record
+        invoice_file = InvoiceFile(
+            invoice_id=new_invoice.invoice_id,
+            file_name=filename,
+            file_path=str(file_path)
+        )
+        db.add(invoice_file)
+        
+        # Add tags if provided
+        for tag_name in tag_list:
+            tag = get_or_create_tag(db, tag_name)
+            new_invoice.tags.append(tag)
+        
+        # Add category if provided
+        if category:
+            cat = get_or_create_category(db, category)
+            new_invoice.categories.append(cat)
+        
+        # Add status history
+        add_status_history(db, new_invoice.invoice_id, new_invoice.status)
+        
+        # Log audit
+        log_audit(
+            db=db,
+            user_id=user_id,
+            action="UPLOAD",
+            table_name="invoices",
+            record_id=new_invoice.invoice_id,
+            new_data={
+                "file_name": filename,
+                "merchant_name": new_invoice.merchant_name,
+                "status": new_invoice.status
+            }
+        )
+        
+        db.commit()
+        
+        return {
+            "message": "File uploaded successfully",
+            "invoice_id": new_invoice.invoice_id,
+            "filename": filename
+        }
+    except Exception as e:
+        db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
 
