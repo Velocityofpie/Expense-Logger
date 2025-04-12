@@ -1,12 +1,17 @@
 # features/templates/services.py
 
 import re
+import logging
 from typing import Dict, Optional, Any, List
 from sqlalchemy.orm import Session
 from datetime import datetime
 
 from features.ocr.services import extract_text_from_file
 from utils.helpers import parse_date
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def match_template_to_text(template_data: Dict, text: str) -> float:
     """Calculate how well a template matches the extracted text."""
@@ -18,28 +23,42 @@ def match_template_to_text(template_data: Dict, text: str) -> float:
     matched_markers = 0
     required_markers = 0
     
+    logger.info(f"Template has {len(markers)} markers, checking against text of length {len(text)}")
+    
     for marker in markers:
         is_required = marker.get("required", False)
-        marker_text = marker.get("text", "")
+        marker_text = marker.get("text", "").lower()  # Convert to lowercase for case-insensitive matching
         
         if is_required:
             required_markers += 1
         
-        if marker_text and marker_text.lower() in text.lower():
+        if marker_text and marker_text in text.lower():
             matched_markers += 1
+            logger.info(f"✅ Marker matched: '{marker_text}'")
+        else:
+            logger.info(f"❌ Marker not found: '{marker_text}'")
     
     # If any required markers are missing, it's not a match
     if required_markers > 0 and matched_markers < required_markers:
+        logger.warning(f"Required markers missing: found {matched_markers} of {required_markers}")
         return 0
     
     # Calculate match score based on percentage of markers found
-    return matched_markers / len(markers) if len(markers) > 0 else 0
+    match_score = matched_markers / len(markers) if len(markers) > 0 else 0
+    logger.info(f"Template match score: {match_score:.2f}")
+    return match_score
 
 
 def process_with_template(file_path: str, template_data: Dict) -> Dict:
-    """Process a document with a template and extract data."""
+    """Process a document with a template and extract data with improved regex matching."""
     # Extract text from the file
     text = extract_text_from_file(file_path)
+    
+    logger.info(f"Extracted text from {file_path}: {len(text)} characters")
+    
+    # Save a sample of text for debugging
+    text_sample = text[:500] + ("..." if len(text) > 500 else "")
+    logger.info(f"Text sample: {text_sample}")
     
     # Extract data using template fields
     fields = template_data.get("fields", [])
@@ -47,18 +66,20 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
     fields_total = len(fields)
     fields_matched = 0
     field_results = []  # Store detailed results for each field
+    field_debug_info = {}  # Store debugging information
     
     for field in fields:
         field_name = field.get("field_name", "")
         if not field_name:
             continue
-            
+        
         # Get data type
         data_type = field.get("data_type", "string")
         
-        # Get extraction regex patterns
+        # Get extraction regex patterns - convert to lowercase for better matching
         regex = field.get("extraction", {}).get("regex", "")
         alt_regex = field.get("extraction", {}).get("alternative_regex", "")
+        additional_regex = field.get("extraction", {}).get("additional_patterns", [])
         
         # Prepare field result
         field_result = {
@@ -66,144 +87,209 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
             "display_name": field.get("display_name", field_name),
             "required": field.get("validation", {}).get("required", False),
             "matched": False,
-            "value": None
+            "value": None,
+            "match_method": None
         }
         
-        # Handle different data types
-        if data_type == "array":
-            # For array types, find all matches in the text
-            matches = []
+        # Debugging info for this field
+        field_debug = {
+            "regex_tried": [],
+            "matches_found": [],
+            "final_match": None
+        }
+        
+        # Try multiple approaches to increase chances of matching
+        match = None
+        match_value = None
+        match_method = None
+        
+        # Try with the primary regex
+        if regex:
+            field_debug["regex_tried"].append({"pattern": regex, "type": "primary"})
+            try:
+                # Try case-insensitive matching
+                match = re.search(regex, text, re.IGNORECASE)
+                if match:
+                    match_value = match.group(1) if match.groups() else match.group(0)
+                    match_method = "primary_regex"
+                    field_debug["matches_found"].append({"pattern": "primary", "value": match_value})
+            except Exception as e:
+                logger.error(f"Error with primary regex for {field_name}: {e}")
+        
+        # If primary regex fails, try alternative
+        if not match and alt_regex:
+            field_debug["regex_tried"].append({"pattern": alt_regex, "type": "alternative"})
+            try:
+                match = re.search(alt_regex, text, re.IGNORECASE)
+                if match:
+                    match_value = match.group(1) if match.groups() else match.group(0)
+                    match_method = "alternative_regex"
+                    field_debug["matches_found"].append({"pattern": "alternative", "value": match_value})
+            except Exception as e:
+                logger.error(f"Error with alternative regex for {field_name}: {e}")
+        
+        # Try additional patterns if provided
+        if not match and additional_regex:
+            for i, pattern in enumerate(additional_regex):
+                field_debug["regex_tried"].append({"pattern": pattern, "type": f"additional_{i}"})
+                try:
+                    match = re.search(pattern, text, re.IGNORECASE)
+                    if match:
+                        match_value = match.group(1) if match.groups() else match.group(0)
+                        match_method = f"additional_regex_{i}"
+                        field_debug["matches_found"].append({"pattern": f"additional_{i}", "value": match_value})
+                        break
+                except Exception as e:
+                    logger.error(f"Error with additional regex #{i} for {field_name}: {e}")
+        
+        # Try common patterns based on field type if no match yet
+        if not match:
+            common_patterns = get_common_patterns_for_field_type(field_name, data_type)
+            for i, pattern in enumerate(common_patterns):
+                field_debug["regex_tried"].append({"pattern": pattern, "type": f"common_{i}"})
+                try:
+                    match = re.search(pattern, text, re.IGNORECASE)
+                    if match:
+                        match_value = match.group(1) if match.groups() else match.group(0)
+                        match_method = f"common_pattern_{i}"
+                        field_debug["matches_found"].append({"pattern": f"common_{i}", "value": match_value})
+                        break
+                except Exception as e:
+                    logger.error(f"Error with common pattern #{i} for {field_name}: {e}")
+        
+        # If we found a match, process it
+        if match_value:
+            fields_matched += 1
+            field_result["matched"] = True
+            field_result["match_method"] = match_method
             
-            # Try to match using the primary regex
-            if regex:
-                # Get all matches
-                all_matches = list(re.finditer(regex, text))
-                
-                # Check if we need to process capture groups differently
-                capture_groups = field.get("extraction", {}).get("capture_groups", {})
-                
-                if all_matches:
-                    # We found at least one match for an array field
-                    fields_matched += 1
-                    field_result["matched"] = True
-                    
-                    # Process each match
-                    for match in all_matches:
-                        if capture_groups:
-                            # Process structured capture groups
-                            item_data = {}
-                            for key, group_index in capture_groups.items():
-                                try:
-                                    item_data[key] = match.group(group_index)
-                                except (IndexError, AttributeError):
-                                    pass
-                            matches.append(item_data)
-                        else:
-                            # Simple array item (just the match)
-                            value = match.group(1) if match.groups() else match.group(0)
-                            matches.append(value)
-                
-                # If primary regex fails, try alternative
-                if not matches and alt_regex:
-                    all_matches = list(re.finditer(alt_regex, text))
-                    for match in all_matches:
-                        value = match.group(1) if match.groups() else match.group(0)
-                        matches.append(value)
+            # Apply any post-processing
+            post_processing = field.get("extraction", {}).get("post_processing", "")
+            if post_processing == "trim":
+                match_value = match_value.strip()
             
-            # Store the extracted array
-            if matches:
-                extracted_data[field_name] = matches
-                field_result["value"] = f"{len(matches)} item(s)"  # This is already a string
+            # Handle data type conversion
+            if data_type == "date":
+                # Keep as string, we'll convert it later
+                pass
+            elif data_type == "currency":
+                # Try to extract numeric value
+                numeric_match = re.search(r'(\d+\.\d+|\d+)', match_value)
+                if numeric_match:
+                    try:
+                        match_value = float(numeric_match.group(1))
+                    except ValueError:
+                        # Keep as string if conversion fails
+                        pass
             
+            # Store the extracted value
+            extracted_data[field_name] = match_value
+            # Make sure field_result["value"] is always a string
+            field_result["value"] = str(match_value) if match_value is not None else None
+            
+            # Debug info
+            field_debug["final_match"] = {
+                "value": match_value,
+                "method": match_method
+            }
         else:
-            # For non-array types, find the first match
-            # Try to match using the primary regex
-            match = re.search(regex, text) if regex else None
-            
-            # If primary regex fails, try alternative
-            if not match and alt_regex:
-                match = re.search(alt_regex, text)
-            
-            # If we found a match, extract the data
-            if match:
-                fields_matched += 1
-                field_result["matched"] = True
-                
-                # Get the first capture group, or the whole match if no groups
-                value = match.group(1) if match.groups() else match.group(0)
-                
-                # Apply any post-processing
-                post_processing = field.get("extraction", {}).get("post_processing", "")
-                if post_processing == "trim":
-                    value = value.strip()
-                
-                # Handle data type conversion
-                if data_type == "date":
-                    value = value  # Keep as string, we'll convert it later
-                elif data_type == "currency":
-                    # Try to extract numeric value
-                    numeric_match = re.search(r'(\d+\.\d+)', value)
-                    value = float(numeric_match.group(1)) if numeric_match else value
-                
-                # Store the extracted value
-                extracted_data[field_name] = value
-                # Make sure field_result["value"] is always a string
-                field_result["value"] = str(value) if value is not None else None
+            logger.warning(f"No match found for field: {field_name}")
         
         field_results.append(field_result)
+        field_debug_info[field_name] = field_debug
     
-    # Special processing for item_details into proper item objects
-    if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
-        items = []
-        
-        for item_data in extracted_data["item_details"]:
-            # Check if item_data is already a dict (structured capture groups)
-            if isinstance(item_data, dict):
-                # Process quantity
-                quantity = 1
-                if "quantity" in item_data:
-                    try:
-                        quantity = int(item_data["quantity"])
-                    except (ValueError, TypeError):
-                        quantity = 1
-                
-                # Process item name
-                name = item_data.get("name", "Unknown item")
-                
-                # Build proper item object
-                item = {
-                    "product_name": name,
-                    "quantity": quantity,
-                    "unit_price": 0,  # We don't have price info yet
-                    "condition": item_data.get("condition", "New"),
-                    "item_type": ""  # Add default item_type
-                }
-                
-                items.append(item)
-            else:
-                # Simple string item, add as product name
-                items.append({
-                    "product_name": item_data,
-                    "quantity": 1,
-                    "unit_price": 0,
-                    "condition": "New",
-                    "item_type": ""
-                })
-        
-        # Replace the raw matches with properly structured items
-        extracted_data["item_details"] = items
+    # Process specific fields that require special handling
+    process_special_fields(extracted_data, text)
     
     # Calculate match score
     match_score = fields_matched / fields_total if fields_total > 0 else 0
     
     return {
-        "success": match_score > 0.5,  # At least 50% of fields must match
+        "success": match_score > 0.3,  # Lower threshold to 30% for more lenient matching
         "match_score": match_score,
         "fields_matched": fields_matched,
         "fields_total": fields_total,
         "extracted_data": extracted_data,
-        "field_results": field_results  # Include detailed results
+        "field_results": field_results,
+        "debug_info": {
+            "text_length": len(text),
+            "text_sample": text_sample,
+            "field_debug": field_debug_info
+        }
     }
+
+
+def get_common_patterns_for_field_type(field_name: str, data_type: str) -> List[str]:
+    """Get common regex patterns based on field name and type."""
+    field_name_lower = field_name.lower()
+    
+    # Common patterns dictionary
+    patterns = {
+        "date": [
+            r'(?:date|dated)[\s:]+([a-zA-Z]+ \d{1,2},? \d{4})',  # January 1, 2023
+            r'(?:date|dated)[\s:]+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',  # MM/DD/YYYY or DD/MM/YYYY
+            r'(?:date|dated)[\s:]+(\d{4}[/-]\d{1,2}[/-]\d{1,2})',  # YYYY/MM/DD
+            r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',  # Any date format
+            r'(\d{4}[/-]\d{1,2}[/-]\d{1,2})'  # Any date format YYYY/MM/DD
+        ],
+        "currency": [
+            r'(?:total|amount|price|cost)[\s:]+[$€£]?(\d+\.\d{2})',  # Total: $123.45
+            r'(?:total|amount|price|cost)[\s:]+[$€£]?(\d+)',  # Total: $123
+            r'[$€£](\d+\.\d{2})',  # $123.45
+            r'(\d+\.\d{2})[$€£]',  # 123.45$
+            r'(?:total|amount|price|cost)[\s:]*?(\d+\.\d{2})' # Total 123.45
+        ],
+        "order_number": [
+            r'(?:order|invoice)[:\s#]+([a-zA-Z0-9-]+)',  # Order #: ABC-123
+            r'(?:order|invoice)[:\s#]+(\d+)',  # Order #: 123456
+            r'#\s*([a-zA-Z0-9-]+)',  # # ABC-123
+            r'(?:order|invoice)[\s:]*([a-zA-Z0-9-]+)'  # Order ABC-123
+        ],
+        "merchant_name": [
+            r'(?:from|seller|vendor|merchant|company)[\s:]+([a-zA-Z0-9\s&]+)',  # From: Company Name
+            r'^([a-zA-Z0-9\s&]+)(?:invoice|receipt)',  # Company Name Invoice
+            r'^([a-zA-Z0-9\s&]{2,40})$'  # Just the company name at the start of a line
+        ]
+    }
+    
+    # Select patterns based on field name and data type
+    if "date" in field_name_lower or data_type == "date":
+        return patterns["date"]
+    elif "total" in field_name_lower or "amount" in field_name_lower or "price" in field_name_lower or data_type == "currency":
+        return patterns["currency"]
+    elif "order" in field_name_lower or "invoice" in field_name_lower or "number" in field_name_lower:
+        return patterns["order_number"]
+    elif "merchant" in field_name_lower or "seller" in field_name_lower or "vendor" in field_name_lower or "company" in field_name_lower:
+        return patterns["merchant_name"]
+    
+    # Default: empty list
+    return []
+
+
+def process_special_fields(extracted_data: Dict, text: str) -> None:
+    """Process special fields that require custom handling."""
+    # Example: Try to extract items if not already present
+    if "items" not in extracted_data:
+        items = []
+        # Look for common item patterns
+        # Format: quantity x product $price
+        item_matches = re.finditer(r'(\d+)\s*x\s*([a-zA-Z0-9\s]+)\s*\$?(\d+\.\d{2}|\d+)', text, re.IGNORECASE)
+        for match in item_matches:
+            try:
+                quantity = int(match.group(1))
+                product_name = match.group(2).strip()
+                unit_price = float(match.group(3))
+                
+                items.append({
+                    "product_name": product_name,
+                    "quantity": quantity,
+                    "unit_price": unit_price
+                })
+            except (ValueError, IndexError):
+                continue
+        
+        if items:
+            extracted_data["items"] = items
 
 
 def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Session):
@@ -242,7 +328,7 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                     try:
                         parsed_date = datetime.strptime(value, date_format).date()
                         break
-                    except ValueError:
+                    except (ValueError, TypeError):
                         continue
                 
                 if parsed_date:
@@ -257,9 +343,12 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                     pass
                 # Otherwise, try to extract the numeric part from values like "$123.45"
                 elif isinstance(value, str):
-                    numeric_match = re.search(r'(\d+\.\d+)', value)
+                    numeric_match = re.search(r'(\d+\.\d+|\d+)', value)
                     if numeric_match:
-                        value = float(numeric_match.group(1))
+                        try:
+                            value = float(numeric_match.group(1))
+                        except ValueError:
+                            continue
                     else:
                         continue
                 else:
@@ -272,9 +361,9 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
     from features.invoices.models import InvoiceItem
     
     # Handle item details if available (preferred method)
-    if "item_details" in extracted_data and isinstance(extracted_data["item_details"], list):
+    if "items" in extracted_data and isinstance(extracted_data["items"], list):
         # Create new invoice items
-        for item_data in extracted_data["item_details"]:
+        for item_data in extracted_data["items"]:
             # Create a new invoice item
             item = InvoiceItem(
                 invoice_id=invoice.invoice_id,
@@ -333,7 +422,7 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                 try:
                     if isinstance(price, str):
                         # Convert string price to float
-                        numeric_match = re.search(r'(\d+\.\d+)', price)
+                        numeric_match = re.search(r'(\d+\.\d+|\d+)', price)
                         if numeric_match:
                             invoice_items[i].unit_price = float(numeric_match.group(1))
                     else:
@@ -385,7 +474,7 @@ def find_matching_template(file_path: str, db: Session) -> Optional[Any]:
     # Try to match each template
     for template in templates:
         score = match_template_to_text(template.template_data, extracted_text)
-        if score > best_score and score > 0.5:  # Require at least 50% match
+        if score > best_score and score > 0.3:  # Lower threshold to 30%
             best_match = template
             best_score = score
     

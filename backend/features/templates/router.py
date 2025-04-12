@@ -1,4 +1,6 @@
 # features/templates/router.py
+# Updated test_template function for better debugging
+
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, BackgroundTasks, Form, Body
 from fastapi.responses import FileResponse, JSONResponse
@@ -6,6 +8,7 @@ from sqlalchemy.orm import Session
 import os
 import json
 import tempfile
+import logging
 
 from core.database import get_db
 from features.templates.models import InvoiceTemplate, TemplateTestResult
@@ -17,7 +20,12 @@ from features.templates.schemas import (
     TemplateTestRequest,
     TemplateTestResponse
 )
-from features.templates.services import process_with_template
+from features.templates.services import process_with_template, extract_text_from_file
+from features.ocr.services import extract_text_from_file as ocr_extract_text
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/templates",
@@ -80,6 +88,7 @@ async def create_template(
         return new_template
     except Exception as e:
         db.rollback()
+        logger.error(f"Error creating template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -121,6 +130,7 @@ async def update_template(
         return template
     except Exception as e:
         db.rollback()
+        logger.error(f"Error updating template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -139,6 +149,7 @@ async def delete_template(template_id: int, db: Session = Depends(get_db)):
         return {"message": "Template deleted successfully"}
     except Exception as e:
         db.rollback()
+        logger.error(f"Error deleting template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -180,6 +191,7 @@ async def import_template(
         raise
     except Exception as e:
         db.rollback()
+        logger.error(f"Error importing template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -208,7 +220,7 @@ async def export_template(
         try:
             os.unlink(path)
         except Exception as e:
-            print(f"Error removing temp file: {e}")
+            logger.error(f"Error removing temp file: {e}")
     
     # Add cleanup task to the background
     background_tasks.add_task(remove_file, temp_path)
@@ -221,12 +233,12 @@ async def export_template(
     )
 
 
-@router.post("/test", response_model=TemplateTestResponse)
+@router.post("/test", response_model=dict)
 async def test_template(
     test_request: TemplateTestRequest,
     db: Session = Depends(get_db)
 ):
-    """Test a template against an invoice."""
+    """Test a template against an invoice with enhanced debugging."""
     try:
         # Get template and invoice
         template = db.query(InvoiceTemplate).filter(InvoiceTemplate.template_id == test_request.template_id).first()
@@ -244,8 +256,16 @@ async def test_template(
         if not invoice_file or not invoice_file.file_path:
             raise HTTPException(status_code=400, detail="Invoice has no associated file")
         
+        logger.info(f"Testing template '{template.name}' on invoice {invoice.invoice_id} (file: {invoice_file.file_path})")
+        
+        # Extract the raw text first for debugging
+        raw_text = ocr_extract_text(invoice_file.file_path)
+        
         # Process the invoice with the template
         result = process_with_template(invoice_file.file_path, template.template_data)
+        
+        # Log the result for debugging
+        logger.info(f"Template test result: Match score: {result['match_score']:.2f}, Fields matched: {result['fields_matched']}/{result['fields_total']}")
         
         # Store the test result
         test_result = TemplateTestResult(
@@ -257,14 +277,14 @@ async def test_template(
             fields_total=result["fields_total"],
             notes=None,
             extracted_data=result["extracted_data"],
-            field_results=result.get("field_results", [])  # Store the detailed field results
+            field_results=result.get("field_results", [])
         )
         
         db.add(test_result)
         db.commit()
         db.refresh(test_result)
         
-        # Add the field_results to the response
+        # Add raw text and debug information to the response
         response_data = {
             "result_id": test_result.result_id,
             "template_id": test_result.template_id,
@@ -276,7 +296,9 @@ async def test_template(
             "fields_total": test_result.fields_total,
             "notes": test_result.notes,
             "extracted_data": test_result.extracted_data,
-            "field_results": result.get("field_results", [])  # Include field results in response
+            "field_results": result.get("field_results", []),
+            "debug_info": result.get("debug_info", {}),
+            "raw_text_sample": raw_text[:1000] + ("..." if len(raw_text) > 1000 else "")
         }
         
         return response_data
@@ -284,4 +306,92 @@ async def test_template(
         raise
     except Exception as e:
         db.rollback()
+        logger.error(f"Error testing template: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/test-file")
+async def test_template_with_file(
+    template_id: int = Form(...),
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db)
+):
+    """Test a template against an uploaded file without saving the invoice."""
+    try:
+        # Get template
+        template = db.query(InvoiceTemplate).filter(InvoiceTemplate.template_id == template_id).first()
+        
+        if not template:
+            raise HTTPException(status_code=404, detail="Template not found")
+        
+        # Save uploaded file temporarily
+        with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as temp:
+            temp_path = temp.name
+            content = await file.read()
+            temp.write(content)
+        
+        try:
+            # Extract raw text for debugging
+            raw_text = ocr_extract_text(temp_path)
+            
+            # Process the file with the template
+            result = process_with_template(temp_path, template.template_data)
+            
+            # Log the result
+            logger.info(f"Template test result: Match score: {result['match_score']:.2f}, Fields matched: {result['fields_matched']}/{result['fields_total']}")
+            
+            # Add raw text to the response
+            result["raw_text_sample"] = raw_text[:1000] + ("..." if len(raw_text) > 1000 else "")
+            
+            return result
+        finally:
+            # Clean up temporary file
+            if os.path.exists(temp_path):
+                os.unlink(temp_path)
+    except Exception as e:
+        logger.error(f"Error testing template with file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/test-results/{test_id}")
+async def get_test_result(test_id: int, db: Session = Depends(get_db)):
+    """Get a specific template test result."""
+    test_result = db.query(TemplateTestResult).filter(TemplateTestResult.result_id == test_id).first()
+    
+    if not test_result:
+        raise HTTPException(status_code=404, detail="Test result not found")
+    
+    return {
+        "result_id": test_result.result_id,
+        "template_id": test_result.template_id,
+        "invoice_id": test_result.invoice_id,
+        "test_date": test_result.test_date,
+        "success": test_result.success,
+        "match_score": test_result.match_score,
+        "fields_matched": test_result.fields_matched,
+        "fields_total": test_result.fields_total,
+        "notes": test_result.notes,
+        "extracted_data": test_result.extracted_data,
+        "field_results": test_result.field_results
+    }
+
+
+@router.get("/test-results/template/{template_id}")
+async def get_template_test_results(template_id: int, db: Session = Depends(get_db), limit: int = 10):
+    """Get test results for a specific template."""
+    test_results = db.query(TemplateTestResult).filter(
+        TemplateTestResult.template_id == template_id
+    ).order_by(TemplateTestResult.test_date.desc()).limit(limit).all()
+    
+    return [
+        {
+            "result_id": result.result_id,
+            "template_id": result.template_id,
+            "invoice_id": result.invoice_id,
+            "test_date": result.test_date,
+            "success": result.success,
+            "match_score": result.match_score,
+            "fields_matched": result.fields_matched,
+            "fields_total": result.fields_total
+        } for result in test_results
+    ]
