@@ -52,3 +52,18 @@ def add_status_history(db: Session, invoice_id: int, status: str):
     db.add(history)
     db.flush()
     return history
+
+
+def parse_boolean(value: str) -> bool:
+    """Parse a string value to boolean.
+    
+    Args:
+        value: String representation of boolean
+        
+    Returns:
+        Boolean value
+    """
+    if isinstance(value, bool):
+        return value
+        
+    return value.lower() in ('yes', 'true', 't', 'y', '1')

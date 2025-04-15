@@ -69,6 +69,48 @@ export const fetchInvoiceById = async (id: number | string): Promise<Invoice> =>
 // Upload an invoice file
 export const uploadInvoice = async (formData: FormData): Promise<UploadResult> => {
   try {
+    // Debug log to check formData contents
+    console.log('Uploading with FormData:', 
+      Array.from(formData.entries()).map(([key, value]) => {
+        // Don't log the actual file contents
+        return key === 'file' ? `${key}: [File]` : `${key}: ${value}`;
+      })
+    );
+    
+    const response = await apiClient.post('/upload/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error("Upload error:", error);
+    throw error;
+  }
+};
+
+// Enhanced version with explicit OCR template parameter
+export const uploadInvoiceWithOCR = async (
+  file: File, 
+  useOcrTemplates: boolean = false,
+  metadata: { category?: string, tags?: string[] } = {}
+): Promise<UploadResult> => {
+  try {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("use_templates", useOcrTemplates.toString());
+    
+    if (metadata.category) {
+      formData.append("category", metadata.category);
+    }
+    
+    if (metadata.tags && metadata.tags.length > 0) {
+      metadata.tags.forEach(tag => formData.append("tags", tag));
+    }
+    
+    console.log('Uploading with OCR templates:', useOcrTemplates);
+    
     const response = await apiClient.post('/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'

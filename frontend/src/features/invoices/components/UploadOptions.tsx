@@ -15,16 +15,23 @@ const UploadOptions: React.FC<UploadOptionsProps> = ({
   showDebugInfo,
   setShowDebugInfo
 }) => {
+  // Handler for OCR template checkbox to ensure boolean is set correctly
+  const handleOcrTemplateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked;
+    console.log(`OCR Templates checkbox changed to: ${isChecked}`);
+    setUseOcrTemplates(isChecked);
+  };
+
   return (
     <div className="mt-6 flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-8">
       <div className="flex items-center">
         <Checkbox
           id="use-ocr-templates"
           checked={useOcrTemplates}
-          onChange={(e) => setUseOcrTemplates(e.target.checked)}
+          onChange={handleOcrTemplateChange}
         />
         <label htmlFor="use-ocr-templates" className="ml-2 block text-sm text-gray-900">
-          Use OCR Templates for extraction
+          Use OCR Templates for extraction {useOcrTemplates ? '(Enabled)' : '(Disabled)'}
         </label>
       </div>
       

@@ -136,6 +136,7 @@ async def upload_file(
     file: UploadFile = File(...),
     category: Optional[str] = Form(None),
     tags: Optional[str] = Form(None),
+    use_templates: Optional[bool] = Form(False),  # Add use_templates param with default False
     user_id: int = Form(1),
     db: Session = Depends(get_db)
 ):
@@ -190,6 +191,24 @@ async def upload_file(
         # Add status history
         add_status_history(db, new_invoice.invoice_id, new_invoice.status)
         
+        # Process with OCR templates if requested
+        template_used = None
+        if use_templates:
+            # Import template-related functions
+            from features.templates.services import find_matching_template, process_with_template, update_invoice_with_extracted_data
+            
+            # Try to find a matching template
+            matching_template = find_matching_template(str(file_path), db)
+            
+            if matching_template:
+                # Process the file with the template
+                result = process_with_template(str(file_path), matching_template.template_data)
+                
+                if result["success"]:
+                    # Update the invoice with extracted data
+                    update_invoice_with_extracted_data(new_invoice, result["extracted_data"], db)
+                    template_used = matching_template.name
+        
         # Log audit
         log_audit(
             db=db,
@@ -206,15 +225,20 @@ async def upload_file(
         
         db.commit()
         
-        return {
+        # Return information about template usage if applicable
+        response_data = {
             "message": "File uploaded successfully",
             "invoice_id": new_invoice.invoice_id,
             "filename": filename
         }
+        
+        if template_used:
+            response_data["template_used"] = template_used
+        
+        return response_data
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
-
 
 @router.post("/add-entry/", response_model=dict)
 async def add_entry(entry_data: InvoiceCreate, db: Session = Depends(get_db), user_id: int = 1):

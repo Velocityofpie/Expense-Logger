@@ -203,7 +203,9 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
     setApplyToAll(false);
   };
   
-  // Upload all selected files
+
+  // Modified handleUploadAll function in src/features/invoices/components/InvoiceUploadSection.tsx
+
   const handleUploadAll = async (): Promise<void> => {
     if (selectedFiles.length === 0) {
       setUploadError("Please select files to upload");
@@ -226,7 +228,12 @@ const InvoiceUploadSection: React.FC<InvoiceUploadSectionProps> = ({
       try {
         const formData = new FormData();
         formData.append("file", file);
-        formData.append("use_templates", useOcrTemplates.toString());
+        
+        // Fix: Convert boolean to string with proper lowercase value
+        formData.append("use_templates", useOcrTemplates.toString().toLowerCase());
+        
+        // Debug output to confirm the value
+        setUploadDebug(prev => prev ? `${prev}\n- Using OCR templates: ${useOcrTemplates.toString().toLowerCase()}` : "");
         
         // Add metadata to the upload
         const metadata = fileMetadata[file.name];
