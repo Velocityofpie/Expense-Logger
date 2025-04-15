@@ -47,7 +47,7 @@ async def get_invoices(db: Session = Depends(get_db), user_id: Optional[int] = N
                 invoice_id=invoice.invoice_id,
                 user_id=invoice.user_id,
                 file_name=invoice.file_name,
-                merchant_name=invoice.merchant_name,  # Include merchant_name in response
+                merchant_name=invoice.merchant_name,
                 order_number=invoice.order_number,
                 purchase_date=invoice.purchase_date.isoformat() if invoice.purchase_date else None,
                 payment_method=invoice.payment_method,
@@ -511,6 +511,10 @@ async def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user_id
         # Get file information before deleting
         filename = invoice.file_name
         
+        # FIXED: Set order_number to NULL to prevent unique constraint violations when reuploading
+        # This is better than keeping the soft delete flag as it ensures new uploads can use the same order number
+        invoice.order_number = None
+        
         # Soft delete
         invoice.is_deleted = True
         
@@ -521,8 +525,8 @@ async def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user_id
             action="DELETE",
             table_name="invoices",
             record_id=invoice_id,
-            old_data={"file_name": filename, "merchant_name": invoice.merchant_name, "is_deleted": False},  # Add merchant_name
-            new_data={"is_deleted": True}
+            old_data={"file_name": filename, "merchant_name": invoice.merchant_name, "is_deleted": False},
+            new_data={"is_deleted": True, "order_number": None}
         )
         
         db.commit()
@@ -530,6 +534,43 @@ async def delete_invoice(invoice_id: int, db: Session = Depends(get_db), user_id
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Error deleting invoice: {str(e)}")
+
+
+@router.delete("/delete-permanent/{invoice_id}")
+async def delete_invoice_permanent(invoice_id: int, db: Session = Depends(get_db), user_id: int = 1):
+    """Hard delete an invoice record and remove associated files."""
+    try:
+        invoice = db.query(Invoice).filter(Invoice.invoice_id == invoice_id).first()
+        if not invoice:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        
+        # Get file information
+        filename = invoice.file_name
+        
+        # Delete the associated files from disk
+        for file_record in invoice.files:
+            file_path = file_record.file_path
+            if file_path and Path(file_path).exists():
+                Path(file_path).unlink()
+        
+        # Log audit
+        log_audit(
+            db=db,
+            user_id=user_id,
+            action="HARD_DELETE",
+            table_name="invoices",
+            record_id=invoice_id,
+            old_data={"file_name": filename, "merchant_name": invoice.merchant_name}
+        )
+        
+        # Hard delete the record (cascade will handle related records)
+        db.delete(invoice)
+        db.commit()
+        
+        return {"message": "Invoice permanently deleted"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Error permanently deleting invoice: {str(e)}")
 
 
 @router.delete("/delete-permanent/{invoice_id}")
