@@ -7,9 +7,14 @@ from PIL import Image, ImageEnhance, ImageFilter
 from pdf2image import convert_from_path
 from typing import List, Dict, Optional, Union
 
+# Ensure the OCR function correctly identifies file types
 def extract_text_from_file(file_path: str) -> str:
     """Extract text content from a file (PDF or image) with enhanced preprocessing."""
     try:
+        # Add debugging output
+        print(f"Extracting text from: {file_path}")
+        print(f"File exists: {os.path.exists(file_path)}")
+        
         # Check if it's a PDF
         if file_path.lower().endswith('.pdf'):
             return extract_text_from_pdf(file_path)
@@ -17,23 +22,30 @@ def extract_text_from_file(file_path: str) -> str:
         elif file_path.lower().endswith(('.png', '.jpg', '.jpeg')):
             return extract_text_from_image(file_path)
         else:
+            print(f"Unsupported file type: {file_path}")
             return ""
     except Exception as e:
         print(f"Error extracting text: {e}")
+        import traceback
+        traceback.print_exc()
         return ""
 
-
+# Make sure PDF processing works correctly
 def extract_text_from_pdf(pdf_path: str) -> str:
     """Extract text from a PDF file using OCR with improved preprocessing."""
     # Create a temporary directory for extracted images
     with tempfile.TemporaryDirectory() as temp_dir:
         text = ""
         
-        # Convert PDF pages to images
+        # Add more detailed error handling
         try:
+            print(f"Converting PDF to images: {pdf_path}")
             images = convert_from_path(pdf_path, dpi=300)  # Higher DPI for better quality
+            print(f"Converted {len(images)} pages")
         except Exception as e:
             print(f"Error converting PDF to images: {e}")
+            import traceback
+            traceback.print_exc()
             return ""
         
         # Process each page

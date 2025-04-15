@@ -12,6 +12,7 @@ import ExpenseTrackerPage from './features/expense/ExpenseTrackerPage';
 import { Tools } from './features/tools';
 import { loadWidthMode, getWidthModeClasses, WidthMode } from './utils/layoutStyles';
 
+
 const App: React.FC = () => {
   // State for width mode
   const [widthMode, setWidthMode] = useState<WidthMode>(loadWidthMode);

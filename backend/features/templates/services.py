@@ -4,10 +4,9 @@ import re
 import logging
 from typing import Dict, Optional, Any, List
 from sqlalchemy.orm import Session
-from datetime import datetime
+from datetime import datetime, date
 
 from features.ocr.services import extract_text_from_file
-from utils.helpers import parse_date
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
@@ -76,7 +75,7 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         # Get data type
         data_type = field.get("data_type", "string")
         
-        # Get extraction regex patterns - convert to lowercase for better matching
+        # Get extraction regex patterns
         regex = field.get("extraction", {}).get("regex", "")
         alt_regex = field.get("extraction", {}).get("alternative_regex", "")
         additional_regex = field.get("extraction", {}).get("additional_patterns", [])
@@ -107,8 +106,8 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         if regex:
             field_debug["regex_tried"].append({"pattern": regex, "type": "primary"})
             try:
-                # Try case-insensitive matching
-                match = re.search(regex, text, re.IGNORECASE)
+                # Try case-insensitive matching with multiline flag
+                match = re.search(regex, text, re.IGNORECASE | re.MULTILINE)
                 if match:
                     match_value = match.group(1) if match.groups() else match.group(0)
                     match_method = "primary_regex"
@@ -120,7 +119,7 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
         if not match and alt_regex:
             field_debug["regex_tried"].append({"pattern": alt_regex, "type": "alternative"})
             try:
-                match = re.search(alt_regex, text, re.IGNORECASE)
+                match = re.search(alt_regex, text, re.IGNORECASE | re.MULTILINE)
                 if match:
                     match_value = match.group(1) if match.groups() else match.group(0)
                     match_method = "alternative_regex"
@@ -133,7 +132,7 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
             for i, pattern in enumerate(additional_regex):
                 field_debug["regex_tried"].append({"pattern": pattern, "type": f"additional_{i}"})
                 try:
-                    match = re.search(pattern, text, re.IGNORECASE)
+                    match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
                     if match:
                         match_value = match.group(1) if match.groups() else match.group(0)
                         match_method = f"additional_regex_{i}"
@@ -142,20 +141,154 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
                 except Exception as e:
                     logger.error(f"Error with additional regex #{i} for {field_name}: {e}")
         
-        # Try common patterns based on field type if no match yet
+        # For specific fields, try more specialized patterns if no match yet
         if not match:
-            common_patterns = get_common_patterns_for_field_type(field_name, data_type)
-            for i, pattern in enumerate(common_patterns):
-                field_debug["regex_tried"].append({"pattern": pattern, "type": f"common_{i}"})
-                try:
-                    match = re.search(pattern, text, re.IGNORECASE)
-                    if match:
-                        match_value = match.group(1) if match.groups() else match.group(0)
-                        match_method = f"common_pattern_{i}"
-                        field_debug["matches_found"].append({"pattern": f"common_{i}", "value": match_value})
-                        break
-                except Exception as e:
-                    logger.error(f"Error with common pattern #{i} for {field_name}: {e}")
+            # For date fields - try common date patterns
+            if field_name == "purchase_date" or "date" in field_name.lower():
+                specialized_patterns = [
+                    r'(?:order|purchase|invoice|receipt)\s+date\s*[:;]\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})',  # Order date: January 15, 2023
+                    r'(?:order|purchase|invoice|receipt)\s+date\s*[:;]\s*(\d{1,2}[/-]\d{1,2}[/-]\d{4})',  # Order date: 01/15/2023
+                    r'(?:order|purchase|invoice|receipt)\s+date\s*[:;]\s*(\d{4}[/-]\d{1,2}[/-]\d{1,2})',  # Order date: 2023/01/15
+                    r'(?:date|dated)[:;]?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})',  # Date: January 15, 2023
+                    r'(?:date|dated)[:;]?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{4})',  # Date: 01/15/2023
+                    r'(\d{1,2}[/-]\d{1,2}[/-]\d{4})',  # Just date format MM/DD/YYYY or DD/MM/YYYY
+                    r'(\d{4}[/-]\d{1,2}[/-]\d{1,2})',  # Just date format YYYY/MM/DD
+                    r'([A-Za-z]+\s+\d{1,2},?\s+\d{4})',  # Just date format Month DD, YYYY
+                ]
+                
+                # Look first in upper half of document where dates typically appear
+                upper_half = text[:len(text)//2]
+                
+                for i, pattern in enumerate(specialized_patterns):
+                    field_debug["regex_tried"].append({"pattern": pattern, "type": f"specialized_date_{i}"})
+                    try:
+                        # Try upper half first
+                        match = re.search(pattern, upper_half, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(1)
+                            match_method = f"specialized_date_{i}_upper"
+                            field_debug["matches_found"].append({"pattern": f"specialized_date_{i}", "value": match_value})
+                            break
+                        
+                        # If not found in upper half, try whole document
+                        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(1)
+                            match_method = f"specialized_date_{i}_full"
+                            field_debug["matches_found"].append({"pattern": f"specialized_date_{i}", "value": match_value})
+                            break
+                    except Exception as e:
+                        logger.error(f"Error with specialized date pattern #{i}: {e}")
+            
+            # For price/total fields - try in last third of document where totals typically appear
+            elif field_name in ["grand_total", "total", "amount", "price", "cost"]:
+                last_third = text[len(text)//3*2:]  # Last third of document
+                
+                specialized_patterns = [
+                    r'(?:order|grand|invoice)\s+total\s*[:;]?\s*[$€£]?\s*(\d+[.,]\d{2})',  # Grand total: $XX.XX
+                    r'total\s*[:;]?\s*[$€£]?\s*(\d+[.,]\d{2})',  # Total: $XX.XX
+                    r'(?:balance|amount)\s+due\s*[:;]?\s*[$€£]?\s*(\d+[.,]\d{2})',  # Amount due: $XX.XX
+                    r'(?:to|total)\s+pay\s*[:;]?\s*[$€£]?\s*(\d+[.,]\d{2})',  # To pay: $XX.XX
+                    r'(?:payment|paid)\s+(?:amount|total)\s*[:;]?\s*[$€£]?\s*(\d+[.,]\d{2})',  # Payment amount: $XX.XX
+                    r'[$€£]\s*(\d+[.,]\d{2})',  # Just $XX.XX
+                ]
+                
+                for i, pattern in enumerate(specialized_patterns):
+                    field_debug["regex_tried"].append({"pattern": pattern, "type": f"specialized_total_{i}"})
+                    try:
+                        # Try last third first (where totals usually appear)
+                        match = re.search(pattern, last_third, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(1)
+                            match_method = f"specialized_total_{i}_last_third"
+                            field_debug["matches_found"].append({"pattern": f"specialized_total_{i}", "value": match_value})
+                            break
+                        
+                        # If not found in last third, try whole document
+                        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(1)
+                            match_method = f"specialized_total_{i}_full"
+                            field_debug["matches_found"].append({"pattern": f"specialized_total_{i}", "value": match_value})
+                            break
+                    except Exception as e:
+                        logger.error(f"Error with specialized total pattern #{i}: {e}")
+            
+            # For merchant name fields - try at beginning of document
+            elif field_name == "merchant_name" or "merchant" in field_name.lower() or "seller" in field_name.lower():
+                first_quarter = text[:len(text)//4]  # First quarter of document
+                
+                specialized_patterns = [
+                    r'(?:AMAZON(?:\.COM)?)',  # Common Amazon variations
+                    r'^([A-Za-z0-9\s&.,\'"-]{2,50})(?:\n|invoice|receipt|order)',  # Company at start of line
+                    r'(?:sold|shipped)\s+by\s*[;:]\s*([A-Za-z0-9\s&.,\'"-]{2,50})',  # Sold by: Company
+                    r'(?:from|vendor|merchant|seller)[;:]?\s*([A-Za-z0-9\s&.,\'"-]{2,50})',  # From: Company
+                ]
+                
+                for i, pattern in enumerate(specialized_patterns):
+                    field_debug["regex_tried"].append({"pattern": pattern, "type": f"specialized_merchant_{i}"})
+                    try:
+                        # Try first quarter first for merchant name
+                        match = re.search(pattern, first_quarter, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(0) if i == 0 else match.group(1)  # Special case for Amazon
+                            if i == 0:  # Amazon case
+                                match_value = "Amazon"
+                            match_method = f"specialized_merchant_{i}_top"
+                            field_debug["matches_found"].append({"pattern": f"specialized_merchant_{i}", "value": match_value})
+                            break
+                        
+                        # If not found in first quarter, try first half of document
+                        if i > 0:  # Skip first case (Amazon) for whole document
+                            match = re.search(pattern, text[:len(text)//2], re.IGNORECASE | re.MULTILINE)
+                            if match:
+                                match_value = match.group(1)
+                                match_method = f"specialized_merchant_{i}_half"
+                                field_debug["matches_found"].append({"pattern": f"specialized_merchant_{i}", "value": match_value})
+                                break
+                    except Exception as e:
+                        logger.error(f"Error with specialized merchant pattern #{i}: {e}")
+                
+                # Special case: filename often contains merchant for invoices
+                if not match and "file_path" in locals():
+                    import os
+                    filename = os.path.basename(file_path)
+                    merchant_match = re.search(r'^([^-]+)', filename)
+                    if merchant_match:
+                        match_value = merchant_match.group(1).strip()
+                        match_method = "filename_extraction"
+                        field_debug["matches_found"].append({"pattern": "filename", "value": match_value})
+            
+            # For order number fields - look for patterns across the document
+            elif field_name == "order_number" or "order" in field_name.lower() and "number" in field_name.lower():
+                specialized_patterns = [
+                    r'(?:order|invoice|confirmation)\s+(?:number|#|id|ref)[;:]?\s*([A-Z0-9\-]+)',  # Order #: ABC-123
+                    r'(?:order|invoice|confirmation)\s+(?:number|#|id|ref)[;:]?\s*([a-zA-Z0-9\-_]+)',  # Order #: any format
+                    r'#\s*([a-zA-Z0-9\-_]+)',  # Just #ABC-123
+                    r'(?:order|invoice|confirmation)[;:]?\s*([a-zA-Z0-9\-_]+)',  # Order: ABC-123
+                ]
+                
+                for i, pattern in enumerate(specialized_patterns):
+                    field_debug["regex_tried"].append({"pattern": pattern, "type": f"specialized_order_{i}"})
+                    try:
+                        match = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
+                        if match:
+                            match_value = match.group(1)
+                            match_method = f"specialized_order_{i}"
+                            field_debug["matches_found"].append({"pattern": f"specialized_order_{i}", "value": match_value})
+                            break
+                    except Exception as e:
+                        logger.error(f"Error with specialized order pattern #{i}: {e}")
+                
+                # Special case: check filename for order number
+                if not match and "file_path" in locals():
+                    import os
+                    filename = os.path.basename(file_path)
+                    order_match = re.search(r'order\s*#?\s*([a-zA-Z0-9\-_]+)', filename, re.IGNORECASE)
+                    if order_match:
+                        match_value = order_match.group(1).strip()
+                        match_method = "filename_order_extraction"
+                        field_debug["matches_found"].append({"pattern": "filename_order", "value": match_value})
         
         # If we found a match, process it
         if match_value:
@@ -165,26 +298,51 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
             
             # Apply any post-processing
             post_processing = field.get("extraction", {}).get("post_processing", "")
-            if post_processing == "trim":
+            if post_processing == "trim" and isinstance(match_value, str):
                 match_value = match_value.strip()
             
-            # Handle data type conversion
+            # Handle data type conversion and cleaning
             if data_type == "date":
-                # Keep as string, we'll convert it later
-                pass
-            elif data_type == "currency":
-                # Try to extract numeric value
-                numeric_match = re.search(r'(\d+\.\d+|\d+)', match_value)
-                if numeric_match:
-                    try:
-                        match_value = float(numeric_match.group(1))
-                    except ValueError:
-                        # Keep as string if conversion fails
-                        pass
+                # Keep as string, we'll convert it during invoice update
+                if isinstance(match_value, str):
+                    # Clean up date string
+                    match_value = re.sub(r'\s+', ' ', match_value.strip())
+                    # Remove ordinal suffixes (1st, 2nd, 3rd, etc.)
+                    match_value = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', match_value)
+            elif data_type == "currency" and isinstance(match_value, str):
+                # Clean up currency string - remove currency symbols, spaces
+                match_value = re.sub(r'[$€£¥\s]', '', match_value)
+                # Handle different decimal separators
+                if ',' in match_value and '.' not in match_value:
+                    match_value = match_value.replace(',', '.')
+                # Remove any commas used as thousand separators
+                match_value = match_value.replace(',', '')
+                
+                # Convert to float
+                try:
+                    match_value = float(match_value)
+                except ValueError:
+                    # Try a simpler approach if conversion fails
+                    numeric_match = re.search(r'(\d+\.\d+|\d+)', match_value)
+                    if numeric_match:
+                        try:
+                            match_value = float(numeric_match.group(1))
+                        except ValueError:
+                            # Keep as string if conversion still fails
+                            pass
+            elif field_name == "merchant_name" and isinstance(match_value, str):
+                # Clean up merchant name
+                match_value = match_value.strip()
+                match_value = re.sub(r'^(from|vendor|merchant|company|business|seller)[\s:]+', '', match_value, flags=re.IGNORECASE)
+                match_value = re.sub(r'[.,;:]*$', '', match_value).strip()
+                
+                # Special case for Amazon
+                if re.search(r'amazon', match_value, re.IGNORECASE):
+                    match_value = "Amazon"
             
             # Store the extracted value
             extracted_data[field_name] = match_value
-            # Make sure field_result["value"] is always a string
+            # Make sure field_result["value"] is always a string for the response
             field_result["value"] = str(match_value) if match_value is not None else None
             
             # Debug info
@@ -219,61 +377,32 @@ def process_with_template(file_path: str, template_data: Dict) -> Dict:
     }
 
 
-def get_common_patterns_for_field_type(field_name: str, data_type: str) -> List[str]:
-    """Get common regex patterns based on field name and type."""
-    field_name_lower = field_name.lower()
-    
-    # Common patterns dictionary
-    patterns = {
-        "date": [
-            r'(?:date|dated)[\s:]+([a-zA-Z]+ \d{1,2},? \d{4})',  # January 1, 2023
-            r'(?:date|dated)[\s:]+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',  # MM/DD/YYYY or DD/MM/YYYY
-            r'(?:date|dated)[\s:]+(\d{4}[/-]\d{1,2}[/-]\d{1,2})',  # YYYY/MM/DD
-            r'(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',  # Any date format
-            r'(\d{4}[/-]\d{1,2}[/-]\d{1,2})'  # Any date format YYYY/MM/DD
-        ],
-        "currency": [
-            r'(?:total|amount|price|cost)[\s:]+[$€£]?(\d+\.\d{2})',  # Total: $123.45
-            r'(?:total|amount|price|cost)[\s:]+[$€£]?(\d+)',  # Total: $123
-            r'[$€£](\d+\.\d{2})',  # $123.45
-            r'(\d+\.\d{2})[$€£]',  # 123.45$
-            r'(?:total|amount|price|cost)[\s:]*?(\d+\.\d{2})' # Total 123.45
-        ],
-        "order_number": [
-            r'(?:order|invoice)[:\s#]+([a-zA-Z0-9-]+)',  # Order #: ABC-123
-            r'(?:order|invoice)[:\s#]+(\d+)',  # Order #: 123456
-            r'#\s*([a-zA-Z0-9-]+)',  # # ABC-123
-            r'(?:order|invoice)[\s:]*([a-zA-Z0-9-]+)'  # Order ABC-123
-        ],
-        "merchant_name": [
-            r'(?:from|seller|vendor|merchant|company)[\s:]+([a-zA-Z0-9\s&]+)',  # From: Company Name
-            r'^([a-zA-Z0-9\s&]+)(?:invoice|receipt)',  # Company Name Invoice
-            r'^([a-zA-Z0-9\s&]{2,40})$'  # Just the company name at the start of a line
-        ]
-    }
-    
-    # Select patterns based on field name and data type
-    if "date" in field_name_lower or data_type == "date":
-        return patterns["date"]
-    elif "total" in field_name_lower or "amount" in field_name_lower or "price" in field_name_lower or data_type == "currency":
-        return patterns["currency"]
-    elif "order" in field_name_lower or "invoice" in field_name_lower or "number" in field_name_lower:
-        return patterns["order_number"]
-    elif "merchant" in field_name_lower or "seller" in field_name_lower or "vendor" in field_name_lower or "company" in field_name_lower:
-        return patterns["merchant_name"]
-    
-    # Default: empty list
-    return []
-
-
 def process_special_fields(extracted_data: Dict, text: str) -> None:
     """Process special fields that require custom handling."""
-    # Example: Try to extract items if not already present
+    # Special handling for Amazon invoices
+    if "merchant_name" in extracted_data and extracted_data["merchant_name"] == "Amazon":
+        # Look for shipping amount in Amazon format
+        shipping_match = re.search(r'shipping\s*&?\s*handling\s*:?\s*\$?(\d+\.\d{2})', text, re.IGNORECASE)
+        if shipping_match and "shipping_handling" not in extracted_data:
+            try:
+                extracted_data["shipping_handling"] = float(shipping_match.group(1))
+            except ValueError:
+                pass
+        
+        # Look for tax in Amazon format
+        tax_match = re.search(r'estimated\s*tax\s*:?\s*\$?(\d+\.\d{2})', text, re.IGNORECASE)
+        if tax_match and "estimated_tax" not in extracted_data:
+            try:
+                extracted_data["estimated_tax"] = float(tax_match.group(1))
+            except ValueError:
+                pass
+    
+    # Extract items if not already present
     if "items" not in extracted_data:
         items = []
         # Look for common item patterns
         # Format: quantity x product $price
-        item_matches = re.finditer(r'(\d+)\s*x\s*([a-zA-Z0-9\s]+)\s*\$?(\d+\.\d{2}|\d+)', text, re.IGNORECASE)
+        item_matches = re.finditer(r'(\d+)\s*x\s*([^$\n]+?)\s*\$?(\d+\.\d{2}|\d+)', text, re.IGNORECASE)
         for match in item_matches:
             try:
                 quantity = int(match.group(1))
@@ -312,55 +441,83 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
         if template_field in extracted_data:
             value = extracted_data[template_field]
             
-            # Handle date fields
+            # Handle date fields with more robust parsing
             if invoice_field == "purchase_date":
-                # Try to parse dates in various formats
-                date_formats = [
-                    '%B %d, %Y',  # July 23, 2024
-                    '%b %d, %Y',  # Jul 23, 2024
-                    '%Y-%m-%d',   # 2024-07-23
-                    '%m/%d/%Y',   # 07/23/2024
-                    '%d/%m/%Y',   # 23/07/2024
-                ]
-                
-                parsed_date = None
-                for date_format in date_formats:
-                    try:
-                        parsed_date = datetime.strptime(value, date_format).date()
-                        break
-                    except (ValueError, TypeError):
-                        continue
-                
-                if parsed_date:
-                    value = parsed_date
-                else:
-                    continue
-            
-            # Handle numeric fields
-            elif invoice_field in ["grand_total", "shipping_handling", "estimated_tax", "total_before_tax"]:
-                # If it's already a float, use it
-                if isinstance(value, float):
+                # If the value is already a date object, use it
+                if isinstance(value, date):
                     pass
-                # Otherwise, try to extract the numeric part from values like "$123.45"
+                elif isinstance(value, datetime):
+                    value = value.date()
                 elif isinstance(value, str):
-                    numeric_match = re.search(r'(\d+\.\d+|\d+)', value)
-                    if numeric_match:
+                    # Try to parse dates in various formats
+                    date_formats = [
+                        '%B %d, %Y',     # July 23, 2024
+                        '%B %d %Y',      # July 23 2024
+                        '%b %d, %Y',     # Jul 23, 2024
+                        '%b %d %Y',      # Jul 23 2024
+                        '%d %B %Y',      # 23 July 2024
+                        '%d %b %Y',      # 23 Jul 2024
+                        '%d-%b-%Y',      # 23-Jul-2024
+                        '%Y-%m-%d',      # 2024-07-23
+                        '%m/%d/%Y',      # 07/23/2024
+                        '%d/%m/%Y',      # 23/07/2024
+                        '%m-%d-%Y',      # 07-23-2024
+                        '%d-%m-%Y',      # 23-07-2024
+                        '%Y/%m/%d',      # 2024/07/23
+                    ]
+                    
+                    # Clean up the date string
+                    value = re.sub(r'\s+', ' ', value.strip())
+                    value = re.sub(r'(\d+)(st|nd|rd|th)', r'\1', value)
+                    
+                    parsed_date = None
+                    for date_format in date_formats:
                         try:
-                            value = float(numeric_match.group(1))
-                        except ValueError:
+                            parsed_date = datetime.strptime(value, date_format).date()
+                            break
+                        except (ValueError, TypeError):
                             continue
+                    
+                    if parsed_date:
+                        value = parsed_date
                     else:
-                        continue
+                        # If all parsing attempts fail, try a more general approach with dateutil
+                        try:
+                            from dateutil import parser
+                            parsed_date = parser.parse(value).date()
+                            value = parsed_date
+                        except (ValueError, TypeError, ImportError):
+                            # Skip this field if we can't parse the date
+                            continue
                 else:
+                    # Skip this field if value is not a recognized type
                     continue
             
-            # Set the value
+            # Handle numeric fields with robust parsing
+            elif invoice_field in ["grand_total", "shipping_handling", "estimated_tax", "total_before_tax"]:
+                if isinstance(value, (int, float)):
+                    # Already a number, use as is
+                    pass
+                elif isinstance(value, str):
+                    # Handle complex string formats
+                    try:
+                        # Remove any non-numeric chars except decimal point
+                        clean_value = re.sub(r'[^\d.]', '', value.replace(',', '.'))
+                        value = float(clean_value)
+                    except ValueError:
+                        # Skip this field if conversion fails
+                        continue
+                else:
+                    # Skip this field if value is not a recognized type
+                    continue
+            
+            # Set the value on the invoice object
             setattr(invoice, invoice_field, value)
     
     # Import here to avoid circular imports
     from features.invoices.models import InvoiceItem
     
-    # Handle item details if available (preferred method)
+    # Handle item details if available
     if "items" in extracted_data and isinstance(extracted_data["items"], list):
         # Create new invoice items
         for item_data in extracted_data["items"]:
@@ -375,71 +532,6 @@ def update_invoice_with_extracted_data(invoice, extracted_data: Dict, db: Sessio
                 item_type=item_data.get("item_type", "")
             )
             db.add(item)
-            
-    # Fallback: Handle separate item/count lists
-    elif "items" in extracted_data and "item_counts" in extracted_data:
-        # Get the lists
-        items = extracted_data["items"]
-        counts = extracted_data["item_counts"]
-        
-        # Make sure both lists have data
-        if items and counts:
-            # Convert counts to integers if they're strings
-            parsed_counts = []
-            for count in counts:
-                try:
-                    if isinstance(count, str):
-                        parsed_counts.append(int(count))
-                    else:
-                        parsed_counts.append(count)
-                except (ValueError, TypeError):
-                    parsed_counts.append(1)
-            
-            # Process items and counts
-            for i in range(len(items)):
-                # Get the count for this item (use 1 if index is out of range)
-                quantity = parsed_counts[i] if i < len(parsed_counts) else 1
-                
-                # Create a new invoice item
-                item = InvoiceItem(
-                    invoice_id=invoice.invoice_id,
-                    product_name=items[i],
-                    quantity=quantity,
-                    unit_price=0,  # Default unit price since we don't have it
-                    item_type=extracted_data.get("category", "")  # Use category as item_type if available
-                )
-                db.add(item)
-    
-    # Get item prices if available
-    if "item_prices" in extracted_data and isinstance(extracted_data["item_prices"], list):
-        # Get newly created items for this invoice
-        invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.invoice_id).all()
-        prices = extracted_data["item_prices"]
-        
-        # Update prices for items
-        for i, price in enumerate(prices):
-            if i < len(invoice_items):
-                try:
-                    if isinstance(price, str):
-                        # Convert string price to float
-                        numeric_match = re.search(r'(\d+\.\d+|\d+)', price)
-                        if numeric_match:
-                            invoice_items[i].unit_price = float(numeric_match.group(1))
-                    else:
-                        invoice_items[i].unit_price = float(price)
-                except (ValueError, TypeError):
-                    pass
-    
-    # Get item types if available
-    if "item_types" in extracted_data and isinstance(extracted_data["item_types"], list):
-        # Get newly created items for this invoice
-        invoice_items = db.query(InvoiceItem).filter(InvoiceItem.invoice_id == invoice.invoice_id).all()
-        types = extracted_data["item_types"]
-        
-        # Update types for items
-        for i, item_type in enumerate(types):
-            if i < len(invoice_items):
-                invoice_items[i].item_type = item_type
     
     # Extract and set tags/categories if available
     if "tags" in extracted_data and isinstance(extracted_data["tags"], list):
