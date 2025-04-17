@@ -1,0 +1,330 @@
+/* frontend/src/features/tools/exports_imports/styles/import-export.css */
+
+/* Container styles */
+.import-export-container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  
+  /* File upload area */
+  .file-drop-area {
+    border: 2px dashed #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease;
+    background-color: #f9fafb;
+    cursor: pointer;
+  }
+  
+  .dark .file-drop-area {
+    border-color: #4b5563;
+    background-color: #1f2937;
+  }
+  
+  .file-drop-area.dragging {
+    border-color: #4f46e5;
+    background-color: rgba(79, 70, 229, 0.05);
+  }
+  
+  .dark .file-drop-area.dragging {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  
+  .file-drop-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Progress bars */
+  .progress-bar-container {
+    width: 100%;
+    height: 1rem;
+    background-color: #e5e7eb;
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+  
+  .dark .progress-bar-container {
+    background-color: #374151;
+  }
+  
+  .progress-bar {
+    height: 100%;
+    transition: width 0.3s ease;
+  }
+  
+  .progress-bar.primary {
+    background-color: #4f46e5;
+  }
+  
+  .progress-bar.success {
+    background-color: #10b981;
+  }
+  
+  .progress-bar.danger {
+    background-color: #ef4444;
+  }
+  
+  .progress-bar.warning {
+    background-color: #f59e0b;
+  }
+  
+  .progress-bar.info {
+    background-color: #3b82f6;
+  }
+  
+  .dark .progress-bar.primary {
+    background-color: #6366f1;
+  }
+  
+  .dark .progress-bar.success {
+    background-color: #34d399;
+  }
+  
+  .dark .progress-bar.danger {
+    background-color: #f87171;
+  }
+  
+  .dark .progress-bar.warning {
+    background-color: #fbbf24;
+  }
+  
+  .dark .progress-bar.info {
+    background-color: #60a5fa;
+  }
+  
+  /* Striped progress bar animation */
+  .progress-bar.striped {
+    background-image: linear-gradient(
+      45deg,
+      rgba(255, 255, 255, 0.15) 25%,
+      transparent 25%,
+      transparent 50%,
+      rgba(255, 255, 255, 0.15) 50%,
+      rgba(255, 255, 255, 0.15) 75%,
+      transparent 75%,
+      transparent
+    );
+    background-size: 1rem 1rem;
+  }
+  
+  .progress-bar.animated {
+    animation: progress-bar-stripes 1s linear infinite;
+  }
+  
+  @keyframes progress-bar-stripes {
+    from { background-position: 1rem 0; }
+    to { background-position: 0 0; }
+  }
+  
+  /* Mapping editor styles */
+  .mapping-field {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s ease;
+  }
+  
+  .mapping-field:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .dark .mapping-field:hover {
+    background-color: #374151;
+  }
+  
+  .mapping-field-source {
+    width: 40%;
+    font-weight: 500;
+  }
+  
+  .mapping-field-arrow {
+    width: 10%;
+    text-align: center;
+    color: #9ca3af;
+  }
+  
+  .mapping-field-target {
+    width: 50%;
+  }
+  
+  /* Format selector styles */
+  .format-selector-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: 1rem;
+  }
+  
+  .format-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .dark .format-card {
+    border-color: #4b5563;
+  }
+  
+  .format-card:hover {
+    border-color: #4f46e5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark .format-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .format-card.selected {
+    border-color: #4f46e5;
+    background-color: rgba(79, 70, 229, 0.05);
+  }
+  
+  .dark .format-card.selected {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  
+  .format-icon {
+    margin: 0 auto 0.5rem;
+    height: 2.5rem;
+    width: 2.5rem;
+  }
+  
+  /* Template selector styles */
+  .template-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr));
+    gap: 1rem;
+  }
+  
+  .template-card {
+    border: 1px solid #e5e7eb;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  
+  .dark .template-card {
+    border-color: #4b5563;
+  }
+  
+  .template-card:hover {
+    border-color: #4f46e5;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dark .template-card:hover {
+    border-color: #6366f1;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+  
+  .template-card.selected {
+    border-color: #4f46e5;
+    background-color: rgba(79, 70, 229, 0.05);
+  }
+  
+  .dark .template-card.selected {
+    border-color: #6366f1;
+    background-color: rgba(99, 102, 241, 0.1);
+  }
+  
+  /* Backup panel styles */
+  .backup-history-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .dark .backup-history-item {
+    border-color: #4b5563;
+  }
+  
+  .backup-history-item:last-child {
+    border-bottom: none;
+  }
+  
+  .backup-history-details {
+    flex: 1;
+  }
+  
+  .backup-history-actions {
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  /* Status badges */
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+  
+  .status-badge.completed {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  .dark .status-badge.completed {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+  }
+  
+  .status-badge.in-progress {
+    background-color: #dbeafe;
+    color: #1e40af;
+  }
+  
+  .dark .status-badge.in-progress {
+    background-color: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+  }
+  
+  .status-badge.failed {
+    background-color: #fee2e2;
+    color: #b91c1c;
+  }
+  
+  .dark .status-badge.failed {
+    background-color: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+  }
+  
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .mapping-field {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    
+    .mapping-field-source, 
+    .mapping-field-arrow, 
+    .mapping-field-target {
+      width: 100%;
+    }
+    
+    .mapping-field-arrow {
+      transform: rotate(90deg);
+      margin: 0.5rem 0;
+    }
+    
+    .template-grid,
+    .format-selector-grid {
+      grid-template-columns: 1fr;
+    }
+  }

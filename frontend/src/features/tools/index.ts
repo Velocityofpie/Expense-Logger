@@ -1,4 +1,4 @@
-// src/features/tools/index.ts
+// src/features/tools/index.ts - Updated to include ImportExportPage exports
 
 // Export main Tools component
 export { default as Tools } from './Tools';
@@ -21,6 +21,10 @@ export { default as InvoicePreviewModal } from './templates/components/InvoicePr
 export { default as ImportTemplateModal } from './templates/modals/ImportTemplateModal';
 export { default as TestTemplateModal } from './templates/modals/TestTemplateModal';
 
+// Export Import/Export components
+export { ImportExportPage } from './exports_imports';
+export { ImportPanel, ExportPanel, BackupPanel } from './exports_imports';
+
 // Export shared utilities
 export * from './shared/types';
 export * from './shared/api';
@@ -28,3 +32,6 @@ export * from './shared/api';
 // Export API functions
 export * from './ocr/utils/ocr-api';
 export * from './templates/utils/template-api';
+export * from './exports_imports/api/importApi';
+export * from './exports_imports/api/exportApi';
+export * from './exports_imports/api/backupApi';

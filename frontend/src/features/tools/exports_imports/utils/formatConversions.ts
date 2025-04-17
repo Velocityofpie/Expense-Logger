@@ -1,6 +1,6 @@
 // frontend/src/features/tools/exports_imports/utils/formatConversions.ts
 import Papa from 'papaparse';
-import * as XLSX from 'sheetjs';
+import * as XLSX from 'xlsx';  // Changed from 'sheetjs' to 'xlsx'
 import { FileFormat } from '../types';
 
 /**
